@@ -30,7 +30,9 @@
     "react-dom": "^19.2.5",
     "react-i18next": "^17.0.2",
     "react-joyride": "^3.0.2",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "@vercel/analytics": "latest",
+    "@vercel/speed-insights": "latest"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
