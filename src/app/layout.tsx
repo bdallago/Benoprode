@@ -4,6 +4,8 @@ import "../index.css";
 import { Providers } from "../components/Providers";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +28,8 @@ export default function RootLayout({
             <Providers>{children}</Providers>
           </ThemeProvider>
         </ErrorBoundary>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
