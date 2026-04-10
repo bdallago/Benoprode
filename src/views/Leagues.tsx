@@ -44,6 +44,7 @@ export default function Leagues({ user }: { user: User }) {
   const [leagueError, setLeagueError] = useState("");
   const [leagueToDelete, setLeagueToDelete] = useState<League | null>(null);
   const [leagueToLeave, setLeagueToLeave] = useState<League | null>(null);
+  const [userToRemoveFromLeague, setUserToRemoveFromLeague] = useState<{leagueId: string, userId: string, userName: string} | null>(null);
   const [copiedLeagueId, setCopiedLeagueId] = useState<string | null>(null);
   const [pendingInvitation, setPendingInvitation] = useState<{league: League, inviter: string} | null>(null);
   const [selectedUser, setSelectedUser] = useState<{uid: string, name: string} | null>(null);
@@ -221,6 +222,18 @@ export default function Leagues({ user }: { user: User }) {
     setPendingInvitation(null);
   };
 
+  const confirmRemoveUser = async () => {
+    if (!userToRemoveFromLeague) return;
+    try {
+      await updateDoc(doc(db, "leagues", userToRemoveFromLeague.leagueId), {
+        members: arrayRemove(userToRemoveFromLeague.userId)
+      });
+      setUserToRemoveFromLeague(null);
+    } catch (err) {
+      console.error("Error removing user from league", err);
+    }
+  };
+
   const currentUser = players.find((p) => p.uid === user.uid);
 
   // Filter leagues: Show all leagues
@@ -387,6 +400,7 @@ export default function Leagues({ user }: { user: User }) {
               currentUser={user} 
               onUserClick={(u) => setSelectedUser({uid: u.uid, name: u.name})} 
               loading={loading} 
+              onRemoveUser={isAdmin || selectedLeague.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: selectedLeague.id, userId: u.uid, userName: u.name}) : undefined}
             />
           </div>
         )}
@@ -512,6 +526,26 @@ export default function Leagues({ user }: { user: User }) {
                 onClick={() => leaveLeague(leagueToLeave.id)}
               >
                 {leagueToLeave.members.length === 1 ? t('leagues.yesLeaveAndDelete') : t('leagues.yesLeave')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {userToRemoveFromLeague && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Eliminar Jugador</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              ¿Estás seguro de que querés eliminar a <strong>{userToRemoveFromLeague.userName}</strong> de esta liga?
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setUserToRemoveFromLeague(null)}>{t('leagues.cancel')}</Button>
+              <Button 
+                variant="destructive"
+                onClick={confirmRemoveUser}
+              >
+                Sí, eliminar
               </Button>
             </div>
           </div>

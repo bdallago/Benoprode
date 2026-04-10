@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { User } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Trophy, Search, ChevronLeft, ChevronRight, User as UserIcon, Target } from "lucide-react";
+import { Trophy, Search, ChevronLeft, ChevronRight, User as UserIcon, Target, Trash2 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 interface Player {
@@ -18,11 +18,12 @@ interface LeaderboardProps {
   currentUser: User;
   onUserClick?: (user: {uid: string, name: string, points: number}) => void;
   loading?: boolean;
+  onRemoveUser?: (user: {uid: string, name: string}) => void;
 }
 
 const ITEMS_PER_PAGE = 50;
 
-export function Leaderboard({ title, players, currentUser, onUserClick, loading }: LeaderboardProps) {
+export function Leaderboard({ title, players, currentUser, onUserClick, loading, onRemoveUser }: LeaderboardProps) {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,6 +110,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading 
               <th className="py-3 px-4 font-semibold w-24 text-center">Posición</th>
               <th className="py-3 px-4 font-semibold">Jugador</th>
               <th className="py-3 px-4 font-semibold text-right w-32">Puntos</th>
+              {onRemoveUser && <th className="py-3 px-4 w-12"></th>}
             </tr>
           </thead>
           <tbody>
@@ -153,11 +155,29 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading 
                   <td className="py-3 px-4 text-right font-bold text-gray-900 dark:text-gray-100 text-lg">
                     {player.totalPoints}
                   </td>
+                  {onRemoveUser && (
+                    <td className="py-3 px-4 text-right">
+                      {player.uid !== currentUser.uid && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveUser({uid: player.uid, name: player.displayName});
+                          }}
+                          title="Eliminar jugador"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={onRemoveUser ? 4 : 3} className="py-8 text-center text-gray-500 dark:text-gray-400">
                   No se encontraron jugadores.
                 </td>
               </tr>
