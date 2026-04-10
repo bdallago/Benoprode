@@ -82,9 +82,9 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             <div className="flex items-center justify-end gap-3 md:w-1/4">
               <Button 
                 variant="outline" 
-                size="icon" 
+                size="sm" 
                 onClick={toggleTheme} 
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20 hidden sm:flex items-center justify-center h-9 w-9"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 hidden sm:flex items-center justify-center h-9 w-9 p-0"
                 title="Cambiar tema"
               >
                 {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
