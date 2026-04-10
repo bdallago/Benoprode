@@ -82,20 +82,15 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             <div className="flex items-center justify-end gap-3 md:w-1/4">
               <Button 
                 variant="outline" 
-                size="sm" 
+                size="icon" 
                 onClick={toggleTheme} 
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20 hidden sm:flex items-center gap-2"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 hidden sm:flex items-center justify-center h-9 w-9"
+                title="Cambiar tema"
               >
                 {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
-                  <>
-                    <Sun className="h-4 w-4" />
-                    <span>Modo Día</span>
-                  </>
+                  <Moon className="h-4 w-4" />
                 ) : (
-                  <>
-                    <Moon className="h-4 w-4" />
-                    <span>Modo Noche</span>
-                  </>
+                  <Sun className="h-4 w-4" />
                 )}
               </Button>
               {user && (
@@ -142,13 +137,12 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             <Settings className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Admin</span>
           </Link>
         )}
-        <button onClick={toggleTheme} className="flex flex-col items-center text-[10px] leading-tight p-2 rounded-md transition-colors bg-gray-700 dark:bg-gray-800 text-white">
+        <button onClick={toggleTheme} className="flex flex-col items-center justify-center text-[10px] leading-tight p-2 rounded-md transition-colors bg-gray-700 dark:bg-gray-800 text-white w-12 h-12">
           {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
-            <Sun className="h-5 w-5 mb-1" />
+            <Moon className="h-5 w-5" />
           ) : (
-            <Moon className="h-5 w-5 mb-1" />
+            <Sun className="h-5 w-5" />
           )}
-          Tema
         </button>
       </div>
     </>
