@@ -329,7 +329,49 @@ export default function Predictions({ user }: { user: User }) {
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2">{t('predictions.knockoutStage')}</h2>
         
         {/* Bracket UI placeholder */}
-        <div className="flex gap-8 overflow-x-auto pb-8 pt-10 px-4 min-h-[800px] relative items-stretch">
+        <div 
+          className="flex gap-8 overflow-x-auto pb-8 pt-10 px-4 min-h-[800px] relative items-stretch cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={(e) => {
+            const ele = e.currentTarget;
+            ele.dataset.isDown = 'true';
+            ele.dataset.startX = e.pageX.toString();
+            ele.dataset.scrollLeft = ele.scrollLeft.toString();
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.dataset.isDown = 'false';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.dataset.isDown = 'false';
+          }}
+          onMouseMove={(e) => {
+            const ele = e.currentTarget;
+            if (ele.dataset.isDown !== 'true') return;
+            e.preventDefault();
+            const startX = parseFloat(ele.dataset.startX || '0');
+            const scrollLeft = parseFloat(ele.dataset.scrollLeft || '0');
+            const x = e.pageX;
+            const walk = (x - startX) * 2; // Scroll-fast
+            ele.scrollLeft = scrollLeft - walk;
+          }}
+          onTouchStart={(e) => {
+            const ele = e.currentTarget;
+            ele.dataset.isDown = 'true';
+            ele.dataset.startX = e.touches[0].pageX.toString();
+            ele.dataset.scrollLeft = ele.scrollLeft.toString();
+          }}
+          onTouchEnd={(e) => {
+            e.currentTarget.dataset.isDown = 'false';
+          }}
+          onTouchMove={(e) => {
+            const ele = e.currentTarget;
+            if (ele.dataset.isDown !== 'true') return;
+            const startX = parseFloat(ele.dataset.startX || '0');
+            const scrollLeft = parseFloat(ele.dataset.scrollLeft || '0');
+            const x = e.touches[0].pageX;
+            const walk = (x - startX) * 2;
+            ele.scrollLeft = scrollLeft - walk;
+          }}
+        >
           {['16avos', 'Octavos', 'Cuartos', 'Semifinal', 'Final'].map((stage, idx) => {
             const numMatches = Math.pow(2, 4 - idx);
             return (
@@ -358,10 +400,10 @@ export default function Predictions({ user }: { user: User }) {
                       <>
                         <div className="absolute top-1/2 -right-4 w-4 border-t-2 border-gray-300 dark:border-gray-600"></div>
                         {i % 2 === 0 && (
-                          <div className="absolute top-1/2 -right-4 w-0 border-r-2 border-gray-300 dark:border-gray-600 h-[50%] translate-y-full"></div>
+                          <div className="absolute top-1/2 -right-4 w-0 border-r-2 border-gray-300 dark:border-gray-600 h-[50%]"></div>
                         )}
                         {i % 2 === 1 && (
-                          <div className="absolute top-1/2 -right-4 w-0 border-r-2 border-gray-300 dark:border-gray-600 h-[50%] -translate-y-full"></div>
+                          <div className="absolute top-0 -right-4 w-0 border-r-2 border-gray-300 dark:border-gray-600 h-[50%]"></div>
                         )}
                       </>
                     )}

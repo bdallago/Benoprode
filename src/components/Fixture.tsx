@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 
 export const TEAM_CODES: Record<string, string> = {
   "México": "mx", "Sudáfrica": "za", "Corea del Sur": "kr", "República Checa": "cz",
-  "Canadá": "ca", "Bosnia y Herzegovina": "ba", "Qatar": "qa", "Suiza": "ch",
+  "Canadá": "ca", "Bosnia y Herzegovina": "ba", "Bosnia": "ba", "Qatar": "qa", "Suiza": "ch",
   "Brasil": "br", "Marruecos": "ma", "Haití": "ht", "Escocia": "gb-sct",
   "Estados Unidos": "us", "Paraguay": "py", "Australia": "au", "Turquía": "tr",
   "Alemania": "de", "Curazao": "cw", "Costa de Marfil": "ci", "Ecuador": "ec",

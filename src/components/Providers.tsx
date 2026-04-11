@@ -24,7 +24,8 @@ const AuthContext = createContext<AuthContextType>({ user: null, loading: true, 
 export const useAuth = () => useContext(AuthContext);
 
 function GlobalBadgeListener({ user }: { user: User }) {
-  const [newBadge, setNewBadge] = useState<any | null>(null);
+  const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
+  const [currentBadge, setCurrentBadge] = useState<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -68,16 +69,8 @@ function GlobalBadgeListener({ user }: { user: User }) {
       const newEarnedBadges = userBadges.filter(b => b && !storedBadges.includes(b.id));
       
       if (newEarnedBadges.length > 0) {
-        setNewBadge(newEarnedBadges[0] || null);
-        if (audioRef.current) {
-          audioRef.current.play().catch(e => console.log("Audio play failed:", e));
-        }
+        setBadgeQueue(prev => [...prev, ...newEarnedBadges]);
         localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
-        
-        // Hide notification after 5 seconds
-        setTimeout(() => {
-          setNewBadge(null);
-        }, 5000);
       } else if (!storedBadgesStr && userBadges.length > 0) {
         localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
       }
@@ -89,16 +82,32 @@ function GlobalBadgeListener({ user }: { user: User }) {
     };
   }, [user]);
 
-  if (!newBadge) return null;
+  useEffect(() => {
+    if (badgeQueue.length > 0 && !currentBadge) {
+      setCurrentBadge(badgeQueue[0]);
+      if (audioRef.current) {
+        audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+      }
+      
+      const timer = setTimeout(() => {
+        setCurrentBadge(null);
+        setBadgeQueue(prev => prev.slice(1));
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [badgeQueue, currentBadge]);
+
+  if (!currentBadge) return null;
 
   return (
     <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
       <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 rounded-lg shadow-2xl border-2 border-yellow-300 flex items-center gap-4 max-w-sm">
-        <div className="text-4xl animate-bounce">{newBadge.icon}</div>
+        <div className="text-4xl animate-bounce">{currentBadge.icon}</div>
         <div>
           <p className="text-xs font-bold text-yellow-100 uppercase tracking-wider">¡Nueva Medalla Desbloqueada!</p>
-          <h4 className="font-bold text-lg">{newBadge.name}</h4>
-          <p className="text-sm text-yellow-50">{newBadge.description}</p>
+          <h4 className="font-bold text-lg">{currentBadge.name}</h4>
+          <p className="text-sm text-yellow-50">{currentBadge.description}</p>
         </div>
       </div>
     </div>
@@ -149,7 +158,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             await setDoc(userRef, {
               uid: currentUser.uid,
               displayName: currentUser.displayName || "Usuario",
-              email: currentUser.email,
+              email: currentUser.email || `${currentUser.uid}@no-email.com`,
               photoURL: currentUser.photoURL || "",
               role: role,
               totalPoints: 0,
