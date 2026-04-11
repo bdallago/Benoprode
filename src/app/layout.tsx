@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Prode Beno",
   },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  }
 };
 
 export default function RootLayout({
