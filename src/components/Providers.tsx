@@ -167,6 +167,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             });
             // New user, do not run the tour for now
             setRunTour(false);
+            
+            // Clear local storage badges for this user since they are starting fresh
+            localStorage.removeItem(`user_badges_${currentUser.uid}`);
           } else {
             const userData = userSnap.data();
             const currentRole = userData.role;
