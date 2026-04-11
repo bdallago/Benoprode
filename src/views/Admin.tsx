@@ -405,6 +405,26 @@ export default function Admin() {
       // Delete user predictions
       await deleteDoc(doc(db, "predictions", uid));
       
+      // Remove user from all leagues
+      const leaguesSnap = await getDocs(collection(db, "leagues"));
+      const batch = writeBatch(db);
+      
+      leaguesSnap.docs.forEach(d => {
+        const leagueData = d.data();
+        if (leagueData.members && leagueData.members.includes(uid)) {
+          if (leagueData.members.length === 1) {
+            // If they are the only member, delete the league
+            batch.delete(doc(db, "leagues", d.id));
+          } else {
+            // Otherwise just remove them from the members array
+            const updatedMembers = leagueData.members.filter((m: string) => m !== uid);
+            batch.update(doc(db, "leagues", d.id), { members: updatedMembers });
+          }
+        }
+      });
+      
+      await batch.commit();
+      
       // Update local state
       setUsers(users.filter(u => u.uid !== uid));
       setMessage({ type: 'success', text: t('admin.messages.deleteUserSuccess', { name }) });
