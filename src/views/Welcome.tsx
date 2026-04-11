@@ -6,9 +6,16 @@ import { Button } from "../components/ui/button";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
-import { WorldCupBanner } from "../components/WorldCupBanner";
-import { CountdownBanner } from "../components/CountdownBanner";
+import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
+
+const WorldCupBanner = dynamic(() => import("../components/WorldCupBanner").then(mod => mod.WorldCupBanner), {
+  loading: () => <div className="h-32 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl"></div>
+});
+
+const CountdownBanner = dynamic(() => import("../components/CountdownBanner").then(mod => mod.CountdownBanner), {
+  loading: () => <div className="h-24 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl"></div>
+});
 
 export default function Welcome() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);

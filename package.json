@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start -p 3000",
     "lint": "next lint"
   },
@@ -13,6 +13,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@google/genai": "^1.49.0",
     "@vercel/analytics": "^2.0.1",
     "axios": "^1.15.0",
@@ -33,6 +34,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
@@ -40,7 +42,6 @@
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.9",
-    "@tailwindcss/postcss": "^4.2.2",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2"
   }

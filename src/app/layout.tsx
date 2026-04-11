@@ -10,7 +10,13 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "El Prode de Beno",
   description: "Demostrá cuánto sabés de fútbol",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
+  themeColor: "#1e3a8a",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Prode Beno",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,17 @@
+{
+  "name": "El Prode de Beno",
+  "short_name": "Prode Beno",
+  "description": "Jugá al Prode con tus amigos, sumá puntos y ganá medallas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
