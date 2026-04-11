@@ -1,4 +1,4 @@
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "../components/ui/button";
@@ -11,17 +11,8 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      const search = window.location.search;
-      const hash = window.location.hash;
-      const targetPath = (search.includes('league=') || hash.includes('league=')) ? '/leagues' : '/';
-      router.push(targetPath + search + hash);
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        // User intentionally closed the popup, no need to show an error alert
-        console.log("Login popup closed by user");
-        return;
-      }
       console.error("Error signing in with Google", error);
       alert(t('login.error'));
     }
