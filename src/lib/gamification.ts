@@ -5,7 +5,7 @@ export const LEVELS = [
   { name: 'Ojeador', minPoints: 300, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
   { name: 'Analista Táctico', minPoints: 500, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30' },
   { name: 'Director Técnico', minPoints: 800, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
-  { name: 'Leyenda Mundial', minPoints: 1200, color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+  { name: 'Leyenda Mundial', minPoints: 1200, color: 'text-sky-500', bg: 'bg-sky-100 dark:bg-sky-900/30' },
 ];
 
 export const BADGES = [

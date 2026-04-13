@@ -129,7 +129,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                 >
                   <td className="py-3 px-4 text-center">
                     <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                      player.rank === 1 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 border border-yellow-300' :
+                      player.rank === 1 ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-400 border border-sky-300' :
                       player.rank === 2 ? 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300' :
                       player.rank === 3 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-400 border border-orange-300' :
                       'text-gray-600 dark:text-gray-400'

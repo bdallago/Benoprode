@@ -5,22 +5,20 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, setDoc, onSnapshot, collection, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { Navbar } from "./Navbar";
-import { Joyride, STATUS } from 'react-joyride';
 import '../i18n';
 import { useTranslation } from 'react-i18next';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getUserBadges } from "../lib/gamification";
 import { X } from "lucide-react";
+import { useTheme } from "./ThemeProvider";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
-  advanceTour: () => void;
-  tourStepIndex: number;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false, advanceTour: () => {}, tourStepIndex: 0 });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false });
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -110,19 +108,19 @@ function GlobalBadgeListener({ user }: { user: User }) {
 
   return (
     <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 rounded-lg shadow-2xl border-2 border-yellow-300 flex items-center gap-4 max-w-sm relative pr-10">
+      <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 rounded-lg shadow-2xl border-2 border-sky-300 flex items-center gap-4 max-w-sm relative pr-10">
         <button 
           onClick={() => setCurrentBadge(null)} 
-          className="absolute top-2 right-2 text-yellow-200 hover:text-white transition-colors"
+          className="absolute top-2 right-2 text-sky-200 hover:text-white transition-colors"
           title="Cerrar"
         >
           <X className="w-4 h-4" />
         </button>
         <div className="text-4xl animate-bounce">{currentBadge.icon}</div>
         <div>
-          <p className="text-xs font-bold text-yellow-100 uppercase tracking-wider">¡Nueva Medalla Desbloqueada!</p>
+          <p className="text-xs font-bold text-sky-100 uppercase tracking-wider">¡Nueva Medalla Desbloqueada!</p>
           <h4 className="font-bold text-lg">{currentBadge.name}</h4>
-          <p className="text-sm text-yellow-50">{currentBadge.description}</p>
+          <p className="text-sm text-sky-50">{currentBadge.description}</p>
         </div>
       </div>
     </div>
@@ -133,34 +131,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [runTour, setRunTour] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
   const { t } = useTranslation();
   const pathname = usePathname();
-
-  const advanceTour = () => {
-    setStepIndex(prev => prev + 1);
-  };
-
-  useEffect(() => {
-    if (!runTour) return;
-    
-    if (stepIndex === 0 && pathname === '/predictions') {
-      setStepIndex(1);
-    } else if (stepIndex === 7 && pathname === '/leagues') {
-      setStepIndex(8);
-    } else if (stepIndex === 10 && pathname === '/dashboard') {
-      setStepIndex(11);
-    } else if (stepIndex === 13 && pathname === '/instructions') {
-      setStepIndex(14);
-    }
-  }, [pathname, stepIndex, runTour]);
+  const router = useRouter();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      try {
-        setUser(currentUser);
-        if (currentUser) {
+      setUser(currentUser);
+      setLoading(false); // Unblock UI immediately after auth state is known
+      
+      if (currentUser) {
+        try {
           const isAdminEmail = currentUser.email?.toLowerCase() === "bdallago01@gmail.com";
           
           // Check if user exists in db, if not create
@@ -180,9 +162,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               lastLogin: new Date().toISOString(),
               tourCompleted: false
             });
-            // New user, do not run the tour for now
-            setRunTour(false);
             
+            // New user
             // Clear local storage badges for this user since they are starting fresh
             localStorage.removeItem(`user_badges_${currentUser.uid}`);
           } else {
@@ -195,9 +176,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
               updates.role = "admin";
             }
             await setDoc(userRef, updates, { merge: true });
-            
-            // Tutorial disabled
-            setRunTour(false);
           }
           
           // Auto-create Benoliga if admin
@@ -218,120 +196,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
               console.error("Error auto-creating Benoliga", e);
             }
           }
-        } else {
-          setIsAdmin(false);
+        } catch (error) {
+          console.error("Error in auth state change:", error);
         }
-      } catch (error) {
-        console.error("Error in auth state change:", error);
-      } finally {
-        setLoading(false);
+      } else {
+        setIsAdmin(false);
       }
     });
 
     return () => unsubscribe();
   }, []);
-
-  const handleJoyrideCallback = async (data: any) => {
-    const { action, index, status, type } = data;
-    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
-    
-    if (finishedStatuses.includes(status)) {
-      setRunTour(false);
-      setStepIndex(0);
-      if (user) {
-        try {
-          await setDoc(doc(db, "users", user.uid), { tourCompleted: true }, { merge: true });
-        } catch (error) {
-          console.error("Error updating tour status:", error);
-        }
-      }
-    } else if (type === 'step:after') {
-      // Update state to advance the tour
-      setStepIndex(index + (action === 'prev' ? -1 : 1));
-    }
-  };
-
-  const tourSteps = [
-    {
-      target: 'a[href="/predictions"]',
-      content: <div className="text-justify w-full">¡Bienvenido a El Prode de Beno! Te mostramos cómo jugar en unos simples pasos. Hacé click acá en "Predicciones" para continuar.</div>,
-      disableBeacon: true,
-      spotlightClicks: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: '.group-card-A',
-      content: <div className="text-justify w-full">Estas son las predicciones de la fase de grupos. Acá vas a poder ordenar a las selecciones, grupo por grupo, según como vos crees que van a ser sus posiciones finales. Podes guardar las veces que quieras! Y si te gusta el riesgo o estas super seguro, ya podes fijarlas con el boton "fijar predicciones". Ojo! Esto lo vas a poder hacer una sola vez y se te bloquean las selecciones. Todos las selecciones de la fase de grupo se van a bloquear de manera automatica el 8 de Junio a las 00:00.</div>,
-    },
-    {
-      target: '.group-card-A',
-      content: <div className="text-justify w-full">Vamos a probar nuestra primera predicción. Agarrá y arrastrá los equipos y ordenalos como quieras.</div>,
-      spotlightClicks: true,
-      hideOverlay: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: '.save-draft-btn',
-      content: <div className="text-justify w-full">Luego, apretá en "Guardar borrador".</div>,
-      spotlightClicks: true,
-      hideOverlay: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: 'body',
-      placement: 'center' as const,
-      content: <div className="text-justify w-full">Listo! ya hiciste un borrador de tu primera predicción, más tarde vas a poder hacerlo con el resto de grupos</div>,
-    },
-    {
-      target: '.tab-specials',
-      content: <div className="text-justify w-full">Tambien estan las preguntas especiales! Están en esta pestaña de Predicciones y suman muchos puntos extra. Hace click en "Preguntas Especiales".</div>,
-      spotlightClicks: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: '.special-questions-container',
-      content: <div className="text-justify w-full">Acá vas a poder desplegar otro tipo de conocimientos futbolísticos. Cada pregunta que aciertes suma 10 puntos! No te olvides de completarlas luego</div>,
-    },
-    {
-      target: 'a[href="/leagues"]',
-      content: <div className="text-justify w-full">Creá o unite a una liga: Competí contra tus amigos o compañeros de trabajo en torneos privados. Hace click en la pestaña "Torneos".</div>,
-      spotlightClicks: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: '.benoliga-card',
-      content: <div className="text-justify w-full">Mirá, ya hay un torneo! Beno te invita a su desafío con "La Benoliga".</div>,
-    },
-    {
-      target: '.create-league-btn',
-      content: <div className="text-justify w-full">Podes crear tus propios torneos, tanto públicos, para que cualquiera participe, como privados, para que compartas el link con tus amigos y jueguen solo entre ustedes</div>,
-    },
-    {
-      target: 'a[href="/dashboard"]',
-      content: <div className="text-justify w-full">Seguí tu posición en el Ranking Global, hace click acá y vamos a verlo!</div>,
-      spotlightClicks: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: '.top-5-ranking',
-      content: <div className="text-justify w-full">A medida que vayas obteniendo aciertos vas a sumar puntos. Tambien podes conseguir medallas!</div>,
-    },
-    {
-      target: '.medals-section',
-      content: <div className="text-justify w-full">En "Mis Medallas" vas a poder verlas a medidas que las consigas. Baja hasta la sección "Medallas" para enterarte cuantas hay y como conseguirlas</div>,
-    },
-    {
-      target: 'a[href="/instructions"]',
-      content: <div className="text-justify w-full">Acá tenes las reglas de como funciona el prode y como sumás puntos, vamos allá!</div>,
-      spotlightClicks: true,
-      buttons: [] as ('back' | 'close' | 'primary' | 'skip')[]
-    },
-    {
-      target: 'body',
-      placement: 'center' as const,
-      content: <div className="text-justify w-full">Siempre que tengas dudas, podes consultar el reglamento. Si tu duda no esta acá, en la pestaña de inicio podes contactar directamente con Beno, el te va a responder!</div>,
-    }
-  ];
 
   if (loading) {
     return (
@@ -342,27 +216,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, advanceTour, tourStepIndex: stepIndex }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin }}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-0">
         <Navbar user={user} isAdmin={isAdmin} />
         {user && <GlobalBadgeListener user={user} />}
         <main className="container mx-auto px-4 py-8">
           {children}
         </main>
-        {user && (
-          <Joyride
-            steps={tourSteps}
-            run={runTour}
-            stepIndex={stepIndex}
-            continuous
-            options={{
-              buttons: ['back', 'close', 'primary', 'skip'],
-              zIndex: 10000,
-            }}
-            locale={{ skip: 'Omitir tutorial', last: 'Finalizar tutorial', next: 'Siguiente', back: 'Atrás' }}
-            onEvent={handleJoyrideCallback}
-          />
-        )}
       </div>
     </AuthContext.Provider>
   );

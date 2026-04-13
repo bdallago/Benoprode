@@ -4,12 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import firebaseConfig from "../firebase-applet-config.json";
 
-const config = {
-  ...firebaseConfig,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain
-};
-
-const app = initializeApp(config);
+const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 

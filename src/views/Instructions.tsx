@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 export default function Instructions() {
   const { t } = useTranslation();
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div id="tutorial-rules-content" className="max-w-4xl mx-auto space-y-8">
       <CountdownBanner />
       <div className="flex flex-col md:flex-row items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center md:text-left transition-colors duration-200">
         <div className="bg-blue-100 dark:bg-blue-900/40 p-3 rounded-full shrink-0">

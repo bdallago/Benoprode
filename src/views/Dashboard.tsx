@@ -97,7 +97,7 @@ export default function Dashboard({ user }: { user: User }) {
   const userBadgeIds = userBadges.map(b => b?.id);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
       <CountdownBanner />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -192,7 +192,7 @@ export default function Dashboard({ user }: { user: User }) {
       {/* Achievements Table */}
       <div className="mt-12 space-y-4 medals-section">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Medal className="w-6 h-6 text-yellow-500" /> Medallas
+          <Medal className="w-6 h-6 text-sky-500" /> Medallas
         </h2>
         <p className="text-sm text-gray-500">Completá estas acciones para desbloquear todas las medallas en tu perfil.</p>
         

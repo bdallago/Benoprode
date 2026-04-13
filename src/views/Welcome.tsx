@@ -88,10 +88,10 @@ export default function Welcome() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 relative">
       <WorldCupBanner />
       <CountdownBanner />
-      <div className="flex flex-col items-center justify-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-colors duration-200">
+      <div id="tutorial-welcome" className="flex flex-col items-center justify-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-colors duration-200">
         <div className="w-full">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
             {t('welcome.title')}<br />"{t('welcome.appTitle')}"
@@ -103,7 +103,7 @@ export default function Welcome() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="hover:shadow-md transition-shadow border-t-4 border-t-blue-500">
+        <Card id="tutorial-instructions" className="hover:shadow-md transition-shadow border-t-4 border-t-blue-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl flex items-center gap-2 text-blue-900 dark:text-blue-400">
               <BookOpen className="w-5 h-5" /> {t('welcome.instructionsTitle')}
@@ -119,7 +119,7 @@ export default function Welcome() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-t-4 border-t-green-500">
+        <Card id="tutorial-predictions" className="hover:shadow-md transition-shadow border-t-4 border-t-green-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl flex items-center gap-2 text-green-900 dark:text-green-400">
               <PenSquare className="w-5 h-5" /> {t('welcome.predictionsTitle')}
@@ -135,7 +135,7 @@ export default function Welcome() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-t-4 border-t-purple-500">
+        <Card id="tutorial-leagues" className="hover:shadow-md transition-shadow border-t-4 border-t-purple-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl flex items-center gap-2 text-purple-900 dark:text-purple-400">
               <Users className="w-5 h-5" /> {t('welcome.leaguesTitle')}
@@ -151,7 +151,7 @@ export default function Welcome() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-t-4 border-t-orange-500">
+        <Card id="tutorial-ranking" className="hover:shadow-md transition-shadow border-t-4 border-t-orange-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl flex items-center gap-2 text-orange-900 dark:text-orange-400">
               <Trophy className="w-5 h-5" /> {t('welcome.rankingTitle')}

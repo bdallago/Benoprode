@@ -1,4 +1,4 @@
-import { signInWithRedirect } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useRouter } from "next/navigation";
 import { Button } from "../components/ui/button";
@@ -11,7 +11,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error("Error signing in with Google", error);
       alert(t('login.error'));

@@ -10,17 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { SortableItem } from "../components/SortableItem";
 import { DndContext, closestCenter, KeyboardSensor, TouchSensor, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Save, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Save, Lock, AlertCircle, CheckCircle2, Share2 } from "lucide-react";
 import { CountdownBanner } from "../components/CountdownBanner";
-import confetti from 'canvas-confetti';
 import { useAuth } from "../components/Providers";
-
+import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
+
+// Lazy load heavy components
+const SharePredictionsModal = dynamic(() => import("../components/SharePredictionsModal").then(mod => mod.SharePredictionsModal), {
+  ssr: false
+});
 
 const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
 
 export default function Predictions({ user }: { user: User }) {
-  const { advanceTour, tourStepIndex } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +39,7 @@ export default function Predictions({ user }: { user: User }) {
   const [matchPredictions, setMatchPredictions] = useState<Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>>({});
   
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -128,10 +132,6 @@ export default function Predictions({ user }: { user: User }) {
         };
       });
     }
-    
-    if (tourStepIndex === 2) {
-      advanceTour();
-    }
   };
 
   const handleSpecialChange = (id: string, value: string) => {
@@ -155,10 +155,6 @@ export default function Predictions({ user }: { user: User }) {
     setSaving(true);
     setMessage(null);
     
-    if (tourStepIndex === 3) {
-      advanceTour();
-    }
-    
     try {
       const docRef = doc(db, "predictions", user.uid);
       await setDoc(docRef, {
@@ -178,11 +174,13 @@ export default function Predictions({ user }: { user: User }) {
       setMessage({ type: 'success', text: lock ? t('predictions.lockSuccess') : t('predictions.saveSuccess') });
       
       // Trigger confetti on successful save
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
+      import('canvas-confetti').then((confetti) => {
+        confetti.default({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
+        });
       });
     } catch (error) {
       console.error("Error saving predictions:", error);
@@ -192,6 +190,20 @@ export default function Predictions({ user }: { user: User }) {
       setTimeout(() => setMessage(null), 5000);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
+        <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+        <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -208,26 +220,32 @@ export default function Predictions({ user }: { user: User }) {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-4 md:mt-0 shrink-0">
-          {!effectiveIsLocked && !loading && (
+          <Button 
+            onClick={() => setIsShareModalOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white border-0 transition-colors"
+          >
+            <Share2 className="w-4 h-4" /> Compartir
+          </Button>
+          {!effectiveIsLocked && (
             <>
               <Button 
                 variant="outline" 
                 onClick={() => savePredictions(false)}
-                disabled={saving}
+                disabled={saving || loading}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 save-draft-btn"
               >
                 <Save className="w-4 h-4" /> {saving ? t('predictions.saving') : t('predictions.saveDraft')}
               </Button>
               <Button 
                 onClick={() => setConfirmLock(true)}
-                disabled={saving}
+                disabled={saving || loading}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
               >
                 <Lock className="w-4 h-4" /> {t('predictions.lockPredictions')}
               </Button>
             </>
           )}
-          {effectiveIsLocked && !loading && (
+          {effectiveIsLocked && (
             <div className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-2 rounded-md border border-green-200 w-full justify-center">
               <Lock className="w-4 h-4" /> {t('predictions.predictionsLocked')}
             </div>
@@ -242,19 +260,15 @@ export default function Predictions({ user }: { user: User }) {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-10 text-gray-500 dark:text-gray-400">{t('predictions.loading')}</div>
-      ) : (
-        <>
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')}>Fase de Grupos</Button>
-            <Button className="tab-specials" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => {
-              setActiveTab('specials');
-              if (tourStepIndex === 5) advanceTour();
-            }}>Preguntas Especiales</Button>
-            <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')}>Partidos Individuales</Button>
-            <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')}>Fase Eliminatoria</Button>
-          </div>
+      <>
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Button id="tab-groups" variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')}>Fase de Grupos</Button>
+          <Button id="tab-specials" className="tab-specials" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => {
+            setActiveTab('specials');
+          }}>Preguntas Especiales</Button>
+          <Button id="tab-matches" variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')}>Partidos Individuales</Button>
+          <Button id="tab-knockout" variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')}>Fase Eliminatoria</Button>
+        </div>
 
           {activeTab === 'groups' && (
             <div className="space-y-6">
@@ -546,8 +560,8 @@ export default function Predictions({ user }: { user: User }) {
           </div>
         </div>
       )}
+
       </>
-      )}
 
       {confirmLock && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -569,6 +583,17 @@ export default function Predictions({ user }: { user: User }) {
             </div>
           </div>
         </div>
+      )}
+      
+      {isShareModalOpen && (
+        <SharePredictionsModal 
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          champion={knockoutPredictions['champion']?.[0] || ''}
+          topScorer={specialPredictions['topScorer'] || ''}
+          revelation={specialPredictions['revelation'] || ''}
+          userName={user.displayName || 'Usuario'}
+        />
       )}
     </div>
   );

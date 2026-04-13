@@ -30,7 +30,7 @@ interface League {
 }
 
 export default function Leagues({ user }: { user: User }) {
-  const { isAdmin, tourStepIndex } = useAuth();
+  const { isAdmin } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,12 +239,34 @@ export default function Leagues({ user }: { user: User }) {
   // Filter leagues: Show all leagues
   const visibleLeagues = leagues;
 
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
+        <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded w-1/3"></div>
+          <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded w-32"></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+            ))}
+          </div>
+          <div className="lg:col-span-2">
+            <div className="h-96 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <CountdownBanner />
 
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div id="tutorial-leagues-actions" className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-center sm:text-left w-full sm:w-auto">
             <h2 className="text-3xl font-bold text-gray-900">{t('leagues.title')}</h2>
             <p className="text-sm text-gray-500 mt-1 text-justify sm:text-left">{t('leagues.description')}</p>
@@ -252,7 +274,6 @@ export default function Leagues({ user }: { user: User }) {
           <Button 
             onClick={() => setShowCreateModal(true)} 
             className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto shrink-0 create-league-btn"
-            disabled={tourStepIndex === 9}
           >
             <Plus className="w-4 h-4 mr-2"/> {t('leagues.createLeague')}
           </Button>
@@ -265,14 +286,14 @@ export default function Leagues({ user }: { user: User }) {
             const isMember = benoliga ? benoliga.members.includes(user.uid) : false;
             
             return (
-              <Card className="col-span-full border-2 border-yellow-400 dark:border-yellow-500 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 relative overflow-hidden benoliga-card">
-                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+              <Card className="col-span-full border-2 border-sky-400 dark:border-sky-500 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 relative overflow-hidden benoliga-card">
+                <div className="absolute top-0 right-0 bg-sky-400 text-sky-900 text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
                   Creado por Beno
                 </div>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" /> {benoliga ? benoliga.name : 'La Benoliga'}
+                      <Trophy className="w-5 h-5 text-sky-600 dark:text-sky-400" /> {benoliga ? benoliga.name : 'La Benoliga'}
                       <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-normal" title={t('leagues.anyoneCanJoin')}>
                         <Globe className="w-3 h-3" /> {t('leagues.public')}
                       </span>
@@ -288,10 +309,10 @@ export default function Leagues({ user }: { user: User }) {
                   </p>
                   {isMember ? (
                     <div className="flex gap-2 flex-wrap">
-                      <Button variant={selectedLeague?.id === benoliga?.id ? "default" : "outline"} size="sm" onClick={() => benoliga && setSelectedLeague(benoliga)} className="bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-100 dark:border-yellow-700">
+                      <Button variant={selectedLeague?.id === benoliga?.id ? "default" : "outline"} size="sm" onClick={() => benoliga && setSelectedLeague(benoliga)} className="bg-sky-100 hover:bg-sky-200 text-sky-900 border-sky-300 dark:bg-sky-900/40 dark:hover:bg-sky-900/60 dark:text-sky-100 dark:border-sky-700">
                         {t('leagues.viewRanking')}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => benoliga && inviteToLeague(benoliga)} className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-yellow-300 dark:border-yellow-700">
+                      <Button variant="outline" size="sm" onClick={() => benoliga && inviteToLeague(benoliga)} className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-sky-300 dark:border-sky-700">
                         {copiedLeagueId === benoliga?.id ? (
                           <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
                         ) : (
@@ -300,7 +321,7 @@ export default function Leagues({ user }: { user: User }) {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold" onClick={() => {
+                    <Button size="sm" className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold" onClick={() => {
                       if (benoliga) {
                         joinLeague(benoliga.id);
                       } else {
