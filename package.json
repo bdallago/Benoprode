@@ -14,7 +14,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@google/genai": "^1.49.0",
+    "@google/genai": "^1.50.0",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@vercel/analytics": "^2.0.1",
     "axios": "^1.15.0",
     "canvas-confetti": "^1.9.4",
@@ -30,7 +31,7 @@
     "next": "^16.2.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-i18next": "^17.0.2",
+    "react-i18next": "^17.0.3",
     "react-joyride": "^3.0.2",
     "tailwind-merge": "^3.5.0"
   },
@@ -41,7 +42,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "archiver": "^7.0.1",
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.5.0",
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2"

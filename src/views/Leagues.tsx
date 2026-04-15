@@ -1,103 +1,47 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { User } from "firebase/auth";
-import { collection, query, orderBy, onSnapshot, getDocs, addDoc, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
-import { db } from "../firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Trophy, User as UserIcon, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock } from "lucide-react";
+import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { CountdownBanner } from "../components/CountdownBanner";
-import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../components/Providers";
 import { Leaderboard } from "../components/Leaderboard";
-
-interface Player {
-  uid: string;
-  displayName: string;
-  photoURL: string;
-  totalPoints: number;
-  role?: string;
-}
-
-interface League {
-  id: string;
-  name: string;
-  createdBy: string;
-  members: string[];
-  createdAt: string;
-  isPublic: boolean;
-}
+import { useLeagues } from "../hooks/useLeagues";
+import { UserPredictionsModal } from "../components/UserPredictionsModal";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
+import { Info } from "lucide-react";
 
 export default function Leagues({ user }: { user: User }) {
   const { isAdmin } = useAuth();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [leagues, setLeagues] = useState<League[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  
+  const {
+    players,
+    leagues,
+    loading,
+    selectedLeague,
+    setSelectedLeague,
+    pendingInvitation,
+    setPendingInvitation,
+    createLeague,
+    deleteLeague,
+    joinLeague,
+    leaveLeague,
+    removeMember
+  } = useLeagues(user.uid);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isConfirmingCreate, setIsConfirmingCreate] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newLeagueName, setNewLeagueName] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [leagueError, setLeagueError] = useState("");
-  const [leagueToDelete, setLeagueToDelete] = useState<League | null>(null);
-  const [leagueToLeave, setLeagueToLeave] = useState<League | null>(null);
+  const [leagueToDelete, setLeagueToDelete] = useState<any>(null);
+  const [leagueToLeave, setLeagueToLeave] = useState<any>(null);
   const [userToRemoveFromLeague, setUserToRemoveFromLeague] = useState<{leagueId: string, userId: string, userName: string} | null>(null);
   const [copiedLeagueId, setCopiedLeagueId] = useState<string | null>(null);
-  const [pendingInvitation, setPendingInvitation] = useState<{league: League, inviter: string} | null>(null);
   const [selectedUser, setSelectedUser] = useState<{uid: string, name: string} | null>(null);
-  const searchParams = useSearchParams();
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"));
-    const unsubscribeUsers = onSnapshot(q, (snapshot) => {
-      const playersData = snapshot.docs.map((doc) => ({ ...doc.data(), uid: doc.id } as Player));
-      setPlayers(playersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching leaderboard", error);
-      setLoading(false);
-    });
-
-    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
-      const leaguesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as League));
-      setLeagues(leaguesData);
-      
-      // Handle auto-join via URL or Hash
-      let leagueId = searchParams?.get('league');
-      let inviter = searchParams?.get('inviter') || t('leagues.aPlayer');
-      
-      if (!leagueId && typeof window !== 'undefined' && window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
-        leagueId = hashParams.get('league');
-        if (hashParams.has('inviter')) {
-          inviter = hashParams.get('inviter') || t('leagues.aPlayer');
-        }
-      }
-
-      if (leagueId) {
-        const league = leaguesData.find(l => l.id === leagueId);
-        if (league) {
-          if (!league.members.includes(user.uid)) {
-            setPendingInvitation({ league, inviter });
-          } else {
-            if (typeof window !== 'undefined') {
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }
-            setSelectedLeague(league);
-          }
-        }
-      }
-    });
-
-    return () => {
-      unsubscribeUsers();
-      unsubscribeLeagues();
-    };
-  }, [user.uid, searchParams, t]);
 
   const handleCreateClick = () => {
     if (!newLeagueName.trim()) return;
@@ -118,14 +62,7 @@ export default function Leagues({ user }: { user: User }) {
     if (isCreating) return;
     setIsCreating(true);
     try {
-      const newLeague = {
-        name: newLeagueName.trim(),
-        createdBy: user.uid,
-        members: [user.uid],
-        createdAt: new Date().toISOString(),
-        isPublic: isPublic
-      };
-      await addDoc(collection(db, "leagues"), newLeague);
+      await createLeague(newLeagueName, isPublic);
       setShowCreateModal(false);
       setIsConfirmingCreate(false);
       setNewLeagueName("");
@@ -138,61 +75,18 @@ export default function Leagues({ user }: { user: User }) {
     }
   };
 
-  const deleteLeague = async (leagueId: string) => {
-    try {
-      await deleteDoc(doc(db, "leagues", leagueId));
-      if (selectedLeague?.id === leagueId) setSelectedLeague(null);
-      setLeagueToDelete(null);
-    } catch (err) {
-      console.error("Error deleting league", err);
-    }
-  };
-
-  const joinLeague = async (leagueId: string) => {
-    try {
-      await updateDoc(doc(db, "leagues", leagueId), {
-        members: arrayUnion(user.uid)
-      });
-    } catch (err) {
-      console.error("Error joining league", err);
-    }
-  };
-
-  const leaveLeague = async (leagueId: string) => {
-    try {
-      const league = leagues.find(l => l.id === leagueId);
-      if (league && league.members.length === 1 && league.members[0] === user.uid) {
-        // If last member, delete the league
-        await deleteDoc(doc(db, "leagues", leagueId));
-      } else {
-        await updateDoc(doc(db, "leagues", leagueId), {
-          members: arrayRemove(user.uid)
-        });
-      }
-      if (selectedLeague?.id === leagueId) setSelectedLeague(null);
-      setLeagueToLeave(null);
-    } catch (err) {
-      console.error("Error leaving league", err);
-    }
-  };
-
-  const inviteToLeague = (league: League) => {
-    // 1. Fijamos tu dominio oficial de producción
+  const inviteToLeague = (league: any) => {
     const origin = "https://www.elprodedebeno.com.ar";
-    
-    // 2. Preparamos el nombre y armamos la URL correcta con el #
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
     const url = `${origin}/#league=${league.id}&inviter=${inviterName}`;
     
-    // 3. Copiamos al portapapeles
     navigator.clipboard.writeText(t('leagues.inviteMessage', { name: league.name, url }));
     
-    // 4. Mostramos el tilde de éxito
     setCopiedLeagueId(league.id);
     setTimeout(() => setCopiedLeagueId(null), 3000);
   };
 
-  const inviteViaWhatsApp = (league: League) => {
+  const inviteViaWhatsApp = (league: any) => {
     const origin = "https://www.elprodedebeno.com.ar";
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
     const url = `${origin}/#league=${league.id}&inviter=${inviterName}`;
@@ -206,9 +100,7 @@ export default function Leagues({ user }: { user: User }) {
   const handleAcceptInvitation = async () => {
     if (!pendingInvitation) return;
     try {
-      await updateDoc(doc(db, "leagues", pendingInvitation.league.id), {
-        members: arrayUnion(user.uid)
-      });
+      await joinLeague(pendingInvitation.league.id);
       window.history.replaceState({}, document.title, window.location.pathname);
       setSelectedLeague(pendingInvitation.league);
       setPendingInvitation(null);
@@ -225,9 +117,7 @@ export default function Leagues({ user }: { user: User }) {
   const confirmRemoveUser = async () => {
     if (!userToRemoveFromLeague) return;
     try {
-      await updateDoc(doc(db, "leagues", userToRemoveFromLeague.leagueId), {
-        members: arrayRemove(userToRemoveFromLeague.userId)
-      });
+      await removeMember(userToRemoveFromLeague.leagueId, userToRemoveFromLeague.userId);
       setUserToRemoveFromLeague(null);
     } catch (err) {
       console.error("Error removing user from league", err);

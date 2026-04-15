@@ -9,10 +9,59 @@ export const LEVELS = [
 ];
 
 export const BADGES = [
-  { id: 'competitivo', name: 'Mi segundo nombre es Competitivo', description: 'Fundaste o te uniste a un torneo', icon: '🏆' },
-  { id: 'social', name: 'Sociable', description: 'Invitaste a tus amigos a participar en el Prode de Beno', icon: '🤝' },
-  { id: 'beno_rival', name: 'Rival de Beno', description: 'Te uniste a la Benoliga', icon: '👑' },
-  { id: 'el_mejor', name: 'Yo, el mejor de todos', description: 'Acertaste un grupo exacto', icon: '🎯' },
+  // Grupos y Resultados
+  { id: 'visionario', name: 'Visionario', description: 'Acertaste las posiciones finales exactas de 1 grupo', icon: '👁️', level: 1 },
+  { id: 'oraculo', name: 'Oráculo', description: 'Acertaste las posiciones finales exactas de 3 grupos', icon: '🔮', level: 2 },
+  { id: 'viajero_tiempo', name: 'Viajero del Tiempo', description: 'Acertaste las posiciones finales exactas de 6 grupos', icon: '⏳', level: 3 },
+  
+  { id: 'ojo_halcon', name: 'Ojo de Halcón', description: 'Acertaste el resultado exacto de 1 partido', icon: '🦅', level: 1 },
+  { id: 'francotirador', name: 'Francotirador', description: 'Acertaste el resultado exacto de 5 partidos', icon: '🎯', level: 2 },
+  { id: 'cirujano', name: 'Cirujano', description: 'Acertaste el resultado exacto de 10 partidos', icon: '🔪', level: 3 },
+  { id: 'nostradamus', name: 'Nostradamus', description: 'Acertaste el resultado exacto de 20 partidos', icon: '📜', level: 4 },
+  
+  { id: 'primer_paso', name: 'Primer Paso', description: 'Guardaste o fijaste tus predicciones por primera vez', icon: '📝' },
+  { id: 'dia_perfecto', name: 'Día Perfecto', description: 'Acertaste todos los resultados de un día entero', icon: '☀️' },
+  { id: 'dueno_fecha', name: 'Dueño de la Fecha', description: 'Acertaste todos los resultados de una fecha entera', icon: '👑' },
+  
+  { id: 'en_racha', name: 'En Racha', description: 'Acertaste el resultado en 3 partidos consecutivos', icon: '🔥', level: 1 },
+  { id: 'on_fire', name: 'On Fire', description: 'Acertaste el resultado en 5 partidos consecutivos', icon: '☄️', level: 2 },
+  { id: 'imparable', name: 'Imparable', description: 'Acertaste el resultado en 10 partidos consecutivos', icon: '🚀', level: 3 },
+  
+  { id: 'sociable', name: 'Sociable', description: 'Invitaste a 1 amigo a jugar', icon: '🤝', level: 1 },
+  { id: 'influencer', name: 'Influencer', description: 'Invitaste a 5 amigos a jugar', icon: '📱', level: 2 },
+  { id: 'embajador', name: 'Embajador', description: 'Invitaste a 10 amigos a jugar', icon: '🌍', level: 3 },
+
+  // Intermedias
+  { id: 'constante', name: 'Constante', description: 'Sumaste puntos en 3 días distintos', icon: '📅', level: 1 },
+  { id: 'fiel', name: 'Fiel', description: 'Sumaste puntos en 5 días distintos', icon: '🗓️', level: 2 },
+  { id: 'incondicional', name: 'Incondicional', description: 'Sumaste puntos en 10 días distintos', icon: '📆', level: 3 },
+  
+  { id: 'palo_afuera', name: 'Palo y afuera', description: 'Acertaste todos los resultados del día excepto uno', icon: '🥅' },
+  
+  { id: 'suma_sigue', name: 'Suma y Sigue', description: 'Acertaste el resultado en 10 partidos', icon: '➕', level: 1 },
+  { id: 'hormiga', name: 'Hormiga Trabajadora', description: 'Acertaste el resultado en 20 partidos', icon: '🐜', level: 2 },
+  { id: 'calculadora', name: 'Calculadora', description: 'Acertaste el resultado en 30 partidos', icon: '🧮', level: 3 },
+
+  // Especiales y Difíciles
+  { id: 'sobre_hora', name: 'Sobre la Hora', description: 'Fijaste tu predicción 10 minutos antes del cierre', icon: '⏱️' },
+  { id: 'piedra', name: 'Piedra', description: 'Erraste un resultado donde el ganador era claro (>70%)', icon: '🗿' },
+  { id: 'campeon_barrio', name: 'Campeón de Barrio', description: 'Alcanzaste el primer puesto de un torneo con 4+ jugadores', icon: '🏘️' },
+  { id: 'zona_copas', name: 'Zona de copas', description: 'Te ubicaste en el mejor 30% de los jugadores', icon: '🍷', level: 1 },
+  { id: 'en_cima', name: 'En la Cima', description: 'Te ubicaste en el mejor 10% de los jugadores', icon: '🏔️', level: 2 },
+  { id: 'siempre_arriba', name: 'Siempre Arriba', description: 'Top 30% al finalizar las 3 fechas', icon: '📈', level: 1 },
+  { id: 'creme_creme', name: 'Creme de la Creme', description: 'Top 10% al finalizar las 3 fechas', icon: '🎩', level: 2 },
+  { id: 'ojo_clinico', name: 'Ojo Clínico', description: 'Acertaste un resultado poco claro (40-60%)', icon: '🩺' },
+  { id: 'esta_locura', name: 'Esta Locura', description: 'Acertaste los 3 resultados de Argentina en el Grupo J', icon: '🇦🇷' },
+  { id: 'confiado', name: 'Confiado', description: 'Fijaste tus predicciones antes del 1° de Junio', icon: '😎' },
+  { id: 'mufa', name: 'Mufa', description: 'Erraste todos los resultados de un grupo entero', icon: '🐈‍⬛' },
+
+  // Secretas
+  { id: 'estrategia', name: 'Jugar mal fue parte de la estrategia', description: 'Sumaste más puntos en la fecha 3 que en la 1 o 2', icon: '🤫', isSecret: true },
+  { id: 'cazador_utopias', name: 'Cazador de Utopías imposibles', description: 'Acertaste un ganador poco favorito (<30%)', icon: '🦄', isSecret: true },
+  { id: 'hora_juez', name: 'La hora juez!', description: 'Sumaste puntos por un gol después del minuto 80', icon: '⌚', isSecret: true },
+  { id: 'muchachos', name: 'Muchaaachos', description: 'Tu torneo privado llegó a 10 integrantes', icon: '🫂', isSecret: true },
+  { id: 'zzz', name: 'Zzz', description: 'Acertaste un resultado 0-0', icon: '😴', isSecret: true },
+  { id: 'hare_10_veces', name: 'Haré 10 veces más si es necesario. Ellos no están preparados', description: 'Finalizaste en segundo puesto luego de la fase de grupos', icon: '🥈', isSecret: true },
 ];
 
 export function getUserLevel(points: number) {
@@ -21,14 +70,27 @@ export function getUserLevel(points: number) {
   return level || LEVELS[0];
 }
 
-// Mock function to determine badges (in a real app, this would be calculated by Cloud Functions)
-export function getUserBadges(points: number, isLeagueCreatorOrMember: boolean, inBenoliga: boolean, hasPerfectGroup: boolean = false, hasInvitedFriends: boolean = false) {
-  const earnedBadges: (typeof BADGES[0] | undefined)[] = [];
+export function getUserBadges(
+  points: number, 
+  userStats: any = {}
+) {
+  const earnedBadges: (typeof BADGES[0])[] = [];
   
-  if (isLeagueCreatorOrMember) earnedBadges.push(BADGES.find(b => b.id === 'competitivo'));
-  if (hasInvitedFriends) earnedBadges.push(BADGES.find(b => b.id === 'social'));
-  if (inBenoliga) earnedBadges.push(BADGES.find(b => b.id === 'beno_rival'));
-  if (hasPerfectGroup) earnedBadges.push(BADGES.find(b => b.id === 'el_mejor'));
+  // Logic to determine earned badges based on userStats
+  // This is a placeholder. In a real app, a Cloud Function would calculate these 
+  // and store the unlocked badge IDs in the user's document.
   
-  return earnedBadges.filter((b): b is typeof BADGES[0] => Boolean(b));
+  // Example logic based on referrals
+  const referrals = userStats.referralsCount || 0;
+  if (referrals >= 10) earnedBadges.push(BADGES.find(b => b.id === 'embajador')!);
+  else if (referrals >= 5) earnedBadges.push(BADGES.find(b => b.id === 'influencer')!);
+  else if (referrals >= 1) earnedBadges.push(BADGES.find(b => b.id === 'sociable')!);
+
+  // Example logic based on saved predictions
+  if (userStats.hasSavedPredictions) {
+    earnedBadges.push(BADGES.find(b => b.id === 'primer_paso')!);
+  }
+
+  // Filter out any undefined values just in case
+  return earnedBadges.filter(Boolean);
 }

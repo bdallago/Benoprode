@@ -272,7 +272,7 @@ export default function Admin() {
 
           // Check perfect group
           if (exactMatches === 4) {
-            totalPoints += 2;
+            totalPoints += 3; // Changed from 2 to 3
           }
         }
 

@@ -63,14 +63,14 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               <Link href="/instructions" className={getLinkStyle("/instructions", "bg-blue-600 dark:bg-blue-800", "hover:bg-blue-500 dark:hover:bg-blue-700", "bg-blue-400 dark:bg-blue-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
                 <BookOpen className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.instructions')}</span>
               </Link>
+              <Link href="/predictions" className={getLinkStyle("/predictions", "bg-green-600 dark:bg-green-800", "hover:bg-green-500 dark:hover:bg-green-700", "bg-green-400 dark:bg-green-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
+                <PenSquare className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.predictions')}</span>
+              </Link>
               <Link href="/dashboard" className={getLinkStyle("/dashboard", "bg-orange-600 dark:bg-orange-800", "hover:bg-orange-500 dark:hover:bg-orange-700", "bg-orange-400 dark:bg-orange-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
                 <Trophy className="h-4 w-4 shrink-0" /> <span className="truncate">Ranking</span>
               </Link>
               <Link href="/leagues" className={getLinkStyle("/leagues", "bg-purple-600 dark:bg-purple-800", "hover:bg-purple-500 dark:hover:bg-purple-700", "bg-purple-400 dark:bg-purple-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
                 <Users className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.leagues')}</span>
-              </Link>
-              <Link href="/predictions" className={getLinkStyle("/predictions", "bg-green-600 dark:bg-green-800", "hover:bg-green-500 dark:hover:bg-green-700", "bg-green-400 dark:bg-green-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
-                <PenSquare className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.predictions')}</span>
               </Link>
               {isAdmin && (
                 <Link href="/admin" className={getLinkStyle("/admin", "bg-gray-600 dark:bg-gray-800", "hover:bg-gray-500 dark:hover:bg-gray-700", "bg-gray-400 dark:bg-gray-600 ring-2 ring-white/50") + " w-36 justify-center text-center"}>
@@ -123,14 +123,14 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
         <Link href="/instructions" className={getMobileLinkStyle("/instructions", "bg-blue-700 dark:bg-blue-900", "bg-blue-500 dark:bg-blue-700 ring-1 ring-white/50")}>
           <BookOpen className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Reglas</span>
         </Link>
+        <Link href="/predictions" className={getMobileLinkStyle("/predictions", "bg-green-700 dark:bg-green-900", "bg-green-500 dark:bg-green-700 ring-1 ring-white/50")}>
+          <PenSquare className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Prode</span>
+        </Link>
         <Link href="/dashboard" className={getMobileLinkStyle("/dashboard", "bg-orange-700 dark:bg-orange-900", "bg-orange-500 dark:bg-orange-700 ring-1 ring-white/50")}>
           <Trophy className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Ranking</span>
         </Link>
         <Link href="/leagues" className={getMobileLinkStyle("/leagues", "bg-purple-700 dark:bg-purple-900", "bg-purple-500 dark:bg-purple-700 ring-1 ring-white/50")}>
           <Users className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Torneos</span>
-        </Link>
-        <Link href="/predictions" className={getMobileLinkStyle("/predictions", "bg-green-700 dark:bg-green-900", "bg-green-500 dark:bg-green-700 ring-1 ring-white/50")}>
-          <PenSquare className="h-5 w-5 mb-1" /> <span className="text-[10px] leading-tight">Prode</span>
         </Link>
         {isAdmin && (
           <Link href="/admin" className={getMobileLinkStyle("/admin", "bg-gray-700 dark:bg-gray-900", "bg-gray-500 dark:bg-gray-700 ring-1 ring-white/50")}>

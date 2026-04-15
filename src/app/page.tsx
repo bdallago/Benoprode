@@ -4,19 +4,27 @@ import { useAuth } from "../components/Providers";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Welcome from "../views/Welcome";
-import Login from "../views/Login";
+import LandingPage from "../views/LandingPage";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // If there is a league invite in the URL, redirect to leagues ONLY if user is logged in
-    if (user && typeof window !== "undefined") {
-      const search = window.location.search;
-      const hash = window.location.hash;
-      if (search.includes('league=') || hash.includes('league=')) {
-        router.push("/leagues" + search + hash);
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const refId = searchParams.get('ref');
+      if (refId) {
+        localStorage.setItem('referralId', refId);
+      }
+
+      // If there is a league invite in the URL, redirect to leagues ONLY if user is logged in
+      if (user) {
+        const search = window.location.search;
+        const hash = window.location.hash;
+        if (search.includes('league=') || hash.includes('league=')) {
+          router.push("/leagues" + search + hash);
+        }
       }
     }
   }, [router, user]);
@@ -27,5 +35,5 @@ export default function HomePage() {
     return <Welcome />;
   }
 
-  return <Login />;
+  return <LandingPage />;
 }

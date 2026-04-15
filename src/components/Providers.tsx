@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext, useRef } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, updateDoc, increment } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { Navbar } from "./Navbar";
 import '../i18n';
@@ -11,6 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { getUserBadges } from "../lib/gamification";
 import { X } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { TooltipProvider } from "./ui/tooltip";
 
 interface AuthContextType {
   user: User | null;
@@ -43,7 +44,9 @@ function GlobalBadgeListener({ user }: { user: User }) {
 
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
-        myPoints = docSnap.data().totalPoints || 0;
+        const data = docSnap.data();
+        myPoints = data.totalPoints || 0;
+        hasInvitedFriends = (data.referralsCount || 0) > 0;
         checkBadges();
       }
     });
@@ -58,7 +61,11 @@ function GlobalBadgeListener({ user }: { user: User }) {
     });
 
     const checkBadges = () => {
-      const userBadges = getUserBadges(myPoints, isLeagueCreatorOrMember, inBenoliga, hasPerfectGroup, hasInvitedFriends);
+      // We need userStats here. Let's create a dummy one based on what we have
+      const userStats = {
+        referralsCount: hasInvitedFriends ? 1 : 0
+      };
+      const userBadges = getUserBadges(myPoints, userStats);
       const userBadgeIds = userBadges.map(b => b?.id);
       
       const storedBadgesKey = `user_badges_${user.uid}`;
@@ -152,6 +159,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           if (!userSnap.exists()) {
             const role = isAdminEmail ? "admin" : "player";
             setIsAdmin(isAdminEmail);
+            
+            const refId = localStorage.getItem('referralId');
+            
             await setDoc(userRef, {
               uid: currentUser.uid,
               displayName: currentUser.displayName || "Usuario",
@@ -159,9 +169,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
               photoURL: currentUser.photoURL || "",
               role: role,
               totalPoints: 0,
+              referralsCount: 0,
+              referredBy: refId || null,
               lastLogin: new Date().toISOString(),
               tourCompleted: false
             });
+            
+            if (refId) {
+              try {
+                const referrerRef = doc(db, "users", refId);
+                const referrerSnap = await getDoc(referrerRef);
+                if (referrerSnap.exists()) {
+                  await updateDoc(referrerRef, {
+                    referralsCount: increment(1)
+                  });
+                }
+              } catch (err) {
+                console.error("Error updating referrer points:", err);
+              }
+            }
             
             // New user
             // Clear local storage badges for this user since they are starting fresh
@@ -216,14 +242,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin }}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-0">
-        <Navbar user={user} isAdmin={isAdmin} />
-        {user && <GlobalBadgeListener user={user} />}
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
-      </div>
-    </AuthContext.Provider>
+    <TooltipProvider>
+      <AuthContext.Provider value={{ user, loading, isAdmin }}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-0">
+          <Navbar user={user} isAdmin={isAdmin} />
+          {user && <GlobalBadgeListener user={user} />}
+          <main className="container mx-auto px-4 py-8">
+            {children}
+          </main>
+        </div>
+      </AuthContext.Provider>
+    </TooltipProvider>
   );
 }

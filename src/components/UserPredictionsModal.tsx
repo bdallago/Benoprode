@@ -28,13 +28,16 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [hasPerfectGroup, setHasPerfectGroup] = useState(false);
   const [hasInvitedFriends, setHasInvitedFriends] = useState(false);
 
+  const [userStats, setUserStats] = useState<any>({});
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [predSnap, resSnap, leaguesSnap] = await Promise.all([
+        const [predSnap, resSnap, leaguesSnap, userSnap] = await Promise.all([
           getDoc(doc(db, "predictions", userId)),
           getDoc(doc(db, "results", "actual")),
-          import("firebase/firestore").then(m => m.getDocs(m.collection(db, "leagues")))
+          import("firebase/firestore").then(m => m.getDocs(m.collection(db, "leagues"))),
+          getDoc(doc(db, "users", userId))
         ]);
 
         if (predSnap.exists()) {
@@ -42,6 +45,9 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         }
         if (resSnap.exists()) {
           setResults(resSnap.data());
+        }
+        if (userSnap.exists()) {
+          setUserStats(userSnap.data());
         }
 
         // Calculate gamification states
@@ -85,7 +91,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   }
 
   // Calculate badges for the selected user
-  const userBadges = getUserBadges(userPoints, isLeagueCreatorOrMember, inBenoliga, hasPerfectGroup, hasInvitedFriends);
+  const userBadges = getUserBadges(userPoints, userStats);
 
   if (!predictions) {
     return (

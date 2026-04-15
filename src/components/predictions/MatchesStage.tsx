@@ -1,0 +1,196 @@
+import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { Lock, Save } from "lucide-react";
+import { TeamFlag } from "../Fixture";
+import matchesData from "../../lib/matches.json";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../firebase";
+
+interface MatchesStageProps {
+  matchPredictions: Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>;
+  effectiveIsLocked: boolean;
+  saving: boolean;
+  handleMatchChange: (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => void;
+  savePredictions: (lock: boolean) => void;
+}
+
+export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, handleMatchChange, savePredictions }: MatchesStageProps) {
+  const [matchStats, setMatchStats] = useState<Record<string, { A: number, B: number, DRAW: number, total: number }>>({});
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const snap = await getDocs(collection(db, "predictions"));
+        const stats: Record<string, { A: number, B: number, DRAW: number, total: number }> = {};
+        
+        snap.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.matches) {
+            Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
+              if (pred && pred.outcome) {
+                if (!stats[matchId]) {
+                  stats[matchId] = { A: 0, B: 0, DRAW: 0, total: 0 };
+                }
+                if (pred.outcome === 'A' || pred.outcome === 'B' || pred.outcome === 'DRAW') {
+                  stats[matchId][pred.outcome as 'A' | 'B' | 'DRAW']++;
+                  stats[matchId].total++;
+                }
+              }
+            });
+          }
+        });
+        
+        setMatchStats(stats);
+      } catch (error) {
+        console.error("Error fetching prediction stats:", error);
+      }
+    };
+    
+    fetchStats();
+  }, []);
+
+  return (
+    <div className="space-y-6 pt-2">
+      <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2 transition-colors duration-200">Partidos Individuales</h2>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-justify transition-colors duration-200 whitespace-pre-line">
+        ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada!
+
+        Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido. Si acertás el resultado (quién gana o si empatan) te llevás 1 punto. Si además lo hacés con el resultado exacto, te llevás 1 punto extra (Total: 2 puntos).
+      </p>
+      
+      <div className="space-y-8">
+        {Object.entries(matchesData.reduce((acc, match) => {
+          const date = new Date(match.date);
+          const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+          const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
+          if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
+          acc[capitalizedDay].push(match);
+          return acc;
+        }, {} as Record<string, typeof matchesData>)).map(([day, dayMatches]) => (
+          <div key={day} className="space-y-4">
+            <div className="flex items-center justify-between border-b dark:border-gray-700 pb-2">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">{day}</h3>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => savePredictions(false)}
+                disabled={saving || effectiveIsLocked}
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Guardar Día
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {dayMatches.map((match) => {
+                const matchDate = new Date(match.date);
+                const isMatchLocked = Date.now() >= matchDate.getTime() - 60 * 60 * 1000;
+                const locked = isMatchLocked || effectiveIsLocked;
+                const pred = matchPredictions[match.id] || { teamA: '', teamB: '', outcome: '' };
+
+                return (
+                  <Card key={match.id} className={`overflow-hidden ${isMatchLocked ? 'opacity-75 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                    <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        {matchDate.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}hs
+                      </span>
+                      {isMatchLocked && <Lock className="w-3 h-3 text-gray-400" />}
+                    </CardHeader>
+                    <CardContent className="p-4 flex flex-col gap-4">
+                      <div className="flex flex-col gap-3">
+                        {/* Team A */}
+                        <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 p-2 rounded-md border border-gray-100 dark:border-gray-700/50">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <TeamFlag teamName={match.teamA} />
+                            <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamA}>{match.teamA}</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="20"
+                            className="w-12 sm:w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold"
+                            value={pred.teamA}
+                            onChange={(e) => handleMatchChange(match.id, 'teamA', e.target.value === '' ? '' : parseInt(e.target.value))}
+                            disabled={locked}
+                          />
+                        </div>
+                        
+                        {/* Team B */}
+                        <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 p-2 rounded-md border border-gray-100 dark:border-gray-700/50">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <TeamFlag teamName={match.teamB} />
+                            <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamB}>{match.teamB}</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="20"
+                            className="w-12 sm:w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold"
+                            value={pred.teamB}
+                            onChange={(e) => handleMatchChange(match.id, 'teamB', e.target.value === '' ? '' : parseInt(e.target.value))}
+                            disabled={locked}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-center gap-2 mt-1">
+                        <div className="flex-1 flex flex-col items-center">
+                          <Button 
+                            size="sm" 
+                            variant={pred.outcome === 'A' ? 'default' : 'outline'} 
+                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'A' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            onClick={() => handleMatchChange(match.id, 'outcome', 'A')}
+                            disabled={locked}
+                          >
+                            Gana Local
+                          </Button>
+                          {matchStats[match.id] && matchStats[match.id].total > 0 && (
+                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                              {Math.round((matchStats[match.id].A / matchStats[match.id].total) * 100)}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col items-center">
+                          <Button 
+                            size="sm" 
+                            variant={pred.outcome === 'DRAW' ? 'default' : 'outline'} 
+                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'DRAW' ? 'bg-gray-600 hover:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            onClick={() => handleMatchChange(match.id, 'outcome', 'DRAW')}
+                            disabled={locked}
+                          >
+                            Empate
+                          </Button>
+                          {matchStats[match.id] && matchStats[match.id].total > 0 && (
+                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                              {Math.round((matchStats[match.id].DRAW / matchStats[match.id].total) * 100)}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col items-center">
+                          <Button 
+                            size="sm" 
+                            variant={pred.outcome === 'B' ? 'default' : 'outline'} 
+                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'B' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            onClick={() => handleMatchChange(match.id, 'outcome', 'B')}
+                            disabled={locked}
+                          >
+                            Gana Visita
+                          </Button>
+                          {matchStats[match.id] && matchStats[match.id].total > 0 && (
+                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                              {Math.round((matchStats[match.id].B / matchStats[match.id].total) * 100)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -54,32 +54,37 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
       
       const image = canvas.toDataURL("image/png");
       
-      // Check if Web Share API is supported for files (mobile)
-      if (navigator.share && navigator.canShare) {
-        try {
-          const blob = await (await fetch(image)).blob();
-          const file = new File([blob], 'predicciones.png', { type: 'image/png' });
-          
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: 'Mis Predicciones - Prode de Beno',
-              text: getShareText(),
-              files: [file]
-            });
-            return; // Success, exit function
-          }
-        } catch (shareError) {
-          console.log("Web Share API failed or user cancelled, falling back to download", shareError);
-        }
-      }
-
-      // Fallback to download if navigator.share fails or is unavailable
+      // 1. Always trigger download first
       const link = document.createElement('a');
       link.href = image;
       link.download = `prode-beno-${userName.replace(/\s+/g, '-').toLowerCase()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // 2. Try to use Web Share API
+      if (navigator.share) {
+        try {
+          const blob = await (await fetch(image)).blob();
+          const file = new File([blob], 'predicciones.png', { type: 'image/png' });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'Mis Predicciones - Prode de Beno',
+              text: getShareText(),
+              files: [file]
+            });
+          } else {
+            // Fallback to text share if file share not supported
+            await navigator.share({
+              title: 'Mis Predicciones - Prode de Beno',
+              text: getShareText()
+            });
+          }
+        } catch (shareError) {
+          console.log("Web Share API failed or user cancelled", shareError);
+        }
+      }
       
     } catch (error) {
       console.error("Error generating image:", error);

@@ -29,9 +29,9 @@ export const SPECIAL_QUESTIONS = [
 ];
 
 export const KNOCKOUT_STAGES = [
-  { id: "roundOf16", label: "¿Quién avanza en 16avos? (Pasan a Octavos)", count: 16, points: 1 },
-  { id: "quarterFinals", label: "¿Quién avanza en 8vos? (Pasan a Cuartos)", count: 8, points: 2 },
-  { id: "semiFinals", label: "¿Quién avanza en 4tos? (Pasan a Semis)", count: 4, points: 3 },
-  { id: "finals", label: "¿Quién avanza en semis? (Pasan a la Final)", count: 2, points: 4 },
-  { id: "champion", label: "¿Quién sale campeón?", count: 1, points: 5 }
+  { id: "roundOf16", label: "¿Quién avanza en 16avos? (Pasan a Octavos)", count: 16, points: 2 },
+  { id: "quarterFinals", label: "¿Quién avanza en 8vos? (Pasan a Cuartos)", count: 8, points: 4 },
+  { id: "semiFinals", label: "¿Quién avanza en 4tos? (Pasan a Semis)", count: 4, points: 6 },
+  { id: "finals", label: "¿Quién avanza en semis? (Pasan a la Final)", count: 2, points: 8 },
+  { id: "champion", label: "¿Quién sale campeón?", count: 1, points: 15 }
 ];
