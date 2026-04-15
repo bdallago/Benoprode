@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Joyride, CallBackProps, STATUS, Step } from "react-joyride";
+import dynamic from "next/dynamic";
+import { STATUS, Step } from "react-joyride";
 import { useTheme } from "./ThemeProvider";
+
+const Joyride = dynamic(
+  () => import("react-joyride").then((mod) => mod.Joyride || (mod as any).default),
+  { ssr: false }
+);
 
 export function GuidedTour() {
   const [run, setRun] = useState(false);
@@ -12,6 +18,8 @@ export function GuidedTour() {
     // Check if the user has already seen the tour
     const hasSeenTour = localStorage.getItem("hasSeenTour");
     if (!hasSeenTour) {
+      // Set it immediately so it doesn't run again on reload
+      localStorage.setItem("hasSeenTour", "true");
       // Small delay to ensure elements are rendered
       setTimeout(() => {
         setRun(true);
@@ -19,13 +27,12 @@ export function GuidedTour() {
     }
   }, []);
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status } = data;
+  const handleJoyrideCallback = (data: any) => {
+    const { status, action } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
-    if (finishedStatuses.includes(status)) {
+    if (finishedStatuses.includes(status) || action === 'close') {
       setRun(false);
-      localStorage.setItem("hasSeenTour", "true");
     }
   };
 

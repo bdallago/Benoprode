@@ -254,8 +254,8 @@ export default function Dashboard({ user }: { user: User }) {
 
       {isAllBadgesModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-3xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200">
-            <div className="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b border-gray-100 dark:border-gray-700 z-10">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Medal className="w-6 h-6 text-blue-500" /> Todas las Medallas
               </h3>
@@ -264,7 +264,8 @@ export default function Dashboard({ user }: { user: User }) {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {BADGES.map(badge => {
                 const isEarned = userBadgeIds.includes(badge.id);
                 const isSecretAndNotEarned = badge.isSecret && !isEarned;
@@ -294,6 +295,7 @@ export default function Dashboard({ user }: { user: User }) {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

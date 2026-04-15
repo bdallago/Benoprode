@@ -24,6 +24,17 @@ export default function Instructions() {
             <p>
               Podés <strong>"Guardar Borrador"</strong> todas las veces que quieras. Una vez que estés seguro de tus elecciones, tenés que hacer clic en <strong>"Fijar Predicciones"</strong>. ¡Atención! Esta acción es definitiva, se puede hacer solo una vez y no vas a poder cambiar tus predicciones después.
             </p>
+            
+            <h3 className="font-bold text-lg mt-6 mb-2 border-b dark:border-gray-700 pb-1">Amigos y Duelos ⚔️</h3>
+            <p>
+              ¡El Prode de Beno es mejor con amigos! Podés buscar a otros usuarios y enviarles <strong>Solicitudes de Amistad</strong>. Una vez que sean amigos, podrán ver sus perfiles y retarse a <strong>Duelos</strong>.
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-justify">
+              <li>Si ves que un amigo hizo una predicción con la que no estás de acuerdo (ej. predijo que gana un equipo y vos pensás que gana el otro), podés <strong>Retarlo</strong>.</li>
+              <li>Al retarlo, vas a ingresar tu propia predicción para ese partido. Tu amigo recibirá una notificación y podrá <strong>Aceptar</strong> o <strong>Rechazar</strong> el duelo.</li>
+              <li>Si el duelo es aceptado, ¡que gane el mejor! El sistema llevará la cuenta de tus duelos ganados.</li>
+              <li><strong>Recompensa:</strong> Por cada 3 duelos ganados, vas a recibir <strong>+1 punto extra</strong> en la tabla general, y además podrás desbloquear medallas exclusivas de duelista.</li>
+            </ul>
           </CardContent>
         </Card>
 

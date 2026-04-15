@@ -6,6 +6,7 @@ import { TeamFlag } from "../Fixture";
 import matchesData from "../../lib/matches.json";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
+import { MatchComments } from "./MatchComments";
 
 interface MatchesStageProps {
   matchPredictions: Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>;
@@ -183,6 +184,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                           )}
                         </div>
                       </div>
+                      <MatchComments matchId={match.id} />
                     </CardContent>
                   </Card>
                 );

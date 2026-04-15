@@ -52,6 +52,45 @@
         "isPublic": { "type": "boolean", "description": "Whether the league is public or private" }
       },
       "required": ["name", "createdBy", "members", "createdAt", "isPublic"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "A pending friend request between two users.",
+      "type": "object",
+      "properties": {
+        "fromUserId": { "type": "string" },
+        "toUserId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUserId", "toUserId", "status", "createdAt"]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "An established friendship between two users.",
+      "type": "object",
+      "properties": {
+        "user1Id": { "type": "string" },
+        "user2Id": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1Id", "user2Id", "createdAt"]
+    },
+    "Duel": {
+      "title": "Duel",
+      "description": "A challenge between two users on a specific match or group.",
+      "type": "object",
+      "properties": {
+        "challengerId": { "type": "string" },
+        "challengedId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "challengerPrediction": { "type": "object" },
+        "challengedPrediction": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "active", "completed", "rejected"] },
+        "winnerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["challengerId", "challengedId", "matchId", "challengerPrediction", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -70,6 +109,18 @@
     "/leagues/{leagueId}": {
       "schema": { "$ref": "#/entities/League" },
       "description": "Stores user-created leagues/tournaments."
+    },
+    "/friendRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/FriendRequest" },
+      "description": "Stores friend requests."
+    },
+    "/friendships/{friendshipId}": {
+      "schema": { "$ref": "#/entities/Friendship" },
+      "description": "Stores established friendships."
+    },
+    "/duels/{duelId}": {
+      "schema": { "$ref": "#/entities/Duel" },
+      "description": "Stores duels between users."
     }
   }
 }

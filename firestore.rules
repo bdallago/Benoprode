@@ -67,6 +67,8 @@ service cloud.firestore {
              (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 2000)) &&
              (!('lastLogin' in data) || data.lastLogin is string) &&
              (!('tourCompleted' in data) || data.tourCompleted is bool) &&
+             (!('chatWarnings' in data) || data.chatWarnings is number) &&
+             (!('isChatBanned' in data) || data.isChatBanned is bool) &&
              data.role in ['admin', 'player'] &&
              data.totalPoints is number && data.totalPoints >= 0;
     }
@@ -104,14 +106,14 @@ service cloud.firestore {
       // Update: User can update their own profile (cannot change role/points). Admin can update any profile.
       allow update: if isAuthenticated() && (
                       (isOwner(userId) &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted']) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned']) &&
                        isValidUser(request.resource.data) &&
                        request.resource.data.uid == resource.data.uid &&
                        request.resource.data.role == resource.data.role &&
                        request.resource.data.totalPoints == resource.data.totalPoints)
                       ||
                       (isAdmin() &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted']) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned']) &&
                        isValidUser(request.resource.data) &&
                        request.resource.data.uid == resource.data.uid)
                     );
@@ -199,6 +201,99 @@ service cloud.firestore {
                     
       // Only admins can read, update, delete reports
       allow read, update, delete: if isAdmin();
+    }
+    // ===============================================================
+    // Collection: friendRequests
+    // ===============================================================
+    match /friendRequests/{requestId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['fromUserId', 'toUserId', 'status', 'createdAt']) &&
+                    request.resource.data.fromUserId == request.auth.uid &&
+                    request.resource.data.toUserId is string && request.resource.data.toUserId.size() > 0 &&
+                    request.resource.data.status == 'pending' &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['fromUserId', 'toUserId', 'status', 'createdAt']) &&
+                    request.resource.data.fromUserId == resource.data.fromUserId &&
+                    request.resource.data.toUserId == resource.data.toUserId &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (
+                      (request.auth.uid == resource.data.toUserId && request.resource.data.status in ['accepted', 'rejected']) ||
+                      (request.auth.uid == resource.data.fromUserId && request.resource.data.status == 'rejected')
+                    );
+                    
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+    }
+
+    // ===============================================================
+    // Collection: friendships
+    // ===============================================================
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['user1Id', 'user2Id', 'createdAt']) &&
+                    (request.auth.uid == request.resource.data.user1Id || request.auth.uid == request.resource.data.user2Id) &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if false; // Friendships are immutable, delete to remove
+      
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+    }
+
+    // ===============================================================
+    // Collection: liveChat
+    // ===============================================================
+    match /liveChat/{messageId} {
+      // Anyone authenticated can read chat messages
+      allow read: if isAuthenticated();
+      
+      // Anyone authenticated can create a chat message
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['text', 'userId', 'userName', 'createdAt']) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 500 &&
+                    request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100;
+                    
+      // Only admins can update/delete messages
+      allow update, delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Collection: duels
+    // ===============================================================
+    match /duels/{duelId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.challengerId || request.auth.uid == resource.data.challengedId);
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['challengerId', 'challengerName', 'challengedId', 'challengedName', 'matchId', 'challengerPrediction', 'challengedPrediction', 'status', 'winnerId', 'createdAt']) &&
+                    request.resource.data.challengerId == request.auth.uid &&
+                    request.resource.data.challengedId is string &&
+                    request.resource.data.matchId is string &&
+                    request.resource.data.challengerPrediction is map &&
+                    request.resource.data.status == 'pending' &&
+                    (!('winnerId' in request.resource.data) || request.resource.data.winnerId == null) &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['challengerId', 'challengerName', 'challengedId', 'challengedName', 'matchId', 'challengerPrediction', 'challengedPrediction', 'status', 'winnerId', 'createdAt']) &&
+                    request.resource.data.challengerId == resource.data.challengerId &&
+                    request.resource.data.challengedId == resource.data.challengedId &&
+                    request.resource.data.matchId == resource.data.matchId &&
+                    request.resource.data.challengerPrediction == resource.data.challengerPrediction &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (
+                      // Challenged user accepting/rejecting
+                      (request.auth.uid == resource.data.challengedId && 
+                       request.resource.data.status in ['accepted', 'rejected']) ||
+                      // Admin or system updating winner
+                      (isAdmin() && request.resource.data.status == 'completed')
+                    );
+                    
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.challengerId && resource.data.status == 'pending');
     }
   }
 }

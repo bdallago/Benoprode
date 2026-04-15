@@ -11,6 +11,7 @@ import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Info } from "lucide-react";
+import { LiveChat } from "../components/LiveChat";
 
 export default function Leagues({ user }: { user: User }) {
   const { isAdmin } = useAuth();
@@ -492,6 +493,13 @@ export default function Leagues({ user }: { user: User }) {
           userName={selectedUser.name} 
           onClose={() => setSelectedUser(null)} 
         />
+      )}
+
+      {isAdmin && (
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Chat en Vivo (Solo Admin)</h3>
+          <LiveChat />
+        </div>
       )}
     </div>
   );

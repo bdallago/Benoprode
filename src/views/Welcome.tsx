@@ -16,7 +16,7 @@ import { GuidedTour } from "../components/GuidedTour";
 const WORLD_CUP_START = new Date('2026-06-11T00:00:00').getTime();
 const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
 
-function SquareClock({ type }: { type: 'worldcup' | 'predictions' }) {
+function ClockBanner({ type }: { type: 'worldcup' | 'predictions' }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [mounted, setMounted] = useState(false);
   const { t } = useTranslation();
@@ -31,27 +31,27 @@ function SquareClock({ type }: { type: 'worldcup' | 'predictions' }) {
     return () => clearInterval(interval);
   }, [type]);
 
-  if (!mounted) return <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl flex-shrink-0"></div>;
+  if (!mounted) return <div className="w-full h-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg mb-4"></div>;
 
   const isTimeUp = timeLeft <= 0;
 
   const formatTime = (ms: number) => {
-    if (ms <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-    return {
-      days: Math.floor(ms / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-      minutes: Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60)),
-      seconds: Math.floor((ms % (1000 * 60)) / 1000)
-    };
+    if (ms <= 0) return `00 Días 00h 00m 00s`;
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${days} Días ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
   };
-
-  const time = formatTime(timeLeft);
 
   if (isTimeUp && type === 'predictions') {
     return (
-      <div className="w-32 h-32 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 rounded-xl shadow-sm flex flex-col items-center justify-center gap-2 border border-red-200 dark:border-red-800 flex-shrink-0">
-        <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-        <span className="text-xs font-bold text-center px-2">{t('countdown.timeUp')}</span>
+      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 mb-4 transition-colors duration-200 w-full">
+        <Lock className="w-6 h-6 text-red-600 dark:text-red-400" />
+        <div className="text-left">
+          <h3 className="font-bold">{t('countdown.timeUp')}</h3>
+          <p className="text-sm">{t('countdown.timeUpDesc')}</p>
+        </div>
       </div>
     );
   }
@@ -60,33 +60,20 @@ function SquareClock({ type }: { type: 'worldcup' | 'predictions' }) {
     return null;
   }
 
-  const title = type === 'worldcup' ? "Para el Mundial" : "Para Fijar";
-  const colorClass = type === 'worldcup' ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-600 dark:border-indigo-500 text-indigo-900 dark:text-indigo-300" : "bg-blue-50 dark:bg-blue-900/20 border-blue-600 dark:border-blue-500 text-blue-900 dark:text-blue-300";
+  const title = type === 'worldcup' ? "Tiempo restante para el Mundial" : "Tiempo restante para fijar predicciones";
+  const desc = type === 'worldcup' ? "El 11 de Junio de 2026 comienza la copa del mundo." : "El 7 de Junio de 2026 es el último día para fijar elecciones.";
 
   return (
-    <div className={`w-32 h-32 rounded-xl shadow-sm flex flex-col items-center justify-center border-4 flex-shrink-0 ${colorClass}`}>
-      <span className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-80 text-center px-1">{title}</span>
-      <div className="flex gap-1 text-center">
-        <div className="flex flex-col">
-          <span className="text-xl font-bold font-mono leading-none">{time.days}</span>
-          <span className="text-[9px] uppercase">Días</span>
-        </div>
-        <span className="text-xl font-bold font-mono leading-none">:</span>
-        <div className="flex flex-col">
-          <span className="text-xl font-bold font-mono leading-none">{time.hours.toString().padStart(2, '0')}</span>
-          <span className="text-[9px] uppercase">Hrs</span>
+    <div className="bg-blue-900 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center gap-3 border-t-4 border-blue-400 w-full h-full">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Clock className="w-6 h-6 text-blue-300" />
+        <div>
+          <h3 className="font-bold text-lg leading-tight">{title}</h3>
+          <p className="text-blue-200 text-xs mt-1">{desc}</p>
         </div>
       </div>
-      <div className="flex gap-1 text-center mt-1">
-        <div className="flex flex-col">
-          <span className="text-xl font-bold font-mono leading-none">{time.minutes.toString().padStart(2, '0')}</span>
-          <span className="text-[9px] uppercase">Min</span>
-        </div>
-        <span className="text-xl font-bold font-mono leading-none">:</span>
-        <div className="flex flex-col">
-          <span className="text-xl font-bold font-mono leading-none">{time.seconds.toString().padStart(2, '0')}</span>
-          <span className="text-[9px] uppercase">Seg</span>
-        </div>
+      <div className="text-xl sm:text-2xl font-mono font-bold bg-blue-950 px-4 py-2 rounded-md border border-blue-800 text-center w-full">
+        {formatTime(timeLeft)}
       </div>
     </div>
   );
@@ -220,21 +207,23 @@ export default function Welcome() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 relative">
       <GuidedTour />
-      <div id="tutorial-welcome" className="flex flex-col items-center justify-center gap-6 bg-blue-50 dark:bg-blue-900/20 p-8 rounded-2xl shadow-md border-4 border-blue-200 dark:border-blue-800 text-center transition-colors duration-200">
-        <div className="w-full flex flex-col md:flex-row items-center justify-between gap-8">
-          <SquareClock type="worldcup" />
-          <div className="flex-1 flex flex-col items-center justify-center">
+      <div id="tutorial-welcome" className="flex flex-col items-center justify-center gap-6 text-center transition-colors duration-200">
+        <div className="w-full flex flex-col items-center justify-center gap-4">
+          <div className="flex-1 flex flex-col items-center justify-center my-4">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
               Bienvenido a
             </h1>
             <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 tracking-tight mb-4">
               El Prode de Beno
             </h2>
-            <p className="text-blue-800 dark:text-blue-300 font-medium text-lg md:text-xl bg-white/50 dark:bg-gray-800/50 px-4 py-2 rounded-full">
+            <p className="text-gray-500 dark:text-gray-400 font-medium text-lg md:text-xl">
               Pronostico deportivo del Mundial de fútbol 2026
             </p>
           </div>
-          <SquareClock type="predictions" />
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ClockBanner type="worldcup" />
+            <ClockBanner type="predictions" />
+          </div>
         </div>
         
         <div className="w-full mt-4 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">

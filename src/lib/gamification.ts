@@ -42,6 +42,12 @@ export const BADGES = [
   { id: 'hormiga', name: 'Hormiga Trabajadora', description: 'Acertaste el resultado en 20 partidos', icon: '🐜', level: 2 },
   { id: 'calculadora', name: 'Calculadora', description: 'Acertaste el resultado en 30 partidos', icon: '🧮', level: 3 },
 
+  // Duelos
+  { id: 'primera_sangre', name: 'Primera Sangre', description: 'Ganaste tu primer duelo contra otro jugador', icon: '🩸', level: 1 },
+  { id: 'duelista', name: 'Duelista', description: 'Ganaste 3 duelos', icon: '🤺', level: 2 },
+  { id: 'gladiador', name: 'Gladiador', description: 'Ganaste 5 duelos', icon: '🛡️', level: 3 },
+  { id: 'invencible', name: 'Invencible', description: 'Ganaste 10 duelos', icon: '👑', level: 4 },
+
   // Especiales y Difíciles
   { id: 'sobre_hora', name: 'Sobre la Hora', description: 'Fijaste tu predicción 10 minutos antes del cierre', icon: '⏱️' },
   { id: 'piedra', name: 'Piedra', description: 'Erraste un resultado donde el ganador era claro (>70%)', icon: '🗿' },
@@ -51,15 +57,15 @@ export const BADGES = [
   { id: 'siempre_arriba', name: 'Siempre Arriba', description: 'Top 30% al finalizar las 3 fechas', icon: '📈', level: 1 },
   { id: 'creme_creme', name: 'Creme de la Creme', description: 'Top 10% al finalizar las 3 fechas', icon: '🎩', level: 2 },
   { id: 'ojo_clinico', name: 'Ojo Clínico', description: 'Acertaste un resultado poco claro (40-60%)', icon: '🩺' },
-  { id: 'esta_locura', name: 'Esta Locura', description: 'Acertaste los 3 resultados de Argentina en el Grupo J', icon: '🇦🇷' },
+  { id: 'esta_locura', name: 'Esta Locura', description: 'Acertaste los 3 resultados de Argentina en el Grupo J', icon: '🧉' },
   { id: 'confiado', name: 'Confiado', description: 'Fijaste tus predicciones antes del 1° de Junio', icon: '😎' },
-  { id: 'mufa', name: 'Mufa', description: 'Erraste todos los resultados de un grupo entero', icon: '🐈‍⬛' },
+  { id: 'mufa', name: 'Mufa', description: 'Erraste todos los resultados de un grupo entero', icon: '🥶' },
 
   // Secretas
   { id: 'estrategia', name: 'Jugar mal fue parte de la estrategia', description: 'Sumaste más puntos en la fecha 3 que en la 1 o 2', icon: '🤫', isSecret: true },
   { id: 'cazador_utopias', name: 'Cazador de Utopías imposibles', description: 'Acertaste un ganador poco favorito (<30%)', icon: '🦄', isSecret: true },
   { id: 'hora_juez', name: 'La hora juez!', description: 'Sumaste puntos por un gol después del minuto 80', icon: '⌚', isSecret: true },
-  { id: 'muchachos', name: 'Muchaaachos', description: 'Tu torneo privado llegó a 10 integrantes', icon: '🫂', isSecret: true },
+  { id: 'muchachos', name: 'Muchaaachos', description: 'Tu torneo privado llegó a 10 integrantes', icon: '🇦🇷', isSecret: true },
   { id: 'zzz', name: 'Zzz', description: 'Acertaste un resultado 0-0', icon: '😴', isSecret: true },
   { id: 'hare_10_veces', name: 'Haré 10 veces más si es necesario. Ellos no están preparados', description: 'Finalizaste en segundo puesto luego de la fase de grupos', icon: '🥈', isSecret: true },
 ];

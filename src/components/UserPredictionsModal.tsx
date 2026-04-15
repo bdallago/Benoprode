@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { X, Lock, Unlock, CheckCircle2, XCircle, Shield } from "lucide-react";
+import { X, Lock, Unlock, CheckCircle2, XCircle, Shield, Swords } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTranslation } from 'react-i18next';
 import { getUserBadges } from "../lib/gamification";
+import { DuelModal } from "./DuelModal";
 
 interface UserPredictionsModalProps {
   userId: string;
@@ -21,6 +22,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [predictions, setPredictions] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [duelData, setDuelData] = useState<any>(null);
 
   // Gamification states for the viewed user
   const [isLeagueCreatorOrMember, setIsLeagueCreatorOrMember] = useState(false);
@@ -286,11 +288,24 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                 </span>
                                 <span className={`font-medium ${textColor}`}>{t(`teams.${team}`)}</span>
                               </div>
-                              {icon && (
-                                <div className="flex items-center gap-2">
-                                  {icon}
-                                </div>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {icon}
+                                {auth.currentUser && auth.currentUser.uid !== userId && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                                    title="Retar predicción"
+                                    onClick={() => setDuelData({
+                                      matchId: `group_${groupLetter}_pos_${index}`,
+                                      matchData: { teamA: team, teamB: 'Otro' }, // Mock for now, ideally we challenge specific matches
+                                      challengedPrediction: { outcome: 'A', teamA: 1, teamB: 0 } // Mock
+                                    })}
+                                  >
+                                    <Swords className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </li>
                           );
                         })}
@@ -344,6 +359,17 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           </div>
         </div>
       </div>
+      
+      {duelData && (
+        <DuelModal 
+          challengedId={userId}
+          challengedName={userName}
+          matchId={duelData.matchId}
+          matchData={duelData.matchData}
+          challengedPrediction={duelData.challengedPrediction}
+          onClose={() => setDuelData(null)}
+        />
+      )}
     </div>
   );
 }

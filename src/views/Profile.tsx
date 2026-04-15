@@ -1,0 +1,381 @@
+import React, { useState, useEffect } from 'react';
+import { User } from 'firebase/auth';
+import { doc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Trophy, Users, Swords, UserPlus, Check, X, Clock } from 'lucide-react';
+import { getUserLevel, getUserBadges } from '../lib/gamification';
+
+interface ProfileProps {
+  user: User;
+  profileId?: string; // If provided, viewing someone else's profile
+}
+
+export default function Profile({ user, profileId }: ProfileProps) {
+  const isOwnProfile = !profileId || profileId === user.uid;
+  const targetUserId = profileId || user.uid;
+
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'stats' | 'friends' | 'duels'>('stats');
+
+  // Friendship state
+  const [friendStatus, setFriendStatus] = useState<'none' | 'pending_sent' | 'pending_received' | 'friends'>('none');
+  const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
+  const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [duelsList, setDuelsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', targetUserId));
+        if (userDoc.exists()) {
+          setProfileData(userDoc.data());
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [targetUserId]);
+
+  useEffect(() => {
+    // Fetch friends list
+    const qFriends1 = query(collection(db, 'friendships'), where('user1Id', '==', targetUserId));
+    const qFriends2 = query(collection(db, 'friendships'), where('user2Id', '==', targetUserId));
+
+    const handleFriendsSnap = async (snap1: any, snap2: any) => {
+      const friendIds = new Set<string>();
+      snap1.docs.forEach((d: any) => friendIds.add(d.data().user2Id));
+      snap2.docs.forEach((d: any) => friendIds.add(d.data().user1Id));
+
+      const friendsData: any[] = [];
+      for (const fid of Array.from(friendIds)) {
+        const fDoc = await getDoc(doc(db, 'users', fid));
+        if (fDoc.exists()) {
+          friendsData.push({ id: fid, ...fDoc.data() });
+        }
+      }
+      setFriendsList(friendsData);
+    };
+
+    const unsubF1 = onSnapshot(qFriends1, (snap1) => {
+      getDocs(qFriends2).then(snap2 => handleFriendsSnap(snap1, snap2));
+    });
+    const unsubF2 = onSnapshot(qFriends2, (snap2) => {
+      getDocs(qFriends1).then(snap1 => handleFriendsSnap(snap1, snap2));
+    });
+
+    // Fetch duels
+    const qDuels1 = query(collection(db, 'duels'), where('challengerId', '==', targetUserId));
+    const qDuels2 = query(collection(db, 'duels'), where('challengedId', '==', targetUserId));
+
+    const handleDuelsSnap = (snap1: any, snap2: any) => {
+      const allDuels = new Map();
+      snap1.docs.forEach((d: any) => allDuels.set(d.id, { id: d.id, ...d.data() }));
+      snap2.docs.forEach((d: any) => allDuels.set(d.id, { id: d.id, ...d.data() }));
+      setDuelsList(Array.from(allDuels.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    };
+
+    const unsubD1 = onSnapshot(qDuels1, (snap1) => {
+      getDocs(qDuels2).then(snap2 => handleDuelsSnap(snap1, snap2));
+    });
+    const unsubD2 = onSnapshot(qDuels2, (snap2) => {
+      getDocs(qDuels1).then(snap1 => handleDuelsSnap(snap1, snap2));
+    });
+
+    return () => {
+      unsubF1();
+      unsubF2();
+      unsubD1();
+      unsubD2();
+    };
+  }, [targetUserId]);
+
+  useEffect(() => {
+    if (isOwnProfile) return;
+
+    // Check friendship status
+    const q1 = query(
+      collection(db, 'friendRequests'),
+      where('fromUserId', '==', user.uid),
+      where('toUserId', '==', targetUserId)
+    );
+    const q2 = query(
+      collection(db, 'friendRequests'),
+      where('fromUserId', '==', targetUserId),
+      where('toUserId', '==', user.uid)
+    );
+    const q3 = query(
+      collection(db, 'friendships'),
+      where('user1Id', 'in', [user.uid, targetUserId])
+    );
+
+    const unsub1 = onSnapshot(q1, (snap) => {
+      if (!snap.empty) {
+        const req = snap.docs[0];
+        if (req.data().status === 'pending') {
+          setFriendStatus('pending_sent');
+          setFriendRequestId(req.id);
+        }
+      }
+    });
+
+    const unsub2 = onSnapshot(q2, (snap) => {
+      if (!snap.empty) {
+        const req = snap.docs[0];
+        if (req.data().status === 'pending') {
+          setFriendStatus('pending_received');
+          setFriendRequestId(req.id);
+        }
+      }
+    });
+
+    const unsub3 = onSnapshot(q3, (snap) => {
+      const friendship = snap.docs.find(d => 
+        (d.data().user1Id === user.uid && d.data().user2Id === targetUserId) ||
+        (d.data().user1Id === targetUserId && d.data().user2Id === user.uid)
+      );
+      if (friendship) {
+        setFriendStatus('friends');
+        setFriendshipId(friendship.id);
+      }
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, [user.uid, targetUserId, isOwnProfile]);
+
+  const handleSendFriendRequest = async () => {
+    try {
+      await addDoc(collection(db, 'friendRequests'), {
+        fromUserId: user.uid,
+        toUserId: targetUserId,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+    }
+  };
+
+  const handleAcceptFriendRequest = async () => {
+    if (!friendRequestId) return;
+    try {
+      await updateDoc(doc(db, 'friendRequests', friendRequestId), {
+        status: 'accepted'
+      });
+      await addDoc(collection(db, 'friendships'), {
+        user1Id: user.uid,
+        user2Id: targetUserId,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+    }
+  };
+
+  if (loading) {
+    return <div className="max-w-4xl mx-auto p-8 animate-pulse">Cargando perfil...</div>;
+  }
+
+  if (!profileData) {
+    return <div className="max-w-4xl mx-auto p-8 text-center">Usuario no encontrado</div>;
+  }
+
+  const level = getUserLevel(profileData.totalPoints || 0);
+  const badges = getUserBadges(profileData.totalPoints || 0, profileData);
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <Card className="overflow-hidden">
+        <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <CardContent className="relative pt-0 pb-6 px-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-12 sm:-mt-16 mb-4">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-700 overflow-hidden flex-shrink-0">
+              {profileData.photoURL ? (
+                <img src={profileData.photoURL} alt={profileData.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-blue-600 dark:text-blue-400">
+                  {profileData.displayName?.charAt(0) || "U"}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{profileData.displayName}</h1>
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
+                <span className={`px-2 py-1 rounded-full text-xs font-bold ${level.bg} ${level.color}`}>
+                  {level.name}
+                </span>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {profileData.totalPoints || 0} pts
+                </span>
+              </div>
+            </div>
+            {!isOwnProfile && (
+              <div className="flex gap-2">
+                {friendStatus === 'none' && (
+                  <Button onClick={handleSendFriendRequest} className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" /> Agregar Amigo
+                  </Button>
+                )}
+                {friendStatus === 'pending_sent' && (
+                  <Button disabled variant="outline" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> Solicitud Enviada
+                  </Button>
+                )}
+                {friendStatus === 'pending_received' && (
+                  <Button onClick={handleAcceptFriendRequest} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
+                    <Check className="w-4 h-4" /> Aceptar Solicitud
+                  </Button>
+                )}
+                {friendStatus === 'friends' && (
+                  <Button variant="outline" className="flex items-center gap-2 text-green-600 border-green-600">
+                    <Users className="w-4 h-4" /> Amigos
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <div className="flex border-b dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+        >
+          Estadísticas
+        </button>
+        <button
+          onClick={() => setActiveTab('friends')}
+          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+        >
+          Amigos
+        </button>
+        <button
+          onClick={() => setActiveTab('duels')}
+          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+        >
+          Duelos
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="py-4">
+        {activeTab === 'stats' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Medallas Destacadas</h3>
+            {badges.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {badges.slice(0, 4).map(badge => (
+                  <div key={badge.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2">
+                    <span className="text-4xl">{badge.icon}</span>
+                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{badge.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">Aún no hay medallas para mostrar.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'friends' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Lista de Amigos</h3>
+            {friendsList.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {friendsList.map(friend => (
+                  <a key={friend.id} href={`/profile/${friend.id}`} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:border-blue-500 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden shrink-0">
+                      {friend.photoURL ? (
+                        <img src={friend.photoURL} alt={friend.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">{friend.displayName?.charAt(0) || 'U'}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100">{friend.displayName}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{friend.totalPoints || 0} pts</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">Aún no hay amigos en esta lista.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'duels' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Duelos</h3>
+            {duelsList.length > 0 ? (
+              <div className="space-y-4">
+                {duelsList.map(duel => {
+                  const isChallenger = duel.challengerId === targetUserId;
+                  const otherUserName = isChallenger ? duel.challengedName : duel.challengerName;
+                  return (
+                    <div key={duel.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                          <Swords className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 dark:text-gray-100">
+                            Duelo vs {otherUserName || 'Usuario'}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            Partido: {duel.matchId}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          duel.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          duel.status === 'accepted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                          duel.status === 'rejected' ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400' :
+                          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        }`}>
+                          {duel.status === 'pending' ? 'Pendiente' :
+                           duel.status === 'accepted' ? 'Aceptado' :
+                           duel.status === 'rejected' ? 'Rechazado' : 'Completado'}
+                        </span>
+                        
+                        {isOwnProfile && !isChallenger && duel.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateDoc(doc(db, 'duels', duel.id), { status: 'accepted' })}>Aceptar</Button>
+                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateDoc(doc(db, 'duels', duel.id), { status: 'rejected' })}>Rechazar</Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
+                <Swords className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No hay duelos activos.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -95,7 +95,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               </Button>
               {user && (
                 <>
-                  <div className="flex items-center gap-2">
+                  <Link href="/profile" className="flex items-center gap-2 hover:bg-white/10 p-1.5 rounded-md transition-colors">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />
                     ) : (
@@ -104,7 +104,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                       </div>
                     )}
                     <span className="text-sm font-medium hidden sm:block">{user.displayName}</span>
-                  </div>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-blue-800 dark:hover:bg-gray-800 hover:text-white px-2">
                     <LogOut className="h-4 w-4" />
                   </Button>
