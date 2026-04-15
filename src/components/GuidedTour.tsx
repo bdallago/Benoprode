@@ -5,8 +5,8 @@ import dynamic from "next/dynamic";
 import { STATUS, Step } from "react-joyride";
 import { useTheme } from "./ThemeProvider";
 
-const Joyride = dynamic(
-  () => import("react-joyride").then((mod) => mod.Joyride || (mod as any).default),
+const Joyride = dynamic<any>(
+  () => import("react-joyride").then((mod: any) => mod.default || mod.Joyride || mod),
   { ssr: false }
 );
 
@@ -40,7 +40,6 @@ export function GuidedTour() {
     {
       target: "#tutorial-welcome",
       content: "¡Bienvenido a El Prode de Beno! Acá vas a poder demostrar cuánto sabés de fútbol.",
-      disableBeacon: true,
       placement: "center",
     },
     {
