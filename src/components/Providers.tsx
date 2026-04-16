@@ -200,7 +200,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
             const updates: any = { lastLogin: new Date().toISOString() };
             if (isAdminEmail && currentRole !== "admin") {
               updates.role = "admin";
+            } else if (!currentRole) {
+              updates.role = "player";
             }
+            if (userData.totalPoints == null) {
+              updates.totalPoints = 0;
+            }
+            if (!userData.uid) updates.uid = currentUser.uid;
+            if (!userData.displayName) updates.displayName = currentUser.displayName || "Usuario";
+            if (!userData.email) updates.email = currentUser.email || `${currentUser.uid}@no-email.com`;
+            
             await setDoc(userRef, updates, { merge: true });
           }
           
