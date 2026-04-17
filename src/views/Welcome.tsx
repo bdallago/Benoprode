@@ -209,16 +209,46 @@ export default function Welcome() {
       <GuidedTour />
       <div id="tutorial-welcome" className="flex flex-col items-center justify-center gap-6 text-center transition-colors duration-200">
         <div className="w-full flex flex-col items-center justify-center gap-4">
-          <div className="flex-1 flex flex-col items-center justify-center my-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-              Bienvenido a
-            </h1>
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 tracking-tight mb-4">
-              El Prode de Beno
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 font-medium text-lg md:text-xl">
-              Pronostico deportivo del Mundial de fútbol 2026
-            </p>
+          <div className="flex-1 flex flex-col items-center justify-center mb-6 w-full"> {/* Increased bottom margin slightly */}
+            <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
+              {/* Mobile Header */}
+              <img 
+                src="/header-mobile.jpg" 
+                alt="El Prode de Beno Mobile" 
+                className="w-full h-auto object-cover block sm:hidden"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  document.getElementById('fallback-welcome')!.style.display = 'flex';
+                }}
+              />
+              {/* Desktop Header */}
+              <img 
+                src="/header-desktop.jpg" 
+                alt="El Prode de Beno" 
+                className="w-full h-auto object-cover hidden sm:block"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  document.getElementById('fallback-welcome')!.style.display = 'flex';
+                }}
+              />
+              
+              {/* Fallback if images missing */}
+              <div id="fallback-welcome" className="hidden flex-col items-center justify-center p-8 bg-blue-50 dark:bg-gray-800">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
+                  Bienvenido a
+                </h1>
+                <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 tracking-tight mb-4">
+                  El Prode de Beno
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg md:text-xl text-center">
+                  Pronostico deportivo del Mundial de fútbol 2026
+                </p>
+              </div>
+            </div>
+            
+            {/* SEO & Screen readers */}
+            <h1 className="sr-only">Bienvenido a El Prode de Beno</h1>
+            <p className="sr-only">Pronóstico deportivo del Mundial de fútbol 2026</p>
           </div>
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
             <ClockBanner type="worldcup" />
