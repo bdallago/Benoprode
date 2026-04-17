@@ -34,13 +34,6 @@ export default function Profile({ user, profileId }: ProfileProps) {
   
   // Duel modal state
   const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
-  const [selectedMatchId, setSelectedMatchId] = useState<string>('');
-  const [duelPrediction, setDuelPrediction] = useState<{teamA: number | '', teamB: number | ''}>({teamA: '', teamB: ''});
-
-  // Accept duel state
-  const [acceptDuelId, setAcceptDuelId] = useState<string | null>(null);
-  const [acceptDuelMatchId, setAcceptDuelMatchId] = useState<string>('');
-  const [acceptDuelPrediction, setAcceptDuelPrediction] = useState<{teamA: number | '', teamB: number | ''}>({teamA: '', teamB: ''});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -228,50 +221,6 @@ export default function Profile({ user, profileId }: ProfileProps) {
       });
     } catch (error) {
       console.error("Error accepting friend request:", error);
-    }
-  };
-
-  const handleCreateDuel = async () => {
-    if (!selectedMatchId || duelPrediction.teamA === '' || duelPrediction.teamB === '') return;
-    
-    try {
-      await addDoc(collection(db, 'duels'), {
-        challengerId: user.uid,
-        challengerName: user.displayName || 'Usuario',
-        challengedId: targetUserId,
-        challengedName: profileData.displayName || 'Usuario',
-        matchId: selectedMatchId,
-        challengerPrediction: {
-          teamA: Number(duelPrediction.teamA),
-          teamB: Number(duelPrediction.teamB)
-        },
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      });
-      setIsDuelModalOpen(false);
-      setSelectedMatchId('');
-      setDuelPrediction({teamA: '', teamB: ''});
-    } catch (error) {
-      console.error("Error creating duel:", error);
-    }
-  };
-
-  const handleAcceptDuel = async () => {
-    if (!acceptDuelId || acceptDuelPrediction.teamA === '' || acceptDuelPrediction.teamB === '') return;
-    
-    try {
-      await updateDoc(doc(db, 'duels', acceptDuelId), {
-        status: 'accepted',
-        challengedPrediction: {
-          teamA: Number(acceptDuelPrediction.teamA),
-          teamB: Number(acceptDuelPrediction.teamB)
-        }
-      });
-      setAcceptDuelId(null);
-      setAcceptDuelMatchId('');
-      setAcceptDuelPrediction({teamA: '', teamB: ''});
-    } catch (error) {
-      console.error("Error accepting duel:", error);
     }
   };
 
