@@ -76,10 +76,6 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Prode Beno",
-  },
-  icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
   }
 };
 

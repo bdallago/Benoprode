@@ -10,7 +10,6 @@ import { Button } from "./ui/button";
 import { useTranslation } from 'react-i18next';
 import { getUserBadges, BADGES } from "../lib/gamification";
 import { DuelModal } from "./DuelModal";
-import { MatchPrediction } from "./predictions/MatchesStage";
 
 interface UserPredictionsModalProps {
   userId: string;
