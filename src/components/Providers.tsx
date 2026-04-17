@@ -266,17 +266,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <AuthContext.Provider value={{ user, loading, isAdmin }}>
-        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-24 md:pb-0">
+        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && <GlobalBadgeListener user={user} />}
           <main className="container mx-auto px-4 py-8 flex-grow">
             {children}
           </main>
           
-          <footer className="w-full bg-blue-900 dark:bg-gray-950 text-white py-6 mt-auto border-t border-blue-800 dark:border-gray-800">
+          <footer className="w-full bg-blue-900 dark:bg-gray-950 text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800 dark:border-gray-800">
             <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-400">
               <p>Este Prode fue realizado por <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
-              <p>Contacto: <a href="mailto:beno@elprodedebeno.com.ar" className="text-white hover:text-blue-300 transition-colors">beno@elprodedebeno.com.ar</a></p>
+              <p>Contacto: <a href="mailto:bdallago01@gmail.com" className="text-white hover:text-blue-300 transition-colors">bdallago01@gmail.com</a></p>
             </div>
           </footer>
         </div>

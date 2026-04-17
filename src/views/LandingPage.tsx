@@ -53,7 +53,7 @@ export default function LandingPage() {
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
           <img 
-            src="/header-mobile.jpg" 
+            src="/header-mobile.jpg?v=2" 
             alt="El Prode de Beno Mobile" 
             className="w-full h-auto object-cover block sm:hidden"
             onError={(e) => {
@@ -64,7 +64,7 @@ export default function LandingPage() {
           />
           {/* Desktop Header */}
           <img 
-            src="/header-desktop.jpg" 
+            src="/header-desktop.jpg?v=2" 
             alt="El Prode de Beno" 
             className="w-full h-auto object-cover hidden sm:block max-h-[300px]"
             onError={(e) => {

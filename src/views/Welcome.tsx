@@ -213,7 +213,7 @@ export default function Welcome() {
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
               <img 
-                src="/header-mobile.jpg" 
+                src="/header-mobile.jpg?v=2" 
                 alt="El Prode de Beno Mobile" 
                 className="w-full h-auto object-cover block sm:hidden"
                 onError={(e) => {
@@ -223,7 +223,7 @@ export default function Welcome() {
               />
               {/* Desktop Header */}
               <img 
-                src="/header-desktop.jpg" 
+                src="/header-desktop.jpg?v=2" 
                 alt="El Prode de Beno" 
                 className="w-full h-auto object-cover hidden sm:block"
                 onError={(e) => {
@@ -234,14 +234,11 @@ export default function Welcome() {
               
               {/* Fallback if images missing */}
               <div id="fallback-welcome" className="hidden flex-col items-center justify-center p-8 bg-blue-50 dark:bg-gray-800">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-                  Bienvenido a
+                <h1 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-gray-100 tracking-tight mb-2">
+                  Panel Principal
                 </h1>
-                <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-gray-100 tracking-tight mb-4">
-                  El Prode de Beno
-                </h2>
                 <p className="text-gray-500 dark:text-gray-400 font-medium text-lg md:text-xl text-center">
-                  Pronostico deportivo del Mundial de fútbol 2026
+                  El Prode de Beno - Mundial 2026
                 </p>
               </div>
             </div>
