@@ -233,6 +233,21 @@ service cloud.firestore {
     }
 
     // ===============================================================
+    // Collection: matches subcollections
+    // ===============================================================
+    match /matches/{matchId}/comments/{commentId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['text', 'userId', 'userName', 'createdAt']) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000 &&
+                    request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100;
+                    
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
+    }
+
+    // ===============================================================
     // Collection: liveChat
     // ===============================================================
     match /liveChat/{messageId} {
@@ -251,9 +266,9 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // Collection: duels
+    // Collection: duels_v2
     // ===============================================================
-    match /duels/{duelId} {
+    match /duels_v2/{duelId} {
       allow read: if isAuthenticated();
       
       allow create: if isAuthenticated() &&
@@ -263,6 +278,7 @@ service cloud.firestore {
                     request.resource.data.matchId is string &&
                     request.resource.data.duelType is string &&
                     request.resource.data.challengerPrediction is map &&
+                    request.resource.data.challengedPrediction is map &&
                     request.resource.data.status == 'pending' &&
                     (!('winnerId' in request.resource.data) || request.resource.data.winnerId == null) &&
                     request.resource.data.createdAt is string;
@@ -275,14 +291,13 @@ service cloud.firestore {
                     request.resource.data.challengerPrediction == resource.data.challengerPrediction &&
                     request.resource.data.createdAt == resource.data.createdAt &&
                     (
-                      // Challenged user accepting/rejecting
-                      (request.auth.uid == resource.data.challengedId && 
-                       request.resource.data.status in ['accepted', 'rejected']) ||
+                      // User accepting or rejecting a duel
+                      (request.auth.uid == resource.data.challengedId && request.resource.data.status in ['accepted', 'rejected']) ||
                       // Admin or system updating winner
                       (isAdmin() && request.resource.data.status == 'completed')
                     );
                     
-      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.challengerId && resource.data.status == 'pending');
+      allow delete: if isAdmin();
     }
   }
 }

@@ -1,243 +1,151 @@
 import React, { useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { X } from 'lucide-react';
-import { TeamFlag } from './Fixture';
-import { GROUPS } from '../data';
+import { X, Swords } from 'lucide-react';
 
 interface DuelModalProps {
   challengedId: string;
   challengedName: string;
   matchId: string;
-  matchData: any; // Context data (teams, questions, etc.)
-  challengedPrediction: any; // What they said
-  duelType: 'match' | 'group_position' | 'special' | 'knockout';
+  matchData: any; 
+  challengedPrediction: any;
+  myPrediction: any; 
+  duelType: 'match_winner' | 'match_exact' | 'group_position' | 'group_complete' | 'special' | 'knockout' | 'match';
   onClose: () => void;
 }
 
-export function DuelModal({ challengedId, challengedName, matchId, matchData, challengedPrediction, duelType, onClose }: DuelModalProps) {
-  // Common states
+export function DuelModal({ challengedId, challengedName, matchId, matchData, challengedPrediction, myPrediction, duelType, onClose }: DuelModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // States for Match
-  const [teamA, setTeamA] = useState<number | ''>('');
-  const [teamB, setTeamB] = useState<number | ''>('');
-  const [outcome, setOutcome] = useState<'A' | 'B' | 'DRAW' | ''>('');
-  
-  // States for others
-  const [stringPrediction, setStringPrediction] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const canSubmit = () => {
-    if (duelType === 'match') return outcome !== '';
-    if (duelType === 'group_position') return stringPrediction.trim() !== '';
-    if (duelType === 'special') return stringPrediction.trim() !== '';
-    if (duelType === 'knockout') return stringPrediction.trim() !== '';
-    return false;
-  };
-
-  const getChallengerPredictionPayload = () => {
-    if (duelType === 'match') return { teamA, teamB, outcome };
-    return { value: stringPrediction };
-  };
+  const [internalDuelType, setInternalDuelType] = useState(duelType === 'match_winner' || duelType === 'match_exact' || duelType === 'match' ? 'match_exact' : duelType);
 
   const handleSubmit = async () => {
-    if (!auth.currentUser || !canSubmit()) return;
+    if (!auth.currentUser) return;
     setIsSubmitting(true);
 
     try {
-      await addDoc(collection(db, 'duels'), {
+      await addDoc(collection(db, 'duels_v2'), {
         challengerId: auth.currentUser.uid,
         challengerName: auth.currentUser.displayName || 'Usuario',
         challengedId,
         challengedName,
         matchId,
-        duelType,
-        challengerPrediction: getChallengerPredictionPayload(),
+        duelType: internalDuelType, // Make sure we save the selected match type
+        challengerPrediction: myPrediction,
         challengedPrediction,
         status: 'pending',
         createdAt: new Date().toISOString()
       });
-      onClose();
+      setSuccess(true);
+      setTimeout(onClose, 2000);
     } catch (error) {
       console.error('Error creating duel:', error);
+      alert('Ocurrió un error al crear el duelo.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const renderChallengedPrediction = () => {
-    if (duelType === 'match') {
-      return (
-        <div className="font-bold text-lg text-blue-900 dark:text-blue-300 flex items-center justify-center gap-2">
-          {challengedPrediction.outcome === 'A' && `Gana ${matchData.teamA}`}
-          {challengedPrediction.outcome === 'B' && `Gana ${matchData.teamB}`}
-          {challengedPrediction.outcome === 'DRAW' && `Empate`}
-          {challengedPrediction.teamA !== '' && challengedPrediction.teamB !== '' && ` (${challengedPrediction.teamA} - ${challengedPrediction.teamB})`}
-        </div>
-      );
+  const renderPredictionValue = (pred: any, type: string) => {
+    if (type === 'match_winner' || type === 'match_exact') {
+      if (type === 'match_exact') return `${pred.teamA} - ${pred.teamB}`;
+      if (pred.outcome === 'A') return `Gana ${matchData.teamA}`;
+      if (pred.outcome === 'B') return `Gana ${matchData.teamB}`;
+      if (pred.outcome === 'DRAW') return 'Empate';
+      return 'Sin definir';
     }
-    if (duelType === 'group_position') {
-      return (
-         <div className="font-bold text-lg text-blue-900 dark:text-blue-300">
-           {matchData.groupLetter} - Puesto {matchData.position}: {challengedPrediction.team}
-         </div>
-      );
-    }
-    if (duelType === 'special') {
-      return (
-         <div className="font-bold text-lg text-blue-900 dark:text-blue-300">
-           {challengedPrediction.answer}
-         </div>
-      );
-    }
-    if (duelType === 'knockout') {
-      return (
-         <div className="font-bold text-lg text-blue-900 dark:text-blue-300">
-           Avanza: {challengedPrediction.team}
-         </div>
-      );
-    }
+    if (type === 'group_position') return pred.team || 'Sin definir';
+    if (type === 'group_complete') return pred.teams ? pred.teams.join(', ') : 'Sin definir';
+    if (type === 'special') return pred.answer || 'Sin definir';
+    if (type === 'knockout') return pred.team || 'Sin definir';
+    return '-';
   };
 
-  const renderChallengePrompt = () => {
-    if (duelType === 'match') {
-      return (
-        <div>
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">¿Cuál es tu predicción?</h4>
-          
-          <div className="flex flex-col gap-3 mb-4">
-            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md border border-gray-200 dark:border-gray-600">
-              <div className="flex items-center gap-3">
-                <TeamFlag teamName={matchData.teamA} />
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{matchData.teamA}</span>
-              </div>
-              <input 
-                type="number" min="0" max="20"
-                className="w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                value={teamA}
-                onChange={(e) => setTeamA(e.target.value === '' ? '' : parseInt(e.target.value))}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md border border-gray-200 dark:border-gray-600">
-              <div className="flex items-center gap-3">
-                <TeamFlag teamName={matchData.teamB} />
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{matchData.teamB}</span>
-              </div>
-              <input 
-                type="number" min="0" max="20"
-                className="w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                value={teamB}
-                onChange={(e) => setTeamB(e.target.value === '' ? '' : parseInt(e.target.value))}
-              />
-            </div>
-          </div>
+  let myValue = renderPredictionValue(myPrediction, internalDuelType);
+  let hisValue = renderPredictionValue(challengedPrediction, internalDuelType);
 
-          <div className="flex gap-2">
-            <Button 
-              variant={outcome === 'A' ? 'default' : 'outline'} 
-              className="flex-1 text-xs"
-              onClick={() => setOutcome('A')}
-            >
-              Gana Local
-            </Button>
-            <Button 
-              variant={outcome === 'DRAW' ? 'default' : 'outline'} 
-              className="flex-1 text-xs"
-              onClick={() => setOutcome('DRAW')}
-            >
-              Empate
-            </Button>
-            <Button 
-              variant={outcome === 'B' ? 'default' : 'outline'} 
-              className="flex-1 text-xs"
-              onClick={() => setOutcome('B')}
-            >
-              Gana Visita
-            </Button>
-          </div>
-        </div>
-      );
-    }
+  let arePredictionsIdentical = myValue === hisValue;
+  
+  const isMatch = duelType === 'match_winner' || duelType === 'match_exact' || duelType === 'match' as any;
+  const winnerIsIdentical = isMatch && (renderPredictionValue(myPrediction, 'match_winner') === renderPredictionValue(challengedPrediction, 'match_winner'));
+  const exactIsIdentical = isMatch && (renderPredictionValue(myPrediction, 'match_exact') === renderPredictionValue(challengedPrediction, 'match_exact'));
 
-    if (duelType === 'group_position' || duelType === 'knockout') {
-      const isGroup = duelType === 'group_position';
-      const availableTeams = isGroup && GROUPS[matchData.groupLetter as keyof typeof GROUPS] 
-        ? GROUPS[matchData.groupLetter as keyof typeof GROUPS].filter(t => t !== challengedPrediction.team)
-        : [];
-        
-      return (
-        <div>
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">
-            {isGroup ? `¿Qué equipo quedará en el puesto ${matchData.position}?` : '¿Qué equipo avanzará?'}
-          </h4>
-          {isGroup ? (
-            <select 
-              className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-              value={stringPrediction}
-              onChange={(e) => setStringPrediction(e.target.value)}
-            >
-              <option value="" disabled>Selecciona un equipo...</option>
-              {availableTeams.map(team => (
-                <option key={team} value={team}>{team}</option>
-              ))}
-            </select>
-          ) : (
-            <input 
-               type="text"
-               className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-               placeholder="Ej: Argentina"
-               value={stringPrediction}
-               onChange={(e) => setStringPrediction(e.target.value)}
-            />
-          )}
-        </div>
-      );
+  React.useEffect(() => {
+    if (isMatch && internalDuelType !== 'match_winner' && internalDuelType !== 'match_exact') {
+      if (!exactIsIdentical) setInternalDuelType('match_exact');
+      else if (!winnerIsIdentical) setInternalDuelType('match_winner');
     }
-
-    if (duelType === 'special') {
-      return (
-        <div>
-          <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Tu respuesta a: {matchData.questionTitle}</h4>
-          <input 
-             type="text"
-             className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-             placeholder="Tu respuesta"
-             value={stringPrediction}
-             onChange={(e) => setStringPrediction(e.target.value)}
-          />
-        </div>
-      );
-    }
-  };
+  }, [isMatch, internalDuelType, exactIsIdentical, winnerIsIdentical]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl overflow-hidden transition-colors duration-200">
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Retar a {challengedName}</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Swords className="w-5 h-5 text-blue-600" />
+            Retar a {challengedName}
+          </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Predicción de {challengedName}:</p>
-            {renderChallengedPrediction()}
-          </div>
+          {success ? (
+            <div className="text-center p-6 text-green-600 dark:text-green-400 font-bold text-lg">
+              ¡Duelo registrado correctamente!
+            </div>
+          ) : (
+            <>
+              {isMatch && !winnerIsIdentical && !exactIsIdentical && (
+                <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                  <button 
+                    className={`flex-1 text-sm py-2 px-3 rounded-md transition-colors ${internalDuelType === 'match_exact' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white font-bold' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    onClick={() => setInternalDuelType('match_exact')}
+                  >
+                    Resultado Exacto
+                  </button>
+                  <button 
+                    className={`flex-1 text-sm py-2 px-3 rounded-md transition-colors ${internalDuelType === 'match_winner' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white font-bold' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    onClick={() => setInternalDuelType('match_winner')}
+                  >
+                    Ganador/Empate
+                  </button>
+                </div>
+              )}
 
-          {renderChallengePrompt()}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tu predicción</p>
+                  <p className="font-bold text-blue-700 dark:text-blue-400 text-lg">{myValue}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Elige {challengedName}</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">{hisValue}</p>
+                </div>
+              </div>
 
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={!canSubmit() || isSubmitting}
-            onClick={handleSubmit}
-          >
-            Enviar Reto ⚔️
-          </Button>
+              {arePredictionsIdentical ? (
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-3 flex rounded-md text-sm text-center">
+                  No puedes retar esta predicción porque ambos eligieron exactamente lo mismo. Elige una predicción donde no coincidan.
+                </div>
+              ) : (
+                <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-3 rounded-md text-sm text-center">
+                  Al confirmar, el sistema registrará este duelo. Cuando suceda el evento, el ganador se llevará 1 victoria en el historial de duelos. ¡3 victorias te dan 1 punto!
+                </div>
+              )}
+
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isSubmitting || arePredictionsIdentical}
+                onClick={handleSubmit}
+              >
+                {isSubmitting ? "Enviando..." : "Confirmar Duelo ⚔️"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

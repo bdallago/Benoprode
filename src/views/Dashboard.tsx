@@ -17,6 +17,7 @@ interface Player {
   photoURL: string;
   totalPoints: number;
   role?: string;
+  earnedBadges?: string[];
 }
 
 export default function Dashboard({ user }: { user: User }) {

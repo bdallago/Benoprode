@@ -28,6 +28,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [duelData, setDuelData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
 
+  const [isFriend, setIsFriend] = useState(false);
   const [userStats, setUserStats] = useState<any>({});
 
   useEffect(() => {
@@ -40,8 +41,27 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           getDoc(doc(db, "users", userId))
         ];
 
+        let isFriendsWithUser = false;
         if (auth.currentUser) {
            promises.push(getDoc(doc(db, "predictions", auth.currentUser.uid)));
+           
+           if (auth.currentUser.uid !== userId) {
+               const firestoreHelpers = await import("firebase/firestore");
+               const { query, collection, where, getDocs } = firestoreHelpers;
+               
+               const q3 = query(
+                 collection(db, 'friendships'),
+                 where('user1Id', 'in', [auth.currentUser.uid, userId])
+               );
+               const friendsSnap = await getDocs(q3);
+               friendsSnap.docs.forEach(d => {
+                  if ((d.data().user1Id === auth.currentUser!.uid && d.data().user2Id === userId) ||
+                      (d.data().user1Id === userId && d.data().user2Id === auth.currentUser!.uid)) {
+                      isFriendsWithUser = true;
+                  }
+               });
+               setIsFriend(isFriendsWithUser);
+           }
         }
 
         const resolved = await Promise.all(promises);
@@ -115,8 +135,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
   const isLocked = predictions.isLocked;
   // Use `isLocked` as the lock status of the viewed user
-  // Can only challenge if BOTH users have locked their predictions
-  const canChallenge = auth.currentUser && auth.currentUser.uid !== userId && isLocked && currentUserPredictions?.isLocked;
+  // Can only challenge if BOTH users have locked their predictions and are friends
+  const canChallenge = auth.currentUser && auth.currentUser.uid !== userId && isLocked && currentUserPredictions?.isLocked && isFriend;
 
   const groups = predictions.groups || GROUPS;
   const specials = predictions.specials || {};
@@ -209,7 +229,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         <div className="p-6 overflow-y-auto space-y-8 bg-white dark:bg-gray-800">
           {!canChallenge && auth.currentUser && auth.currentUser.uid !== userId && (
              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Para poder retar a este jugador, ambos deben haber fijado sus predicciones.
+                <AlertCircle className="w-4 h-4" /> Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.
              </div>
           )}
 
@@ -221,7 +241,26 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                   return (
                     <Card key={groupLetter} className="overflow-hidden border-t-4 border-t-blue-600">
                       <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
-                        <CardTitle className="text-md">{t('userPredictions.group')} {groupLetter}</CardTitle>
+                        <CardTitle className="text-md flex items-center justify-between w-full">
+                          <span>{t('userPredictions.group')} {groupLetter}</span>
+                          {canChallenge && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-blue-600 border-blue-200"
+                              title="Retar grupo completo"
+                              onClick={() => setDuelData({ 
+                                duelType: 'group_complete', 
+                                matchId: `group_${groupLetter}_complete`, 
+                                matchData: { groupLetter }, 
+                                challengedPrediction: { teams },
+                                myPrediction: { teams: currentUserPredictions?.groups?.[groupLetter] || [] }
+                              })}
+                            >
+                              <Swords className="w-4 h-4 mr-1" /> Retar
+                            </Button>
+                          )}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
                         <ul className="divide-y dark:divide-gray-700">
@@ -237,7 +276,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                 {canChallenge && (
                                   <Button 
                                     variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title="Retar predicción"
-                                    onClick={() => setDuelData({ duelType: 'group_position', matchId: `group_${groupLetter}_pos_${index + 1}`, matchData: { groupLetter, position: index + 1 }, challengedPrediction: { team } })}
+                                    onClick={() => setDuelData({ 
+                                      duelType: 'group_position', 
+                                      matchId: `group_${groupLetter}_pos_${index + 1}`, 
+                                      matchData: { groupLetter, position: index + 1 }, 
+                                      challengedPrediction: { team },
+                                      myPrediction: { team: currentUserPredictions?.groups?.[groupLetter]?.[index] || '' }
+                                    })}
                                   >
                                     <Swords className="w-4 h-4" />
                                   </Button>
@@ -278,7 +323,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       {canChallenge && (
                         <Button 
                           size="sm" title="Retar partido" className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full md:w-auto mt-2 md:mt-0"
-                          onClick={() => setDuelData({ duelType: 'match', matchId: match.id, matchData: match, challengedPrediction: pred })}
+                          onClick={() => setDuelData({ 
+                            duelType: 'match', 
+                            matchId: match.id, 
+                            matchData: match, 
+                            challengedPrediction: pred,
+                            myPrediction: currentUserPredictions?.matches?.[match.id] || { teamA: '', teamB: '', outcome: '' }
+                          })}
                         >
                           <Swords className="w-4 h-4 mr-2" /> Retar
                         </Button>
@@ -306,7 +357,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                         {canChallenge && specials[q.id] && (
                            <Button 
                              variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 shadow-sm" title="Retar predicción"
-                             onClick={() => setDuelData({ duelType: 'special', matchId: q.id, matchData: { questionTitle: t(`specialQuestions.${q.id}`) }, challengedPrediction: { answer } })}
+                             onClick={() => setDuelData({ 
+                               duelType: 'special', 
+                               matchId: q.id, 
+                               matchData: { questionTitle: t(`specialQuestions.${q.id}`) }, 
+                               challengedPrediction: { answer },
+                               myPrediction: { answer: currentUserPredictions?.specials?.[q.id] || '' }
+                             })}
                            >
                              <Swords className="w-4 h-4" />
                            </Button>
@@ -343,7 +400,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                {canChallenge && m.winner && (
                                  <Button 
                                    variant="outline" size="sm" className="h-7 text-blue-600 border-blue-200" title="Retar ganador"
-                                   onClick={() => setDuelData({ duelType: 'knockout', matchId: `knockout_${phaseKey}_${idx}`, matchData: { phase: phaseKey }, challengedPrediction: { team: m.winner } })}
+                                   onClick={() => setDuelData({ 
+                                     duelType: 'knockout', 
+                                     matchId: `knockout_${phaseKey}_${idx}`, 
+                                     matchData: { phase: phaseKey }, 
+                                     challengedPrediction: { team: m.winner },
+                                     myPrediction: { team: currentUserPredictions?.knockouts?.[phaseKey]?.[idx]?.winner || '' }
+                                   })}
                                  >
                                    <Swords className="w-4 h-4 mr-1" /> Retar 
                                  </Button>
@@ -376,6 +439,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           matchData={duelData.matchData}
           duelType={duelData.duelType}
           challengedPrediction={duelData.challengedPrediction}
+          myPrediction={duelData.myPrediction}
           onClose={() => setDuelData(null)}
         />
       )}

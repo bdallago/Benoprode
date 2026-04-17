@@ -43,7 +43,7 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
         text: newComment.trim(),
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Usuario',
-        createdAt: serverTimestamp()
+        createdAt: new Date().toISOString()
       });
       setNewComment('');
     } catch (error) {

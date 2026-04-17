@@ -103,8 +103,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
     });
 
     // Fetch duels
-    const qDuels1 = query(collection(db, 'duels'), where('challengerId', '==', targetUserId));
-    const qDuels2 = query(collection(db, 'duels'), where('challengedId', '==', targetUserId));
+    const qDuels1 = query(collection(db, 'duels_v2'), where('challengerId', '==', targetUserId));
+    const qDuels2 = query(collection(db, 'duels_v2'), where('challengedId', '==', targetUserId));
 
     const handleDuelsSnap = (snap1: any, snap2: any) => {
       const allDuels = new Map();
@@ -469,12 +469,88 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
         {activeTab === 'duels' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Duelos</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Historial de Duelos</h3>
+            
+            {duelsList.length > 0 && (
+              <div className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex-1 text-center border-r border-gray-200 dark:border-gray-600">
+                  <div className="text-sm text-gray-500">Duelos Ganados</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {duelsList.reduce((acc, d) => acc + (d.winnerId === targetUserId ? (d.duelType === 'group_complete' ? 3 : 1) : 0), 0)}
+                  </div>
+                </div>
+                <div className="flex-1 text-center border-r border-gray-200 dark:border-gray-600">
+                  <div className="text-sm text-gray-500">Duelos Perdidos</div>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {duelsList.filter(d => d.winnerId && d.winnerId !== targetUserId).length}
+                  </div>
+                </div>
+                <div className="flex-1 text-center">
+                  <div className="text-sm text-gray-500">Puntos Extra (3 = 1 pt)</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {Math.floor(duelsList.reduce((acc, d) => acc + (d.winnerId === targetUserId ? (d.duelType === 'group_complete' ? 3 : 1) : 0), 0) / 3)}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {duelsList.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 {duelsList.map(duel => {
                   const isChallenger = duel.challengerId === targetUserId;
                   const otherUserName = isChallenger ? duel.challengedName : duel.challengerName;
+                  const isWinner = duel.winnerId === targetUserId;
+                  const isLoser = duel.winnerId && duel.winnerId !== targetUserId;
+                  
+                  let statusText = 'En curso';
+                  let statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+                  
+                  if (duel.status === 'pending') {
+                      statusText = 'Pendiente';
+                      statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+                  } else if (duel.status === 'rejected') {
+                      statusText = 'Rechazado';
+                      statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+                  } else if (duel.status === 'accepted') {
+                      statusText = 'Aceptado (En curso)';
+                      statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+                  } else if (duel.status === 'completed') {
+                     if (isWinner) {
+                        statusText = 'Ganador';
+                        statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+                     } else if (isLoser) {
+                        statusText = 'Perdedor';
+                        statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+                     } else {
+                        statusText = 'Empate';
+                        statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+                     }
+                  }
+
+                  const formatDuelEventName = (matchId: string, duelType: string) => {
+                      if (duelType === 'group_complete') {
+                          const groupLetter = matchId.replace('group_', '').replace('_complete', '');
+                          return `Grupo ${groupLetter} Completo`;
+                      }
+                      if (duelType === 'group_position') {
+                          const parts = matchId.split('_');
+                          // check safe parsing
+                          if (parts.length >= 4) return `Puesto ${parts[3]} - Grupo ${parts[1]}`;
+                      }
+                      if (duelType === 'match_exact' || duelType === 'match_winner') {
+                          const matchInfo = matchesData.find((m: any) => m.id === matchId);
+                          if (matchInfo) {
+                             return `${matchInfo.teamA} vs ${matchInfo.teamB}`;
+                          }
+                      }
+                      if (duelType === 'special') return `Pregunta Especial`;
+                      if (duelType === 'knockout') return `Fase Eliminatoria`;
+                      return matchId;
+                  };
+                  
+                  const eventName = formatDuelEventName(duel.matchId, duel.duelType);
+                  const typeLabel = duel.duelType === 'match_exact' ? 'Resultado Exacto' : (duel.duelType === 'match_winner' ? 'Ganador/Empate' : '');
+
                   return (
                     <div key={duel.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -486,26 +562,19 @@ export default function Profile({ user, profileId }: ProfileProps) {
                             Duelo vs {otherUserName || 'Usuario'}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Partido: {duel.matchId}
+                            Evento: {eventName} {typeLabel ? `(${typeLabel})` : ''}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                          duel.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          duel.status === 'accepted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                          duel.status === 'rejected' ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400' :
-                          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        }`}>
-                          {duel.status === 'pending' ? 'Pendiente' :
-                           duel.status === 'accepted' ? 'Aceptado' :
-                           duel.status === 'rejected' ? 'Rechazado' : 'Completado'}
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${statusClass}`}>
+                          {statusText}
                         </span>
                         
-                        {isOwnProfile && !isChallenger && duel.status === 'pending' && (
+                        {isOwnProfile && duel.challengedId === targetUserId && duel.status === 'pending' && (
                           <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setAcceptDuelId(duel.id); setAcceptDuelMatchId(duel.matchId); }}>Aceptar</Button>
-                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateDoc(doc(db, 'duels', duel.id), { status: 'rejected' })}>Rechazar</Button>
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'accepted' })}>Aceptar</Button>
+                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' })}>Rechazar</Button>
                           </div>
                         )}
                       </div>
@@ -516,7 +585,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             ) : (
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                 <Swords className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">No hay duelos activos.</p>
+                <p className="text-gray-500 dark:text-gray-400">No hay duelos registrados.</p>
               </div>
             )}
           </div>
@@ -532,56 +601,6 @@ export default function Profile({ user, profileId }: ProfileProps) {
         />
       )}
 
-      {/* Accept Duel Modal */}
-      {acceptDuelId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Aceptar Duelo</h3>
-              <button onClick={() => { setAcceptDuelId(null); setAcceptDuelMatchId(''); setAcceptDuelPrediction({teamA: '', teamB: ''}); }} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tu Predicción</label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 text-center">
-                    <div className="text-sm font-bold mb-1 truncate">{matchesData.find((m: any) => m.id === acceptDuelMatchId)?.teamA}</div>
-                    <input 
-                      type="number" 
-                      min="0"
-                      className="w-full p-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      value={acceptDuelPrediction.teamA}
-                      onChange={(e) => setAcceptDuelPrediction(prev => ({ ...prev, teamA: e.target.value ? Number(e.target.value) : '' }))}
-                    />
-                  </div>
-                  <div className="font-bold text-gray-500">-</div>
-                  <div className="flex-1 text-center">
-                    <div className="text-sm font-bold mb-1 truncate">{matchesData.find((m: any) => m.id === acceptDuelMatchId)?.teamB}</div>
-                    <input 
-                      type="number" 
-                      min="0"
-                      className="w-full p-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      value={acceptDuelPrediction.teamB}
-                      onChange={(e) => setAcceptDuelPrediction(prev => ({ ...prev, teamB: e.target.value ? Number(e.target.value) : '' }))}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <Button 
-                className="w-full bg-green-600 hover:bg-green-700 text-white mt-4"
-                disabled={acceptDuelPrediction.teamA === '' || acceptDuelPrediction.teamB === ''}
-                onClick={handleAcceptDuel}
-              >
-                Confirmar Predicción
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

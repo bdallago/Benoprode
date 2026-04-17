@@ -27,13 +27,13 @@ export default function Instructions() {
             
             <h3 className="font-bold text-lg mt-6 mb-2 border-b dark:border-gray-700 pb-1">Amigos y Duelos ⚔️</h3>
             <p>
-              ¡El Prode de Beno es mejor con amigos! Podés buscar a otros usuarios y enviarles <strong>Solicitudes de Amistad</strong>. Una vez que sean amigos, podrán ver sus perfiles y retarse a <strong>Duelos</strong>.
+              ¡El Prode de Beno es mejor con amigos! Podés buscar a otros usuarios y enviarles <strong>Solicitudes de Amistad</strong>. Una vez que sean amigos y ambos hayan <strong>fijado sus predicciones</strong>, podrán ver sus perfiles y retarse a <strong>Duelos</strong>.
             </p>
             <ul className="list-disc pl-5 space-y-2 text-justify">
-              <li>Si ves que un amigo hizo una predicción con la que no estás de acuerdo (ej. predijo que gana un equipo y vos pensás que gana el otro), podés <strong>Retarlo</strong>.</li>
-              <li>Al retarlo, vas a ingresar tu propia predicción para ese partido. Tu amigo recibirá una notificación y podrá <strong>Aceptar</strong> o <strong>Rechazar</strong> el duelo.</li>
-              <li>Si el duelo es aceptado, ¡que gane el mejor! El sistema llevará la cuenta de tus duelos ganados.</li>
-              <li><strong>Recompensa:</strong> Por cada 3 duelos ganados, vas a recibir <strong>+1 punto extra</strong> en la tabla general, y además podrás desbloquear medallas exclusivas de duelista.</li>
+              <li>Si ves que un amigo hizo una predicción y vos elegiste un resultado diferente, podés <strong>Retarlo</strong> directamente desde su hoja de predicciones.</li>
+              <li>Al enviarle el desafío, la otra persona recibirá una notificación en la sección <strong>"Duelos"</strong> de su perfil y podrá <strong>Aceptar</strong> o <strong>Rechazar</strong>.</li>
+              <li>Podés retar a otro jugador por una posición exacta, el desarrollo de un partido, por responder quién avanzará en una llave, ¡o incluso por las posiciones de un <strong>grupo completo</strong>!</li>
+              <li><strong>Recompensa:</strong> Cada duelo de posición o partido ganado suma 1 victoria, pero si retás a alguien por un grupo y acertás más resultados, ¡te llevás 3 victorias de una! Por cada 3 victorias de duelo, el sistema te otorga <strong>+1 punto extra</strong> en la tabla general.</li>
             </ul>
           </CardContent>
         </Card>
