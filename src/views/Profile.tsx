@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Trophy, Users, Swords, UserPlus, Check, X, Clock } from 'lucide-react';
 import { getUserLevel, getUserBadges, BADGES } from '../lib/gamification';
 import matchesData from '../lib/matches.json';
+import { UserPredictionsModal } from '../components/UserPredictionsModal';
 
 interface ProfileProps {
   user: User;
@@ -27,11 +28,12 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
   const [duelsList, setDuelsList] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>({});
   
   // Duel modal state
-  const [isDuelModalOpen, setIsDuelModalOpen] = useState(false);
+  const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string>('');
   const [duelPrediction, setDuelPrediction] = useState<{teamA: number | '', teamB: number | ''}>({teamA: '', teamB: ''});
 
@@ -118,13 +120,30 @@ export default function Profile({ user, profileId }: ProfileProps) {
       getDocs(qDuels1).then(snap1 => handleDuelsSnap(snap1, snap2));
     });
 
+    let unsubReqs: any = () => {};
+    if (isOwnProfile) {
+      const qReqs = query(collection(db, 'friendRequests'), where('toUserId', '==', user.uid), where('status', '==', 'pending'));
+      unsubReqs = onSnapshot(qReqs, async (snap) => {
+        const reqsData: any[] = [];
+        for (const d of snap.docs) {
+          const fromId = d.data().fromUserId;
+          const uDoc = await getDoc(doc(db, 'users', fromId));
+          if (uDoc.exists()) {
+            reqsData.push({ id: d.id, fromUserId: fromId, ...uDoc.data() });
+          }
+        }
+        setPendingRequestsList(reqsData);
+      });
+    }
+
     return () => {
       unsubF1();
       unsubF2();
       unsubD1();
       unsubD2();
+      unsubReqs();
     };
-  }, [targetUserId]);
+  }, [targetUserId, isOwnProfile, user]);
 
   useEffect(() => {
     if (isOwnProfile) return;
@@ -265,8 +284,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
   }
 
   const level = getUserLevel(profileData.totalPoints || 0);
-  const badgeIds = getUserBadges(profileData.totalPoints || 0, userStats);
-  const badges = badgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
+  const badgeIds = profileData.earnedBadges || [];
+  const badges = badgeIds.map((id: string) => BADGES.find(b => b.id === id)).filter(Boolean);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -317,8 +336,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
                     <Button variant="outline" className="flex items-center gap-2 text-green-600 border-green-600">
                       <Users className="w-4 h-4" /> Amigos
                     </Button>
-                    <Button onClick={() => setIsDuelModalOpen(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
-                      <Swords className="w-4 h-4" /> Retar a Duelo
+                    <Button onClick={() => setIsPredictionsModalOpen(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
+                      <Swords className="w-4 h-4" /> Duelos / Predicciones
                     </Button>
                   </>
                 )}
@@ -371,32 +390,80 @@ export default function Profile({ user, profileId }: ProfileProps) {
         )}
 
         {activeTab === 'friends' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Lista de Amigos</h3>
-            {friendsList.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {friendsList.map(friend => (
-                  <Link key={friend.id} href={`/profile/${friend.id}`} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:border-blue-500 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden shrink-0">
-                      {friend.photoURL ? (
-                        <img src={friend.photoURL} alt={friend.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">{friend.displayName?.charAt(0) || 'U'}</span>
-                      )}
+          <div className="space-y-8">
+            {isOwnProfile && pendingRequestsList.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Solicitudes Entrantes</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {pendingRequestsList.map(req => (
+                    <div key={req.id} className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-4">
+                      <Link href={`/profile/${req.fromUserId}`} className="flex items-center gap-3 flex-1 hover:opacity-80">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden shrink-0">
+                          {req.photoURL ? (
+                            <img src={req.photoURL} alt={req.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <span className="text-blue-600 dark:text-blue-400 font-bold">{req.displayName?.charAt(0) || 'U'}</span>
+                          )}
+                        </div>
+                        <span className="font-bold text-gray-900 dark:text-gray-100">{req.displayName}</span>
+                      </Link>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white p-2"
+                          onClick={() => {
+                            // Accept request inline
+                            updateDoc(doc(db, 'friendRequests', req.id), { status: 'accepted' });
+                            addDoc(collection(db, 'friendships'), { user1Id: user!.uid, user2Id: req.fromUserId, createdAt: new Date().toISOString() });
+                          }}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50 p-2"
+                          onClick={() => {
+                            // Reject request inline
+                            updateDoc(doc(db, 'friendRequests', req.id), { status: 'rejected' });
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-gray-900 dark:text-gray-100">{friend.displayName}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{friend.totalPoints || 0} pts</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">Aún no hay amigos en esta lista.</p>
+                  ))}
+                </div>
               </div>
             )}
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Lista de Amigos</h3>
+              {friendsList.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {friendsList.map(friend => (
+                    <Link key={friend.id} href={`/profile/${friend.id}`} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:border-blue-500 transition-colors">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden shrink-0">
+                        {friend.photoURL ? (
+                          <img src={friend.photoURL} alt={friend.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">{friend.displayName?.charAt(0) || 'U'}</span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 dark:text-gray-100">{friend.displayName}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{friend.totalPoints || 0} pts</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">Aún no hay amigos en esta lista.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -456,73 +523,13 @@ export default function Profile({ user, profileId }: ProfileProps) {
         )}
       </div>
 
-      {/* Duel Modal */}
-      {isDuelModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Retar a Duelo</h3>
-              <button onClick={() => setIsDuelModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Seleccionar Partido</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  value={selectedMatchId}
-                  onChange={(e) => setSelectedMatchId(e.target.value)}
-                >
-                  <option value="">-- Selecciona un partido --</option>
-                  {matchesData.slice(0, 48).map((match: any) => (
-                    <option key={match.id} value={match.id}>
-                      {match.teamA} vs {match.teamB}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {selectedMatchId && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tu Predicción</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 text-center">
-                      <div className="text-sm font-bold mb-1 truncate">{matchesData.find((m: any) => m.id === selectedMatchId)?.teamA}</div>
-                      <input 
-                        type="number" 
-                        min="0"
-                        className="w-full p-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        value={duelPrediction.teamA}
-                        onChange={(e) => setDuelPrediction(prev => ({ ...prev, teamA: e.target.value ? Number(e.target.value) : '' }))}
-                      />
-                    </div>
-                    <div className="font-bold text-gray-500">-</div>
-                    <div className="flex-1 text-center">
-                      <div className="text-sm font-bold mb-1 truncate">{matchesData.find((m: any) => m.id === selectedMatchId)?.teamB}</div>
-                      <input 
-                        type="number" 
-                        min="0"
-                        className="w-full p-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        value={duelPrediction.teamB}
-                        onChange={(e) => setDuelPrediction(prev => ({ ...prev, teamB: e.target.value ? Number(e.target.value) : '' }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <Button 
-                className="w-full bg-red-600 hover:bg-red-700 text-white mt-4"
-                disabled={!selectedMatchId || duelPrediction.teamA === '' || duelPrediction.teamB === ''}
-                onClick={handleCreateDuel}
-              >
-                Enviar Reto
-              </Button>
-            </div>
-          </div>
-        </div>
+      {isPredictionsModalOpen && profileData && (
+        <UserPredictionsModal 
+          userId={targetUserId} 
+          userName={profileData.displayName} 
+          userPoints={profileData.totalPoints || 0}
+          onClose={() => setIsPredictionsModalOpen(false)} 
+        />
       )}
 
       {/* Accept Duel Modal */}

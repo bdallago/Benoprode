@@ -108,13 +108,14 @@ export default function Dashboard({ user }: { user: User }) {
     };
   }, [user.uid]);
 
-  const myPoints = players.find((p) => p.uid === user.uid)?.totalPoints || 0;
+  const myData = players.find((p) => p.uid === user.uid);
+  const myPoints = myData?.totalPoints || 0;
   const myRank = players.findIndex((p) => p.totalPoints === myPoints) + 1;
   
   const userLevel = getUserLevel(myPoints);
   
-  const userBadgeIds = getUserBadges(myPoints, userStats); 
-  const userBadges = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
+  const userBadgeIds = myData?.earnedBadges || [];
+  const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">

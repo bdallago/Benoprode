@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { X } from 'lucide-react';
 import { TeamFlag } from './Fixture';
+import { GROUPS } from '../data';
 
 interface DuelModalProps {
   challengedId: string;
@@ -162,18 +163,36 @@ export function DuelModal({ challengedId, challengedName, matchId, matchData, ch
     }
 
     if (duelType === 'group_position' || duelType === 'knockout') {
+      const isGroup = duelType === 'group_position';
+      const availableTeams = isGroup && GROUPS[matchData.groupLetter as keyof typeof GROUPS] 
+        ? GROUPS[matchData.groupLetter as keyof typeof GROUPS].filter(t => t !== challengedPrediction.team)
+        : [];
+        
       return (
         <div>
           <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">
-            {duelType === 'group_position' ? `¿Qué equipo quedará en el puesto ${matchData.position}?` : '¿Qué equipo avanzará?'}
+            {isGroup ? `¿Qué equipo quedará en el puesto ${matchData.position}?` : '¿Qué equipo avanzará?'}
           </h4>
-          <input 
-             type="text"
-             className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-             placeholder="Ej: Argentina"
-             value={stringPrediction}
-             onChange={(e) => setStringPrediction(e.target.value)}
-          />
+          {isGroup ? (
+            <select 
+              className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              value={stringPrediction}
+              onChange={(e) => setStringPrediction(e.target.value)}
+            >
+              <option value="" disabled>Selecciona un equipo...</option>
+              {availableTeams.map(team => (
+                <option key={team} value={team}>{team}</option>
+              ))}
+            </select>
+          ) : (
+            <input 
+               type="text"
+               className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+               placeholder="Ej: Argentina"
+               value={stringPrediction}
+               onChange={(e) => setStringPrediction(e.target.value)}
+            />
+          )}
         </div>
       );
     }

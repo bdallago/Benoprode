@@ -122,6 +122,7 @@
     "specials": "Specials",
     "saveDraft": "Save Draft",
     "lockPredictions": "Lock Predictions",
+    "predictionsLocked": "Predictions locked",
     "locked": "Predictions locked",
     "lockedDesc": "Your predictions are locked and cannot be modified.",
     "unlockedDesc": "You can 'Save Draft' as many times as you want. Your choices will only be permanently locked when you click 'Lock Predictions' (this action can only be done once).",

@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: '/app-icon.png',
-    shortcut: '/app-icon.png',
-    apple: '/app-icon.png',
+    icon: '/icono.png',
+    shortcut: '/icono.png',
+    apple: '/icono.png',
   },
   openGraph: {
     title: "El Prode de Beno | Mundial 2026",

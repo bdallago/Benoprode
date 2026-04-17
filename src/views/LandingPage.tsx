@@ -48,33 +48,16 @@ export default function LandingPage() {
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
           <img 
-            src="/header-mobile.jpg?v=2" 
+            src="/headertelefono.jpeg" 
             alt="El Prode de Beno Mobile" 
             className="w-full h-auto object-cover block sm:hidden"
-            onError={(e) => {
-              // Fallback if image doesn't exist yet
-              (e.target as HTMLImageElement).style.display = 'none';
-              document.getElementById('fallback-hero')!.style.display = 'flex';
-            }}
           />
           {/* Desktop Header */}
           <img 
-            src="/header-desktop.jpg?v=2" 
-            alt="El Prode de Beno" 
+            src="/headerescritorio.jpeg" 
+            alt="El Prode de Beno Desktop" 
             className="w-full h-auto object-cover hidden sm:block max-h-[300px]"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              document.getElementById('fallback-hero')!.style.display = 'flex';
-            }}
           />
-          
-          {/* Fallback if images missing */}
-          <div id="fallback-hero" className="hidden flex-col items-center justify-center p-10 bg-blue-100 dark:bg-blue-900/40">
-            <Trophy className="h-16 w-16 text-blue-600 dark:text-blue-400 mb-4" />
-            <h1 className="text-4xl md:text-6xl font-extrabold text-blue-900 dark:text-blue-100 tracking-tight">
-              El Prode de Beno
-            </h1>
-          </div>
         </div>
         
         <p className="mt-4 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">

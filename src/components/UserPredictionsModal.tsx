@@ -93,8 +93,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     );
   }
 
-  const userBadgeIds = getUserBadges(userPoints, userStats);
-  const userBadges = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
+  const userBadgeIds = userStats.earnedBadges || [];
+  const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
   if (!predictions) {
     return (

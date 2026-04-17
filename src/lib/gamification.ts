@@ -99,6 +99,10 @@ export function getUserBadges(
     earnedBadgeIds.push('primer_paso');
   }
 
+  if (userStats.lockedEarly) {
+    earnedBadgeIds.push('confiado');
+  }
+
   if (userStats.inBenoliga) {
     earnedBadgeIds.push('rival_beno');
   }

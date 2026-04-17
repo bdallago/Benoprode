@@ -41,22 +41,70 @@ function GlobalBadgeListener({ user }: { user: User }) {
     let inBenoliga = false;
     let hasPerfectGroup = false; // Simplified for now
     let hasInvitedFriends = false; // Simplified for now
+    let hasSavedPredictions = false;
+    let lockedEarly = false;
+    let userData: any = null;
 
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        userData = data;
         myPoints = data.totalPoints || 0;
         hasInvitedFriends = (data.referralsCount || 0) > 0;
+        hasSavedPredictions = !!data.hasSavedPredictions;
+        lockedEarly = !!data.lockedEarly;
+        checkBadges();
+      }
+    });
+
+    const unsubscribePredictions = onSnapshot(doc(db, "predictions", user.uid), (docSnap) => {
+      if (docSnap.exists() && userData) {
+        const data = docSnap.data();
+        let changed = false;
+        
+        if (!userData.hasSavedPredictions) {
+          hasSavedPredictions = true;
+          changed = true;
+        }
+        
+        if (data.isLocked && data.updatedAt) {
+          // Check if locked before June 1st 2026
+          const lockedDate = new Date(data.updatedAt);
+          const deadline = new Date("2026-06-01T00:00:00Z");
+          if (lockedDate < deadline && !userData.lockedEarly) {
+            lockedEarly = true; // Confiado unlocked
+            changed = true;
+          }
+        }
+        
+        if (changed) {
+          updateDoc(doc(db, "users", user.uid), {
+            hasSavedPredictions,
+            lockedEarly
+          }).catch(console.error);
+        }
+        
         checkBadges();
       }
     });
 
     const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
+      if (!userData) return;
       const leagues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const userLeagues = leagues.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
       
-      isLeagueCreatorOrMember = userLeagues.length > 0;
-      inBenoliga = userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga');
+      const newIsLeagueCreatorOrMember = userLeagues.length > 0;
+      const newInBenoliga = userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga');
+      
+      if (newIsLeagueCreatorOrMember !== userData.inPrivateLeague || newInBenoliga !== userData.inBenoliga) {
+        updateDoc(doc(db, "users", user.uid), {
+           inPrivateLeague: newIsLeagueCreatorOrMember,
+           inBenoliga: newInBenoliga
+        }).catch(console.error);
+      }
+      
+      isLeagueCreatorOrMember = newIsLeagueCreatorOrMember;
+      inBenoliga = newInBenoliga;
       checkBadges();
     });
 
@@ -65,15 +113,15 @@ function GlobalBadgeListener({ user }: { user: User }) {
       const userStats = {
         referralsCount: hasInvitedFriends ? 1 : 0,
         inBenoliga,
-        inPrivateLeague: isLeagueCreatorOrMember
+        inPrivateLeague: isLeagueCreatorOrMember,
+        hasSavedPredictions,
+        lockedEarly
       };
-      const userBadgeIds = getUserBadges(myPoints, userStats);
+      if (!userData) return;
+      const userBadgeIds = Array.from(new Set(getUserBadges(myPoints, userStats)));
       const userBadgesFull = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
       
-      const storedBadgesKey = `user_badges_${user.uid}`;
-      const storedBadgesStr = localStorage.getItem(storedBadgesKey);
-      const storedBadges = storedBadgesStr ? JSON.parse(storedBadgesStr) : [];
-      
+      const storedBadges = userData.earnedBadges || [];
       const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
       
       if (newEarnedBadges.length > 0) {
@@ -82,15 +130,26 @@ function GlobalBadgeListener({ user }: { user: User }) {
           const toAdd = newEarnedBadges.filter(b => !existingIds.includes(b.id));
           return [...prev, ...toAdd];
         });
-        localStorage.setItem(storedBadgesKey, JSON.stringify(Array.from(new Set([...storedBadges, ...userBadgeIds]))));
-      } else if (!storedBadgesStr && userBadgeIds.length > 0) {
-        localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
+        
+        const newBadgesList = Array.from(new Set([...storedBadges, ...userBadgeIds]));
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: newBadgesList
+        }).catch(console.error);
+        
+        // Also update local data to prevent immediate refire
+        userData.earnedBadges = newBadgesList;
+      } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: userBadgeIds
+        }).catch(console.error);
+        userData.earnedBadges = userBadgeIds;
       }
     };
 
     return () => {
       unsubscribeUser();
       unsubscribeLeagues();
+      unsubscribePredictions();
     };
   }, [user]);
 

@@ -122,6 +122,7 @@
     "specials": "Especiales",
     "saveDraft": "Guardar Borrador",
     "lockPredictions": "Fijar Predicciones",
+    "predictionsLocked": "Predicciones fijadas",
     "locked": "Predicciones fijadas",
     "lockedDesc": "Tus predicciones están fijadas y no pueden ser modificadas.",
     "unlockedDesc": "Podés 'Guardar Borrador' cuantas veces quieras. Las elecciones solo se van a fijar permanentemente al hacer clic en 'Fijar Predicciones' (esta acción se puede hacer solo una vez).",
