@@ -56,7 +56,7 @@ export default function LandingPage() {
           <img 
             src="/headerescritorio.jpeg" 
             alt="El Prode de Beno Desktop" 
-            className="w-full h-auto object-cover hidden sm:block max-h-[300px]"
+            className="w-full h-auto object-cover hidden sm:block"
           />
         </div>
         
@@ -68,7 +68,7 @@ export default function LandingPage() {
           <Button 
             onClick={handleLogin} 
             size="lg" 
-            className="text-lg h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+            className="text-lg h-14 px-8 font-bold text-white transition-all duration-100 ease-in-out shadow-md bg-blue-500 border-b-[4px] border-blue-700 hover:brightness-110 hover:-translate-y-0.5 active:border-b-0 active:translate-y-[4px] flex items-center gap-2 rounded-xl"
           >
             <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

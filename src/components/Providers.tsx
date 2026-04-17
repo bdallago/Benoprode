@@ -231,7 +231,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
           
           // Check if user exists in db, if not create
           const userRef = doc(db, "users", currentUser.uid);
-          const userSnap = await getDoc(userRef);
+          let userSnap;
+          try {
+            userSnap = await getDoc(userRef);
+          } catch (e: any) {
+            if (e.message?.includes("offline")) {
+              console.warn("Client is offline, skipping user DB sync.");
+              // Fallback to basic admin check based on email since we can't read DB
+              setIsAdmin(isAdminEmail);
+              return;
+            }
+            throw e;
+          }
           
           if (!userSnap.exists()) {
             const role = isAdminEmail ? "admin" : "player";
