@@ -48,12 +48,15 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
   return (
     <>
-      <nav className="bg-blue-900 dark:bg-gray-950 text-white shadow-md z-50 mb-6 transition-colors duration-200">
-        <div className="container mx-auto px-4">
+      <nav 
+        className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover bg-center relative"
+        style={{ backgroundImage: 'url("/navbar.jpeg")' }}
+      >
+        <div className="absolute inset-0 dark:bg-gray-950/80"></div>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl md:w-1/4">
-              <Trophy className="h-6 w-6 text-white" />
-              <span className="inline">{t('login.title')}</span>
+            {/* Invisible clickable logo area */}
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl md:w-1/4 h-12 w-48" aria-label="Inicio">
             </Link>
             
             <div className="hidden md:flex items-center justify-center gap-4 flex-1">
