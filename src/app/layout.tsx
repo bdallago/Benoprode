@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: '/icono.png?v=3',
-    shortcut: '/icono.png?v=3',
-    apple: '/icono.png?v=3',
+    icon: '/icono.png',
+    shortcut: '/icono.png',
+    apple: '/icono.png',
   },
   openGraph: {
     title: "El Prode de Beno | Mundial 2026",
@@ -87,23 +87,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for(let registration of registrations) {
-                    registration.unregister();
-                  }
-                });
-              }
-            `,
-          }}
-        />
       </head>
       <body className={`${inter.className} overflow-x-hidden`}>
         <ErrorBoundary>
-          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+          <ThemeProvider defaultTheme="light" storageKey="benoprode-theme">
             <Providers>{children}</Providers>
           </ThemeProvider>
         </ErrorBoundary>
