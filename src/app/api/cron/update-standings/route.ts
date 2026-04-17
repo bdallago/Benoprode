@@ -44,6 +44,13 @@ const TEAM_NAME_MAPPING: Record<string, string> = {
   "Côte d'Ivoire": "Ivory Coast",
 };
 
+import { getUserBadges } from "../../../../lib/gamification";
+
+function assignUserBadges(docData: any, totalPoints: number): string[] {
+  // Use existing helper and pass any relevant user statistics you have.
+  return getUserBadges(totalPoints, docData);
+}
+
 async function calculatePoints(database: any) {
   try {
     const resultsDoc = await database.collection("results").doc("actual").get();
@@ -54,63 +61,80 @@ async function calculatePoints(database: any) {
     const actualSpecials = actualData.specials || {};
 
     const usersSnap = await database.collection("users").get();
-    const batch = database.batch();
-
+    
+    const chunks: any[][] = [];
+    let currentChunk: any[] = [];
+    
     usersSnap.forEach((doc: any) => {
-      const pred = doc.data();
-      let totalPoints = 0;
-
-      // Group Points
-      const pGroups = pred.groups || {};
-      for (const [groupLetter, actualTeams] of Object.entries(actualGroups)) {
-        const predictedTeams = pGroups[groupLetter] || [];
-        let exactMatches = 0;
-        for (let i = 0; i < 4; i++) {
-          if ((actualTeams as string[])[i] && predictedTeams[i] === (actualTeams as string[])[i]) {
-            totalPoints += 1;
-            exactMatches++;
-          }
-        }
-        if (exactMatches === 4) {
-          totalPoints += 2;
-        }
+      currentChunk.push(doc);
+      if (currentChunk.length === 450) {
+        chunks.push(currentChunk);
+        currentChunk = [];
       }
-
-      // Special Points
-      const pSpecials = pred.specials || {};
-      for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
-        const predictedAnswer = pSpecials[qId];
-        if (predictedAnswer && actualAnswer && typeof actualAnswer === "string" && typeof predictedAnswer === "string") {
-          if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
-            totalPoints += 10;
-          }
-        }
-      }
-
-      // Match Points
-      const pMatches = pred.matches || {};
-      const actualMatches = actualData.matches || {};
-      for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
-        const predictedMatch = pMatches[matchId];
-        if (predictedMatch && actualMatch) {
-          if ((predictedMatch as any).outcome && (actualMatch as any).outcome && (predictedMatch as any).outcome === (actualMatch as any).outcome) {
-            totalPoints += 1;
-          }
-          if (
-            (predictedMatch as any).teamA !== '' && (predictedMatch as any).teamB !== '' &&
-            (actualMatch as any).teamA !== '' && (actualMatch as any).teamB !== '' &&
-            (predictedMatch as any).teamA === (actualMatch as any).teamA &&
-            (predictedMatch as any).teamB === (actualMatch as any).teamB
-          ) {
-            totalPoints += 1;
-          }
-        }
-      }
-
-      batch.set(doc.ref, { totalPoints }, { merge: true });
     });
+    if (currentChunk.length > 0) chunks.push(currentChunk);
 
-    await batch.commit();
+    for (const chunk of chunks) {
+      const batch = database.batch();
+      
+      for (const doc of chunk) {
+        const pred = doc.data();
+        let totalPoints = 0;
+
+        // Group Points
+        const pGroups = pred.groups || {};
+        for (const [groupLetter, actualTeams] of Object.entries(actualGroups)) {
+          const predictedTeams = pGroups[groupLetter] || [];
+          let exactMatches = 0;
+          for (let i = 0; i < 4; i++) {
+            if ((actualTeams as string[])[i] && predictedTeams[i] === (actualTeams as string[])[i]) {
+              totalPoints += 1;
+              exactMatches++;
+            }
+          }
+          if (exactMatches === 4) {
+            totalPoints += 2;
+          }
+        }
+
+        // Special Points
+        const pSpecials = pred.specials || {};
+        for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
+          const predictedAnswer = pSpecials[qId];
+          if (predictedAnswer && actualAnswer && typeof actualAnswer === "string" && typeof predictedAnswer === "string") {
+            if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
+              totalPoints += 10;
+            }
+          }
+        }
+
+        // Match Points
+        const pMatches = pred.matches || {};
+        const actualMatches = actualData.matches || {};
+        for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
+          const predictedMatch = pMatches[matchId];
+          if (predictedMatch && actualMatch) {
+            if ((predictedMatch as any).outcome && (actualMatch as any).outcome && (predictedMatch as any).outcome === (actualMatch as any).outcome) {
+              totalPoints += 1;
+            }
+            if (
+              (predictedMatch as any).teamA !== '' && (predictedMatch as any).teamB !== '' &&
+              (actualMatch as any).teamA !== '' && (actualMatch as any).teamB !== '' &&
+              (predictedMatch as any).teamA === (actualMatch as any).teamA &&
+              (predictedMatch as any).teamB === (actualMatch as any).teamB
+            ) {
+              totalPoints += 1;
+            }
+          }
+        }
+
+        const unlockedBadges = assignUserBadges(doc.data(), totalPoints);
+
+        batch.set(doc.ref, { totalPoints, unlockedBadges }, { merge: true });
+      }
+      
+      await batch.commit();
+    }
   } catch (error) {
     console.error("Error calculating points:", error);
   }

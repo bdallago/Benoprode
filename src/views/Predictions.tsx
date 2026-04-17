@@ -139,11 +139,11 @@ export default function Predictions({ user }: { user: User }) {
       )}
 
       <>
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          <Button id="tab-groups" variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')}>Fase de Grupos</Button>
-          <Button id="tab-specials" className="tab-specials" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')}>Preguntas Especiales</Button>
-          <Button id="tab-matches" variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')}>Partidos Individuales</Button>
-          <Button id="tab-knockout" variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')}>Fase Eliminatoria</Button>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 mb-6">
+          <Button id="tab-groups" variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Fase de Grupos</Button>
+          <Button id="tab-matches" variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Partidos Individuales</Button>
+          <Button id="tab-knockout" variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Fase Eliminatoria</Button>
+          <Button id="tab-specials" className="tab-specials w-full sm:w-auto text-xs sm:text-sm px-2" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')}>Preguntas Especiales</Button>
         </div>
 
         {activeTab === 'groups' && (

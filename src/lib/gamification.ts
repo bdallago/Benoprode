@@ -61,6 +61,10 @@ export const BADGES = [
   { id: 'confiado', name: 'Confiado', description: 'Fijaste tus predicciones antes del 1° de Junio', icon: '😎' },
   { id: 'mufa', name: 'Mufa', description: 'Erraste todos los resultados de un grupo entero', icon: '🥶' },
 
+  // Torneos
+  { id: 'rival_beno', name: 'Rival de Beno', description: 'Te uniste a la Benoliga', icon: '🥊' },
+  { id: 'competitivo', name: 'Mi segundo nombre es competitivo', description: 'Te uniste a un Torneo o Liga', icon: '🏆' },
+  
   // Secretas
   { id: 'estrategia', name: 'Jugar mal fue parte de la estrategia', description: 'Sumaste más puntos en la fecha 3 que en la 1 o 2', icon: '🤫', isSecret: true },
   { id: 'cazador_utopias', name: 'Cazador de Utopías imposibles', description: 'Acertaste un ganador poco favorito (<30%)', icon: '🦄', isSecret: true },
@@ -79,24 +83,29 @@ export function getUserLevel(points: number) {
 export function getUserBadges(
   points: number, 
   userStats: any = {}
-) {
-  const earnedBadges: (typeof BADGES[0])[] = [];
+): string[] {
+  const earnedBadgeIds: string[] = [];
   
   // Logic to determine earned badges based on userStats
-  // This is a placeholder. In a real app, a Cloud Function would calculate these 
-  // and store the unlocked badge IDs in the user's document.
   
   // Example logic based on referrals
   const referrals = userStats.referralsCount || 0;
-  if (referrals >= 10) earnedBadges.push(BADGES.find(b => b.id === 'embajador')!);
-  else if (referrals >= 5) earnedBadges.push(BADGES.find(b => b.id === 'influencer')!);
-  else if (referrals >= 1) earnedBadges.push(BADGES.find(b => b.id === 'sociable')!);
+  if (referrals >= 10) earnedBadgeIds.push('embajador');
+  else if (referrals >= 5) earnedBadgeIds.push('influencer');
+  else if (referrals >= 1) earnedBadgeIds.push('sociable');
 
   // Example logic based on saved predictions
   if (userStats.hasSavedPredictions) {
-    earnedBadges.push(BADGES.find(b => b.id === 'primer_paso')!);
+    earnedBadgeIds.push('primer_paso');
   }
 
-  // Filter out any undefined values just in case
-  return earnedBadges.filter(Boolean);
+  if (userStats.inBenoliga) {
+    earnedBadgeIds.push('rival_beno');
+  }
+
+  if (userStats.inPrivateLeague) {
+    earnedBadgeIds.push('competitivo');
+  }
+
+  return earnedBadgeIds;
 }

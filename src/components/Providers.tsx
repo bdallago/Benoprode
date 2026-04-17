@@ -8,7 +8,7 @@ import { Navbar } from "./Navbar";
 import '../i18n';
 import { useTranslation } from 'react-i18next';
 import { usePathname, useRouter } from 'next/navigation';
-import { getUserBadges } from "../lib/gamification";
+import { getUserBadges, BADGES } from "../lib/gamification";
 import { X } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { TooltipProvider } from "./ui/tooltip";
@@ -63,21 +63,23 @@ function GlobalBadgeListener({ user }: { user: User }) {
     const checkBadges = () => {
       // We need userStats here. Let's create a dummy one based on what we have
       const userStats = {
-        referralsCount: hasInvitedFriends ? 1 : 0
+        referralsCount: hasInvitedFriends ? 1 : 0,
+        inBenoliga,
+        inPrivateLeague: isLeagueCreatorOrMember
       };
-      const userBadges = getUserBadges(myPoints, userStats);
-      const userBadgeIds = userBadges.map(b => b?.id);
+      const userBadgeIds = getUserBadges(myPoints, userStats);
+      const userBadgesFull = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
       
       const storedBadgesKey = `user_badges_${user.uid}`;
       const storedBadgesStr = localStorage.getItem(storedBadgesKey);
       const storedBadges = storedBadgesStr ? JSON.parse(storedBadgesStr) : [];
       
-      const newEarnedBadges = userBadges.filter(b => b && !storedBadges.includes(b.id));
+      const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
       
       if (newEarnedBadges.length > 0) {
         setBadgeQueue(prev => [...prev, ...newEarnedBadges]);
         localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
-      } else if (!storedBadgesStr && userBadges.length > 0) {
+      } else if (!storedBadgesStr && userBadgeIds.length > 0) {
         localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
       }
     };
@@ -91,8 +93,11 @@ function GlobalBadgeListener({ user }: { user: User }) {
   // Effect 1: Process the queue
   useEffect(() => {
     if (badgeQueue.length > 0 && !currentBadge) {
-      setCurrentBadge(badgeQueue[0]);
-      setBadgeQueue(prev => prev.slice(1));
+      const t = setTimeout(() => {
+        setCurrentBadge(badgeQueue[0]);
+        setBadgeQueue(prev => prev.slice(1));
+      }, 500); // 500ms delay between badges
+      return () => clearTimeout(t);
     }
   }, [badgeQueue, currentBadge]);
 
@@ -100,7 +105,13 @@ function GlobalBadgeListener({ user }: { user: User }) {
   useEffect(() => {
     if (currentBadge) {
       if (audioRef.current) {
-        audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+        // Only try to play if user interacted with document, otherwise ignore safely
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            // normal behavior in modern browsers when no interaction yet
+          });
+        }
       }
       
       const timer = setTimeout(() => {
@@ -114,7 +125,7 @@ function GlobalBadgeListener({ user }: { user: User }) {
   if (!currentBadge) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
+    <div key={currentBadge.id} className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 rounded-lg shadow-2xl border-2 border-sky-300 flex items-center gap-4 max-w-sm relative pr-10">
         <button 
           onClick={() => setCurrentBadge(null)} 
@@ -175,7 +186,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               tourCompleted: false
             });
             
-            if (refId) {
+            if (refId && refId !== currentUser.uid) {
               try {
                 const referrerRef = doc(db, "users", refId);
                 const referrerSnap = await getDoc(referrerRef);
@@ -209,6 +220,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             if (!userData.uid) updates.uid = currentUser.uid;
             if (!userData.displayName) updates.displayName = currentUser.displayName || "Usuario";
             if (!userData.email) updates.email = currentUser.email || `${currentUser.uid}@no-email.com`;
+            if (userData.chatWarnings == null) updates.chatWarnings = 0;
+            if (userData.isChatBanned == null) updates.isChatBanned = false;
             
             await setDoc(userRef, updates, { merge: true });
           }
@@ -253,12 +266,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <AuthContext.Provider value={{ user, loading, isAdmin }}>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-20 md:pb-0">
+        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-24 md:pb-0">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && <GlobalBadgeListener user={user} />}
-          <main className="container mx-auto px-4 py-8">
+          <main className="container mx-auto px-4 py-8 flex-grow">
             {children}
           </main>
+          
+          <footer className="w-full bg-blue-900 dark:bg-gray-950 text-white py-6 mt-auto border-t border-blue-800 dark:border-gray-800">
+            <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-400">
+              <p>Este Prode fue realizado por <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
+              <p>Contacto: <a href="mailto:beno@elprodedebeno.com.ar" className="text-white hover:text-blue-300 transition-colors">beno@elprodedebeno.com.ar</a></p>
+            </div>
+          </footer>
         </div>
       </AuthContext.Provider>
     </TooltipProvider>

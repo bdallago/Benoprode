@@ -51,6 +51,19 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
     if (myIndex !== -1) {
       const myPage = Math.floor(myIndex / ITEMS_PER_PAGE) + 1;
       setCurrentPage(myPage);
+      
+      // Use setTimeout to allow the page to render before scrolling
+      setTimeout(() => {
+        const userRow = document.getElementById(`player-row-${currentUser.uid}`);
+        if (userRow) {
+          userRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a temporary highlight effect
+          userRow.classList.add('bg-blue-100', 'dark:bg-blue-900/40');
+          setTimeout(() => {
+            userRow.classList.remove('bg-blue-100', 'dark:bg-blue-900/40');
+          }, 2000);
+        }
+      }, 100);
     }
   };
 
@@ -118,6 +131,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
               currentPlayers.map((player) => (
                 <tr 
                   key={player.uid}
+                  id={`player-row-${player.uid}`}
                   onClick={() => onUserClick && onUserClick({ uid: player.uid, name: player.displayName, points: player.totalPoints })}
                   className={`
                     border-b border-gray-100 dark:border-gray-700/50 transition-colors cursor-pointer

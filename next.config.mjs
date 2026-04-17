@@ -2,7 +2,7 @@ import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: true, // Always disable in AI Studio dev environment to prevent 404 caching
   register: true,
   skipWaiting: true,
 });

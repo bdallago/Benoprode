@@ -250,10 +250,10 @@ export default function Welcome() {
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="font-medium text-gray-600 dark:text-gray-400">Partidos Individuales</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{progress.matches} / 48</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{progress.matches} / 72</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div className="bg-emerald-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(progress.matches / 48) * 100}%` }}></div>
+                <div className="bg-emerald-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(progress.matches / 72) * 100}%` }}></div>
               </div>
             </div>
           </div>
@@ -292,19 +292,19 @@ export default function Welcome() {
           <p className="mb-4">
             ¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de "Sociable"!
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input 
               type="text" 
               readOnly 
               value={`https://www.elprodedebeno.com.ar/?ref=${auth.currentUser?.uid}`} 
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
             />
             <Button 
               onClick={() => {
                 navigator.clipboard.writeText(`https://www.elprodedebeno.com.ar/?ref=${auth.currentUser?.uid}`);
                 alert("Link copiado al portapapeles");
               }}
-              className="bg-sky-600 hover:bg-sky-700 text-white"
+              className="bg-sky-600 hover:bg-sky-700 text-white whitespace-nowrap"
             >
               Copiar Link
             </Button>

@@ -52,7 +52,7 @@ export default function Dashboard({ user }: { user: User }) {
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setUserStats(data);
+        setUserStats(prev => ({ ...prev, ...data }));
         setHasInvitedFriends((data.referralsCount || 0) > 0);
       }
     });
@@ -64,6 +64,12 @@ export default function Dashboard({ user }: { user: User }) {
       
       setIsLeagueCreatorOrMember(userLeagues.length > 0);
       setInBenoliga(userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'));
+      
+      setUserStats(prev => ({
+        ...prev,
+        inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
+        inPrivateLeague: userLeagues.length > 0
+      }));
     });
 
     // Fetch user predictions and actual results to check for perfect group
@@ -107,8 +113,8 @@ export default function Dashboard({ user }: { user: User }) {
   
   const userLevel = getUserLevel(myPoints);
   
-  const userBadges = getUserBadges(myPoints, userStats); 
-  const userBadgeIds = userBadges.map(b => b?.id);
+  const userBadgeIds = getUserBadges(myPoints, userStats); 
+  const userBadges = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
 
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">

@@ -33,6 +33,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: '/app-icon.jpg',
+    shortcut: '/app-icon.jpg',
+    apple: '/app-icon.jpg',
+  },
   openGraph: {
     title: "El Prode de Beno | Mundial 2026",
     description: "Demostrá cuánto sabés de fútbol. Jugá al prode del Mundial 2026, creá ligas con amigos y competí por ser el mejor pronosticador.",
@@ -85,6 +90,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for(let registration of registrations) {
+                    registration.unregister();
+                  }
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} overflow-x-hidden`}>
         <ErrorBoundary>
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">

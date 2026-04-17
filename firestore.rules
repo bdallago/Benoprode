@@ -71,6 +71,7 @@ service cloud.firestore {
              (!('isChatBanned' in data) || data.isChatBanned is bool) &&
              (!('referralsCount' in data) || data.referralsCount is number) &&
              (!('referredBy' in data) || data.referredBy is string || data.referredBy == null) &&
+             (!('unlockedBadges' in data) || data.unlockedBadges is list) &&
              data.role in ['admin', 'player'] &&
              data.totalPoints is number && data.totalPoints >= 0;
     }
@@ -100,7 +101,7 @@ service cloud.firestore {
       
       // Create: User can create their own profile. Role must be 'player' unless they are an admin.
       allow create: if isAuthenticated() && isOwner(userId) &&
-                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy']) &&
+                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges']) &&
                     isValidUser(request.resource.data) &&
                     request.resource.data.uid == userId &&
                     ((request.resource.data.role == 'player' && request.resource.data.totalPoints == 0) || isAdmin());
@@ -108,14 +109,13 @@ service cloud.firestore {
       // Update: User can update their own profile (cannot change role/points). Admin can update any profile.
       allow update: if isAuthenticated() && (
                       (isOwner(userId) &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy']) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges']) &&
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid) &&
                        (!('role' in resource.data) || request.resource.data.role == resource.data.role) &&
                        (!('totalPoints' in resource.data) || request.resource.data.totalPoints == resource.data.totalPoints))
                       ||
                       (isAdmin() &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy']) &&
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid))
                       ||
@@ -132,15 +132,18 @@ service cloud.firestore {
       // Anyone authenticated can read predictions (to see what others guessed)
       allow read: if isAuthenticated();
       
-      // Create: User can create their own prediction.
+      // Create: User can create their own prediction. Must be before June 8, 2026.
       allow create: if isAuthenticated() && isOwner(userId) &&
+                    request.time < timestamp("2026-06-08T00:00:00Z") &&
                     hasOnlyAllowedFields(['uid', 'groups', 'specials', 'knockouts', 'matches', 'isLocked', 'updatedAt']) &&
                     isValidPrediction(request.resource.data) &&
                     request.resource.data.uid == userId;
                     
       // Update: User can update their own prediction IF it's not locked. Admin can update anything.
+      // Modifying as user is only allowed before June 8, 2026.
       allow update: if isAuthenticated() && (
                       (isOwner(userId) &&
+                       request.time < timestamp("2026-06-08T00:00:00Z") &&
                        hasOnlyAllowedFields(['uid', 'groups', 'specials', 'knockouts', 'matches', 'isLocked', 'updatedAt']) &&
                        isValidPrediction(request.resource.data) &&
                        request.resource.data.uid == resource.data.uid &&
@@ -238,7 +241,7 @@ service cloud.firestore {
     // Collection: friendships
     // ===============================================================
     match /friendships/{friendshipId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+      allow read: if isAuthenticated();
       
       allow create: if isAuthenticated() &&
                     hasOnlyAllowedFields(['user1Id', 'user2Id', 'createdAt']) &&
@@ -272,7 +275,7 @@ service cloud.firestore {
     // Collection: duels
     // ===============================================================
     match /duels/{duelId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.challengerId || request.auth.uid == resource.data.challengedId);
+      allow read: if isAuthenticated();
       
       allow create: if isAuthenticated() &&
                     hasOnlyAllowedFields(['challengerId', 'challengerName', 'challengedId', 'challengedName', 'matchId', 'challengerPrediction', 'challengedPrediction', 'status', 'winnerId', 'createdAt']) &&

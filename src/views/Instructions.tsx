@@ -68,7 +68,7 @@ export default function Instructions() {
                 </li>
                 <li className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded transition-colors duration-200">
                   <span className="text-sm sm:text-base">Acertar el resultado exacto (Goles de cada equipo)</span>
-                  <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded whitespace-nowrap text-center min-w-[100px] self-start sm:self-auto">+3 puntos</span>
+                  <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded whitespace-nowrap text-center min-w-[100px] self-start sm:self-auto">+2 puntos</span>
                 </li>
               </ul>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 italic">

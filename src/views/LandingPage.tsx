@@ -1,34 +1,87 @@
 import { Trophy, Users, PenSquare, ArrowRight, Globe, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useTranslation } from 'react-i18next';
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LandingPage() {
   const { t } = useTranslation();
   const router = useRouter();
 
+  useEffect(() => {
+    // Catch any successful redirect sign-ins
+    getRedirectResult(auth).then((result) => {
+      if (result?.user) {
+        router.push("/");
+      }
+    }).catch((error) => {
+      console.error("Redirect login error:", error);
+      alert(`Error de autenticación: ${error.message}`);
+    });
+  }, [router]);
+
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      router.push("/");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+        router.push("/");
+      }
     } catch (error: any) {
-      console.error("Error signing in with Google", error);
-      alert(t('login.error'));
+      console.error("Error signing in with Google:", error);
+      // Fallback for browsers that block popups (Brave, Instagram, etc)
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.message?.includes('cross-origin')) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError: any) {
+          alert(`${t('login.error')}\nDetalle: ${redirectError.message}`);
+        }
+      } else {
+        alert(`${t('login.error')}\nDetalle: ${error.message || 'Error desconocido. Inténtalo desde otro navegador como Chrome.'}`);
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-950 transition-colors duration-200">
       {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-8">
-          <Trophy className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 text-center">
+        <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
+          {/* Mobile Header */}
+          <img 
+            src="/header-mobile.jpg" 
+            alt="El Prode de Beno Mobile" 
+            className="w-full h-auto object-cover block sm:hidden"
+            onError={(e) => {
+              // Fallback if image doesn't exist yet
+              (e.target as HTMLImageElement).style.display = 'none';
+              document.getElementById('fallback-hero')!.style.display = 'flex';
+            }}
+          />
+          {/* Desktop Header */}
+          <img 
+            src="/header-desktop.jpg" 
+            alt="El Prode de Beno" 
+            className="w-full h-auto object-cover hidden sm:block max-h-[300px]"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              document.getElementById('fallback-hero')!.style.display = 'flex';
+            }}
+          />
+          
+          {/* Fallback if images missing */}
+          <div id="fallback-hero" className="hidden flex-col items-center justify-center p-10 bg-blue-100 dark:bg-blue-900/40">
+            <Trophy className="h-16 w-16 text-blue-600 dark:text-blue-400 mb-4" />
+            <h1 className="text-4xl md:text-6xl font-extrabold text-blue-900 dark:text-blue-100 tracking-tight">
+              El Prode de Beno
+            </h1>
+          </div>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight mb-6">
-          El Prode de Beno
-        </h1>
+        
         <p className="mt-4 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
           Demostrá cuánto sabés de fútbol. Jugá al prode del Mundial 2026, creá ligas con amigos y competí por ser el mejor pronosticador.
         </p>
@@ -103,10 +156,12 @@ export default function LandingPage() {
           Empezar a jugar ahora <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
         
-        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row justify-center gap-4">
-          <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Política de Privacidad</a>
-          <span className="hidden sm:inline">•</span>
-          <a href="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Términos y Condiciones</a>
+        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
+          <div className="flex flex-col sm:flex-row gap-4 mb-2">
+            <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Política de Privacidad</a>
+            <span className="hidden sm:inline">•</span>
+            <a href="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Términos y Condiciones</a>
+          </div>
         </div>
       </div>
     </div>

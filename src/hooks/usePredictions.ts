@@ -109,9 +109,13 @@ export function usePredictions(userId: string) {
           colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
         });
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving predictions:", error);
-      setMessage({ type: 'error', text: t('predictions.saveError') });
+      if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
+        setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
+      } else {
+        setMessage({ type: 'error', text: t('predictions.saveError') });
+      }
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(null), 5000);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, limit, doc, getDoc, updateDoc, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Button } from './ui/button';
 import { Send, AlertTriangle } from 'lucide-react';
@@ -43,8 +43,12 @@ export function LiveChat() {
     };
     checkBanStatus();
 
+    // Calculate 1 hour ago
+    const oneHourAgoDate = new Date(Date.now() - 3600000);
+
     const q = query(
       collection(db, 'liveChat'),
+      where('createdAt', '>=', oneHourAgoDate),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -72,7 +76,10 @@ export function LiveChat() {
     e.preventDefault();
     if (!newMessage.trim() || !auth.currentUser || isBanned) return;
 
-    if (containsBadWords(newMessage)) {
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear immediately so it feels instant
+
+    if (containsBadWords(messageText)) {
       const newWarnings = warnings + 1;
       setWarnings(newWarnings);
       setShowWarning(true);
@@ -80,9 +87,9 @@ export function LiveChat() {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       if (newWarnings >= 2) {
         setIsBanned(true);
-        await updateDoc(userRef, { chatWarnings: newWarnings, isChatBanned: true });
+        updateDoc(userRef, { chatWarnings: newWarnings, isChatBanned: true });
       } else {
-        await updateDoc(userRef, { chatWarnings: newWarnings });
+        updateDoc(userRef, { chatWarnings: newWarnings });
       }
       
       setTimeout(() => setShowWarning(false), 5000);
@@ -90,15 +97,26 @@ export function LiveChat() {
     }
 
     try {
+      // Create local timestamp locally until serverTimestamp overrides it if we wanted pessimistic UI
       await addDoc(collection(db, 'liveChat'), {
-        text: newMessage.trim(),
+        text: messageText,
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Usuario',
-        createdAt: serverTimestamp()
+        createdAt: new Date() // Use actual client Date to make sorting and filtering easier across multiple queries since serverTimestamp is null immediately
       });
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  };
+
+  const formatTime = (dateObj: any) => {
+    if (!dateObj) return '';
+    try {
+      // Handle Firebase Timestamp or JS Date
+      const date = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
     }
   };
 
@@ -138,13 +156,18 @@ export function LiveChat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50 dark:bg-gray-900/50">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-            No hay mensajes aún. ¡Sé el primero en comentar!
+            No hay mensajes recientes. ¡Sé el primero en comentar!
           </div>
         ) : (
           messages.map(msg => (
-            <div key={msg.id} className="text-sm">
-              <span className="font-bold text-blue-700 dark:text-blue-400 mr-2">{msg.userName}:</span>
-              <span className="text-gray-800 dark:text-gray-200">{msg.text}</span>
+            <div key={msg.id} className="text-sm flex flex-col mb-1">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <span className="font-bold text-blue-700 dark:text-blue-400">{msg.userName}</span>
+                {msg.createdAt && <span className="text-[10px] text-gray-400">{formatTime(msg.createdAt)}</span>}
+              </div>
+              <span className="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg rounded-tl-none border border-gray-100 dark:border-gray-700 inline-block w-fit max-w-[90%] shadow-sm">
+                {msg.text}
+              </span>
             </div>
           ))
         )}
@@ -172,13 +195,13 @@ export function LiveChat() {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Escribe un mensaje..."
-              className="flex-1 text-sm p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 text-sm p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               maxLength={200}
             />
             <Button 
               type="submit" 
               disabled={!newMessage.trim()}
-              className="px-4"
+              className="px-4 bg-blue-600 hover:bg-blue-700"
             >
               <Send className="w-4 h-4" />
             </Button>

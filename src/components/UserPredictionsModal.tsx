@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
+import matchesData from "../lib/matches.json";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { X, Lock, Unlock, CheckCircle2, XCircle, Shield, Swords } from "lucide-react";
+import { X, Lock, Unlock, CheckCircle2, XCircle, Shield, Swords, AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTranslation } from 'react-i18next';
-import { getUserBadges } from "../lib/gamification";
+import { getUserBadges, BADGES } from "../lib/gamification";
 import { DuelModal } from "./DuelModal";
+import { MatchPrediction } from "./predictions/MatchesStage";
 
 interface UserPredictionsModalProps {
   userId: string;
@@ -20,30 +23,40 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState<any>(null);
+  const [currentUserPredictions, setCurrentUserPredictions] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [duelData, setDuelData] = useState<any>(null);
-
-  // Gamification states for the viewed user
-  const [isLeagueCreatorOrMember, setIsLeagueCreatorOrMember] = useState(false);
-  const [inBenoliga, setInBenoliga] = useState(false);
-  const [hasPerfectGroup, setHasPerfectGroup] = useState(false);
-  const [hasInvitedFriends, setHasInvitedFriends] = useState(false);
+  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
 
   const [userStats, setUserStats] = useState<any>({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [predSnap, resSnap, leaguesSnap, userSnap] = await Promise.all([
+        const promises = [
           getDoc(doc(db, "predictions", userId)),
           getDoc(doc(db, "results", "actual")),
           import("firebase/firestore").then(m => m.getDocs(m.collection(db, "leagues"))),
           getDoc(doc(db, "users", userId))
-        ]);
+        ];
+
+        if (auth.currentUser) {
+           promises.push(getDoc(doc(db, "predictions", auth.currentUser.uid)));
+        }
+
+        const resolved = await Promise.all(promises);
+        const predSnap = resolved[0] as any;
+        const resSnap = resolved[1] as any;
+        const leaguesSnap = resolved[2] as any;
+        const userSnap = resolved[3] as any;
+        const currentUserPredSnap = resolved.length > 4 ? resolved[4] as any : null;
 
         if (predSnap.exists()) {
           setPredictions(predSnap.data());
+        }
+        if (currentUserPredSnap && currentUserPredSnap.exists()) {
+          setCurrentUserPredictions(currentUserPredSnap.data());
         }
         if (resSnap.exists()) {
           setResults(resSnap.data());
@@ -52,26 +65,15 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           setUserStats(userSnap.data());
         }
 
-        // Calculate gamification states
         const leagues = leaguesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
         
-        setIsLeagueCreatorOrMember(userLeagues.length > 0);
-        setInBenoliga(userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'));
+        setUserStats((prev: any) => ({
+          ...prev,
+          inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
+          inPrivateLeague: userLeagues.length > 0
+        }));
 
-        if (predSnap.exists() && resSnap.exists()) {
-          const preds = predSnap.data().groups || {};
-          const res = resSnap.data().groups || {};
-          
-          let perfect = false;
-          for (const group in res) {
-            if (res[group] && preds[group] && JSON.stringify(res[group]) === JSON.stringify(preds[group])) {
-              perfect = true;
-              break;
-            }
-          }
-          setHasPerfectGroup(perfect);
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -92,8 +94,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     );
   }
 
-  // Calculate badges for the selected user
-  const userBadges = getUserBadges(userPoints, userStats);
+  const userBadgeIds = getUserBadges(userPoints, userStats);
+  const userBadges = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
 
   if (!predictions) {
     return (
@@ -101,36 +103,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
-            <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button>
           </div>
-          
-          {userBadges.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
-                <Shield className="w-4 h-4" /> Medallas Obtenidas
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {userBadges.map(badge => (
-                  <div 
-                    key={badge?.id} 
-                    className="relative flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1.5 rounded-md text-sm border border-gray-200 dark:border-gray-600 cursor-pointer"
-                    onClick={() => setActiveTooltip(activeTooltip === badge?.id ? null : badge?.id)}
-                  >
-                    <span>{badge?.icon}</span>
-                    <span className="font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{badge?.name}</span>
-                    {activeTooltip === badge?.id && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                        <div className="font-bold mb-1">{badge?.name}</div>
-                        <div>{badge?.description}</div>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <p className="text-gray-600 dark:text-gray-300 py-4 text-center">{t('userPredictions.noPredictions')}</p>
           <div className="flex justify-end mt-4">
             <Button onClick={onClose}>{t('userPredictions.close')}</Button>
@@ -141,14 +115,18 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   }
 
   const isLocked = predictions.isLocked;
+  // Use `isLocked` as the lock status of the viewed user
+  // Can only challenge if BOTH users have locked their predictions
+  const canChallenge = auth.currentUser && auth.currentUser.uid !== userId && isLocked && currentUserPredictions?.isLocked;
+
   const groups = predictions.groups || GROUPS;
   const specials = predictions.specials || {};
+  const matchPredictions = predictions.matches || {};
+  const knockoutPredictions = predictions.knockouts || {};
 
   const getGroupStatus = (groupLetter: string, predictedTeams: string[]) => {
     if (!results || !results.groups || !results.groups[groupLetter]) return null;
     const actualTeams = results.groups[groupLetter];
-    
-    // Check if actual results are actually filled
     if (!actualTeams || actualTeams.length === 0 || actualTeams.every((t: string) => !t)) return null;
     
     let exactMatches = 0;
@@ -159,25 +137,14 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     }
 
     const isPerfect = exactMatches === 4;
-    const totalPoints = exactMatches + (isPerfect ? 2 : 0);
-    
-    return {
-      isPerfect,
-      exactMatches,
-      totalPoints,
-      actualTeams
-    };
+    return { isPerfect, exactMatches, totalPoints: exactMatches + (isPerfect ? 2 : 0), actualTeams };
   };
 
   const getSpecialStatus = (questionId: string, answer: string) => {
     if (!results || !results.specials || !results.specials[questionId]) return null;
     const actualAnswer = results.specials[questionId];
     if (!actualAnswer || !answer) return null;
-    
-    // Simple string matching (case insensitive)
-    if (answer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
-      return { correct: true, points: 10 }; 
-    }
+    if (answer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) return { correct: true, points: 10 }; 
     return { correct: false, points: 0 };
   };
 
@@ -186,7 +153,12 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
         <div className="flex justify-between items-start p-6 border-b dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800 z-10 sticky top-0 transition-colors duration-200">
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
+              <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
+                Ver Perfil
+              </Link>
+            </div>
             <div className="flex items-center gap-2 mt-2">
               {isLocked ? (
                 <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md border border-green-200 dark:border-green-800">
@@ -223,132 +195,122 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               </div>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 bg-gray-100 dark:bg-gray-700 rounded-full ml-4"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 p-2 bg-gray-100 dark:bg-gray-700 rounded-full ml-4"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-8">
-          <div>
-            <h4 className="text-xl font-bold text-blue-900 dark:text-blue-400 mb-4">{t('userPredictions.groupStage')}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(groups)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([groupLetter, teams]) => {
-                const groupStatus = getGroupStatus(groupLetter, teams as string[]);
-                
-                return (
-                  <Card key={groupLetter} className="overflow-hidden border-t-4 border-t-blue-600">
-                    <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
-                      <CardTitle className="text-md">{t('userPredictions.group')} {groupLetter}</CardTitle>
-                      {groupStatus && (
-                        <span className={`text-sm font-bold ${groupStatus.totalPoints > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          +{groupStatus.totalPoints} pts
-                        </span>
-                      )}
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <ul className="divide-y dark:divide-gray-700">
-                        {(teams as string[]).map((team, index) => {
-                          let bgColor = "bg-white dark:bg-gray-800";
-                          let textColor = "text-gray-900 dark:text-gray-100";
-                          let icon: React.ReactNode = null;
+        <div className="border-b dark:border-gray-700 px-6 pt-4 bg-gray-50 dark:bg-gray-800/80">
+           <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-4">
+             <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="whitespace-nowrap">Fase de Grupos</Button>
+             <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="whitespace-nowrap">Partidos Individuales</Button>
+             <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="whitespace-nowrap">Fase Eliminatoria</Button>
+             <Button variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')} className="whitespace-nowrap">Preguntas Especiales</Button>
+           </div>
+        </div>
 
-                          if (groupStatus) {
-                            const exactPosition = groupStatus.actualTeams[index] === team;
+        <div className="p-6 overflow-y-auto space-y-8 bg-white dark:bg-gray-800">
+          {!canChallenge && auth.currentUser && auth.currentUser.uid !== userId && (
+             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> Para poder retar a este jugador, ambos deben haber fijado sus predicciones.
+             </div>
+          )}
 
-                            if (exactPosition) {
-                              bgColor = "bg-green-50 dark:bg-green-900/20";
-                              textColor = "text-green-900 dark:text-green-300";
-                              icon = (
-                                <>
-                                  <span className="text-sm font-bold text-green-600 dark:text-green-400">+1 pt</span>
-                                  <span title={t('userPredictions.exactPosition')}>
-                                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+          {activeTab === 'groups' && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([groupLetter, teams]) => {
+                  const groupStatus = getGroupStatus(groupLetter, teams as string[]);
+                  return (
+                    <Card key={groupLetter} className="overflow-hidden border-t-4 border-t-blue-600">
+                      <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
+                        <CardTitle className="text-md">{t('userPredictions.group')} {groupLetter}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <ul className="divide-y dark:divide-gray-700">
+                          {(teams as string[]).map((team, index) => {
+                            return (
+                              <li key={`${groupLetter}-${index}`} className="p-3 flex items-center justify-between transition-colors duration-200 bg-white dark:bg-gray-800">
+                                <div className="flex items-center gap-3">
+                                  <span className={`font-bold w-5 text-center ${index < 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                                    {index + 1}
                                   </span>
-                                </>
-                              );
-                            } else {
-                              bgColor = "bg-red-50 dark:bg-red-900/20";
-                              textColor = "text-red-900 dark:text-red-300";
-                              icon = (
-                                <>
-                                  <span className="text-sm font-bold text-red-500 dark:text-red-400">+0 pts</span>
-                                  <span title={t('userPredictions.incorrectPosition')}>
-                                    <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
-                                  </span>
-                                </>
-                              );
-                            }
-                          }
-
-                          return (
-                            <li key={`${groupLetter}-${index}`} className={`p-3 flex items-center justify-between transition-colors duration-200 ${bgColor}`}>
-                              <div className="flex items-center gap-3">
-                                <span className={`font-bold w-5 text-center ${index < 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                  {index + 1}
-                                </span>
-                                <span className={`font-medium ${textColor}`}>{t(`teams.${team}`)}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {icon}
-                                {auth.currentUser && auth.currentUser.uid !== userId && (
+                                  <span className="font-medium text-gray-900 dark:text-gray-100">{t(`teams.${team}`)}</span>
+                                </div>
+                                {canChallenge && (
                                   <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-                                    title="Retar predicción"
-                                    onClick={() => setDuelData({
-                                      matchId: `group_${groupLetter}_pos_${index}`,
-                                      matchData: { teamA: team, teamB: 'Otro' }, // Mock for now, ideally we challenge specific matches
-                                      challengedPrediction: { outcome: 'A', teamA: 1, teamB: 0 } // Mock
-                                    })}
+                                    variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title="Retar predicción"
+                                    onClick={() => setDuelData({ duelType: 'group_position', matchId: `group_${groupLetter}_pos_${index + 1}`, matchData: { groupLetter, position: index + 1 }, challengedPrediction: { team } })}
                                   >
                                     <Swords className="w-4 h-4" />
                                   </Button>
                                 )}
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {groupStatus && groupStatus.isPerfect && (
-                         <div className="bg-green-100 dark:bg-green-900/40 p-2 text-center text-sm font-bold text-green-800 dark:text-green-300 border-t border-green-200 dark:border-green-800 transition-colors duration-200">
-                           {t('userPredictions.perfectGroup')}
-                         </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'matches' && (
+            <div className="space-y-6">
+              {matchesData.map((match) => {
+                const pred = matchPredictions[match.id];
+                if (!pred) return null;
+                
+                return (
+                  <Card key={match.id} className="overflow-hidden border">
+                    <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-2 flex-1 justify-end">
+                           <span className="font-semibold text-gray-900 dark:text-gray-100">{match.teamA}</span>
+                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded">{pred.teamA !== '' ? pred.teamA : '-'}</span>
+                        </div>
+                        <span className="text-gray-500 font-bold">VS</span>
+                        <div className="flex items-center gap-2 flex-1 justify-start">
+                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded">{pred.teamB !== '' ? pred.teamB : '-'}</span>
+                           <span className="font-semibold text-gray-900 dark:text-gray-100">{match.teamB}</span>
+                        </div>
+                      </div>
+                      
+                      {canChallenge && (
+                        <Button 
+                          size="sm" title="Retar partido" className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full md:w-auto mt-2 md:mt-0"
+                          onClick={() => setDuelData({ duelType: 'match', matchId: match.id, matchData: match, challengedPrediction: pred })}
+                        >
+                          <Swords className="w-4 h-4 mr-2" /> Retar
+                        </Button>
                       )}
                     </CardContent>
                   </Card>
                 );
               })}
+              {Object.keys(matchPredictions).length === 0 && (
+                <div className="text-center text-gray-500 py-10">No hay predicciones de partidos individuales guardadas.</div>
+              )}
             </div>
-          </div>
+          )}
 
-          <div>
-            <h4 className="text-xl font-bold text-blue-900 dark:text-blue-400 mb-4">{t('userPredictions.specialQuestions')}</h4>
+          {activeTab === 'specials' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {SPECIAL_QUESTIONS.map((q) => {
                 const answer = specials[q.id] || t('userPredictions.noAnswer');
-                const status = getSpecialStatus(q.id, answer);
-                let bgColor = "bg-gray-50 dark:bg-gray-700/50";
-                let borderColor = "border-gray-200 dark:border-gray-700";
-                
-                if (status) {
-                  bgColor = status.correct ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20";
-                  borderColor = status.correct ? "border-green-200 dark:border-green-800" : "border-red-200 dark:border-red-800";
-                }
-
                 return (
-                  <Card key={q.id} className={`border transition-colors duration-200 ${borderColor} ${bgColor}`}>
+                  <Card key={q.id} className="border transition-colors duration-200">
                     <CardContent className="p-4">
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t(`specialQuestions.${q.id}`)}</p>
-                      <div className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border dark:border-gray-700 transition-colors duration-200">
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
                         <span className="font-medium text-gray-900 dark:text-gray-100">{answer}</span>
-                        {status && (
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${status.correct ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                              +{status.points} pts
-                            </span>
-                            {status.correct ? <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" /> : <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />}
-                          </div>
+                        {canChallenge && specials[q.id] && (
+                           <Button 
+                             variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 shadow-sm" title="Retar predicción"
+                             onClick={() => setDuelData({ duelType: 'special', matchId: q.id, matchData: { questionTitle: t(`specialQuestions.${q.id}`) }, challengedPrediction: { answer } })}
+                           >
+                             <Swords className="w-4 h-4" />
+                           </Button>
                         )}
                       </div>
                     </CardContent>
@@ -356,7 +318,54 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                 );
               })}
             </div>
-          </div>
+          )}
+          
+          {activeTab === 'knockout' && (
+            <div className="space-y-4">
+              {['octavos', 'cuartos', 'semis', 'final'].map((phaseKey) => {
+                 const phaseLabels: Record<string, string> = {
+                   'octavos': 'Octavos de Final',
+                   'cuartos': 'Cuartos de Final',
+                   'semis': 'Semifinal',
+                   'final': 'Final'
+                 };
+                 const matches = knockoutPredictions[phaseKey] || [];
+                 if (matches.length === 0) return null;
+                 
+                 return (
+                    <div key={phaseKey}>
+                      <h4 className="font-bold text-lg text-blue-900 dark:text-blue-400 mb-2 mt-4 border-b pb-1 dark:border-gray-700">{phaseLabels[phaseKey]}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                         {matches.map((m: any, idx: number) => (
+                           <div key={idx} className="flex flex-col bg-gray-50 dark:bg-gray-800 p-3 rounded-md border dark:border-gray-700 text-sm">
+                             <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">{m.label}</div>
+                             <div className="flex items-center justify-between font-medium">
+                               <span className="text-gray-900 dark:text-gray-100">{m.teamA} vs {m.teamB || 'TBD'}</span>
+                               {canChallenge && m.winner && (
+                                 <Button 
+                                   variant="outline" size="sm" className="h-7 text-blue-600 border-blue-200" title="Retar ganador"
+                                   onClick={() => setDuelData({ duelType: 'knockout', matchId: `knockout_${phaseKey}_${idx}`, matchData: { phase: phaseKey }, challengedPrediction: { team: m.winner } })}
+                                 >
+                                   <Swords className="w-4 h-4 mr-1" /> Retar 
+                                 </Button>
+                               )}
+                             </div>
+                             {m.winner && (
+                               <div className="mt-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 px-2 py-1 rounded inline-block">
+                                 Avanza: font-bold {m.winner}
+                               </div>
+                             )}
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+                 );
+              })}
+              {Object.keys(knockoutPredictions).length === 0 && (
+                <div className="text-center text-gray-500 py-10">No hay predicciones de fase eliminatoria guardadas.</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       
@@ -366,6 +375,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           challengedName={userName}
           matchId={duelData.matchId}
           matchData={duelData.matchData}
+          duelType={duelData.duelType}
           challengedPrediction={duelData.challengedPrediction}
           onClose={() => setDuelData(null)}
         />

@@ -48,7 +48,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
   return (
     <>
-      <nav className="bg-blue-900 dark:bg-gray-950 text-white shadow-md sticky top-0 z-50 transition-colors duration-200">
+      <nav className="bg-blue-900 dark:bg-gray-950 text-white shadow-md z-50 mb-6 transition-colors duration-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl md:w-1/4">
@@ -103,7 +103,6 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                         {user.displayName?.charAt(0) || "U"}
                       </div>
                     )}
-                    <span className="text-sm font-medium hidden sm:block">{user.displayName}</span>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-blue-800 dark:hover:bg-gray-800 hover:text-white px-2">
                     <LogOut className="h-4 w-4" />
