@@ -68,9 +68,25 @@ export default function Predictions({ user }: { user: User }) {
   const handleMatchChange = (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => {
     setMatchPredictions(prev => {
       const current = prev[matchId] || { teamA: '', teamB: '', outcome: '' };
+      
+      const updated = { ...current, [field]: value };
+      
+      // Auto-calculate outcome based on goals ONLY if both are numbers
+      if (field === 'teamA' || field === 'teamB') {
+        if (typeof updated.teamA === 'number' && typeof updated.teamB === 'number') {
+          if (updated.teamA > updated.teamB) {
+            updated.outcome = 'A';
+          } else if (updated.teamA < updated.teamB) {
+            updated.outcome = 'B';
+          } else {
+            updated.outcome = 'DRAW';
+          }
+        }
+      }
+      
       return {
         ...prev,
-        [matchId]: { ...current, [field]: value }
+        [matchId]: updated
       };
     });
   };

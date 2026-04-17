@@ -141,7 +141,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             variant={pred.outcome === 'A' ? 'default' : 'outline'} 
                             className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'A' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'A')}
-                            disabled={locked}
+                            disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
                             Gana Local
                           </Button>
@@ -157,7 +157,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             variant={pred.outcome === 'DRAW' ? 'default' : 'outline'} 
                             className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'DRAW' ? 'bg-gray-600 hover:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'DRAW')}
-                            disabled={locked}
+                            disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
                             Empate
                           </Button>
@@ -173,7 +173,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             variant={pred.outcome === 'B' ? 'default' : 'outline'} 
                             className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'B' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'B')}
-                            disabled={locked}
+                            disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
                             Gana Visita
                           </Button>

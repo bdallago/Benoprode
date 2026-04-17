@@ -77,8 +77,12 @@ function GlobalBadgeListener({ user }: { user: User }) {
       const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
       
       if (newEarnedBadges.length > 0) {
-        setBadgeQueue(prev => [...prev, ...newEarnedBadges]);
-        localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
+        setBadgeQueue(prev => {
+          const existingIds = prev.map(p => p.id);
+          const toAdd = newEarnedBadges.filter(b => !existingIds.includes(b.id));
+          return [...prev, ...toAdd];
+        });
+        localStorage.setItem(storedBadgesKey, JSON.stringify(Array.from(new Set([...storedBadges, ...userBadgeIds]))));
       } else if (!storedBadgesStr && userBadgeIds.length > 0) {
         localStorage.setItem(storedBadgesKey, JSON.stringify(userBadgeIds));
       }
@@ -95,7 +99,6 @@ function GlobalBadgeListener({ user }: { user: User }) {
     if (badgeQueue.length > 0 && !currentBadge) {
       const t = setTimeout(() => {
         setCurrentBadge(badgeQueue[0]);
-        setBadgeQueue(prev => prev.slice(1));
       }, 500); // 500ms delay between badges
       return () => clearTimeout(t);
     }
@@ -116,6 +119,7 @@ function GlobalBadgeListener({ user }: { user: User }) {
       
       const timer = setTimeout(() => {
         setCurrentBadge(null);
+        setBadgeQueue(prev => prev.slice(1));
       }, 5000);
       
       return () => clearTimeout(timer);
@@ -128,7 +132,10 @@ function GlobalBadgeListener({ user }: { user: User }) {
     <div key={currentBadge.id} className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 rounded-lg shadow-2xl border-2 border-sky-300 flex items-center gap-4 max-w-sm relative pr-10">
         <button 
-          onClick={() => setCurrentBadge(null)} 
+          onClick={() => {
+            setCurrentBadge(null);
+            setBadgeQueue(prev => prev.slice(1));
+          }} 
           className="absolute top-2 right-2 text-sky-200 hover:text-white transition-colors"
           title="Cerrar"
         >

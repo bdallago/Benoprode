@@ -24,13 +24,8 @@ export default function LandingPage() {
 
   const handleLogin = async () => {
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-        router.push("/");
-      }
+      await signInWithPopup(auth, googleProvider);
+      router.push("/");
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
       // Fallback for browsers that block popups (Brave, Instagram, etc)
