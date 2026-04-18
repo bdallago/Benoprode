@@ -38,7 +38,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
   const getLinkStyle = (path: string, colorNormal: string, colorPressed: string) => {
     const isActive = pathname === path;
-    const baseStyle = "hidden md:flex items-center justify-center gap-1 px-2 lg:px-3 py-2 flex-1 max-w-[130px] rounded-xl font-bold text-white transition-all duration-100 ease-in-out text-xs lg:text-sm shadow-md whitespace-nowrap";
+    const baseStyle = "hidden md:flex items-center justify-center gap-1 px-1 lg:px-2 py-2 flex-1 max-w-[145px] rounded-xl font-bold text-white transition-all duration-100 ease-in-out text-[11px] lg:text-sm shadow-md whitespace-nowrap";
     if (isActive) {
       return `${baseStyle} ${colorPressed} translate-y-[4px] border-b-0`;
     } else {
@@ -71,23 +71,23 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             
             <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 flex-1 px-1">
               <Link href="/" className={getLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
-                <Home className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.dashboard')}</span>
+                <Home className="h-4 w-4 shrink-0" /> <span>{t('navbar.dashboard')}</span>
               </Link>
               <Link href="/instructions" className={getLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>
-                <BookOpen className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.instructions')}</span>
+                <BookOpen className="h-4 w-4 shrink-0" /> <span>Reglas</span>
               </Link>
               <Link href="/predictions" className={getLinkStyle("/predictions", "bg-green-500 border-green-700", "bg-green-600")}>
-                <PenSquare className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.predictions')}</span>
+                <PenSquare className="h-4 w-4 shrink-0" /> <span>{t('navbar.predictions')}</span>
               </Link>
               <Link href="/dashboard" className={getLinkStyle("/dashboard", "bg-orange-500 border-orange-700", "bg-orange-600")}>
-                <Trophy className="h-4 w-4 shrink-0" /> <span className="truncate">Ranking</span>
+                <Trophy className="h-4 w-4 shrink-0" /> <span>Ranking</span>
               </Link>
               <Link href="/leagues" className={getLinkStyle("/leagues", "bg-purple-500 border-purple-700", "bg-purple-600")}>
-                <Users className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.leagues')}</span>
+                <Users className="h-4 w-4 shrink-0" /> <span>Torneos</span>
               </Link>
               {isAdmin && (
                 <Link href="/admin" className={getLinkStyle("/admin", "bg-gray-500 border-gray-700", "bg-gray-600")}>
-                  <Settings className="h-4 w-4 shrink-0" /> <span className="truncate">{t('navbar.admin')}</span>
+                  <Settings className="h-4 w-4 shrink-0" /> <span>{t('navbar.admin')}</span>
                 </Link>
               )}
             </div>

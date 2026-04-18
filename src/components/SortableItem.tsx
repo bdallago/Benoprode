@@ -28,7 +28,7 @@ export const SortableItem: React.FC<{ id: string, team: string, index: number, d
       style={style}
       {...(!disabled ? attributes : {})}
       {...(!disabled ? listeners : {})}
-      className={`flex items-center gap-3 p-3 rounded-md border transition-colors duration-200 touch-none ${
+      className={`flex items-center gap-2 p-2 sm:p-3 rounded-md border transition-colors duration-200 touch-none ${
         isDragging 
           ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800' 
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
@@ -39,18 +39,18 @@ export const SortableItem: React.FC<{ id: string, team: string, index: number, d
       }`}
     >
       {!disabled && (
-        <div className={`p-1 shrink-0 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}`}>
-          <GripVertical size={20} />
+        <div className={`p-0.5 sm:p-1 shrink-0 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}`}>
+          <GripVertical className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       )}
-      <div className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+      <div className={`w-5 h-5 sm:w-6 sm:h-6 flex shrink-0 items-center justify-center rounded-full text-[10px] sm:text-xs font-bold ${
         index === 0 ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 
         index === 1 ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-500' : 
         'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
       }`}>
         {index + 1}
       </div>
-      <span className="font-medium text-gray-900 dark:text-gray-100">{t(`teams.${team}`)}</span>
+      <span className="font-medium text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">{t(`teams.${team}`)}</span>
     </div>
   );
 }

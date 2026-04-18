@@ -222,7 +222,7 @@ export default function Dashboard({ user }: { user: User }) {
                 
                 <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">Medallas Obtenidas</h3>
                 <div className="flex flex-wrap gap-4">
-                  {userBadges.length > 0 ? userBadges.map(badge => badge && (
+                  {userBadges.length > 0 ? userBadges.map((badge: any) => badge && (
                     <div key={badge.id} className="relative group cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
                       <div className="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 flex items-center justify-center text-4xl shadow-sm hover:border-blue-400 dark:hover:border-blue-500 hover:scale-105 transition-all">
                         {badge.icon}
@@ -244,12 +244,12 @@ export default function Dashboard({ user }: { user: User }) {
               
               <div className="w-full md:w-80 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Ver todas las medallas</h3>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Próximas Medallas</h3>
                   <button 
                     onClick={() => setIsAllBadgesModalOpen(true)}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
                   >
-                    Ver todas
+                    Ver galería
                   </button>
                 </div>
                 <div 

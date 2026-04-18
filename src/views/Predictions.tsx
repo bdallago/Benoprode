@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { User } from "firebase/auth";
 import { Button } from "../components/ui/button";
-import { Save, Lock, AlertCircle, CheckCircle2, Share2 } from "lucide-react";
+import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2 } from "lucide-react";
 import { CountdownBanner } from "../components/CountdownBanner";
 import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
@@ -153,6 +153,48 @@ export default function Predictions({ user }: { user: User }) {
           {message.text}
         </div>
       )}
+      
+      <div className="mb-4 bg-transparent p-1 sm:p-2 text-center flex justify-center w-full">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 py-3 px-4 sm:px-6">
+          
+          <div className="flex items-center gap-3">
+             <div className="relative flex items-center justify-center">
+                 {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? (
+                   <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-sm"></div>
+                 ) : (
+                   <>
+                     <div className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                     <div className="relative w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
+                   </>
+                 )}
+             </div>
+             <div className="flex flex-col text-left">
+               <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold leading-none mb-1">Grup. y Especiales</span>
+               <span className={`text-sm font-bold leading-none ${new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'text-gray-500' : 'text-green-600 dark:text-green-400'}`}>
+                 {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'Cerrado' : 'Abierto'}
+               </span>
+             </div>
+          </div>
+
+          <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+
+          <div className="flex items-center gap-3">
+             <div className="relative flex items-center justify-center">
+                   <>
+                     <div className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                     <div className="relative w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
+                   </>
+             </div>
+             <div className="flex flex-col text-left">
+               <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold leading-none mb-1">Partidos Individuales</span>
+               <span className="text-sm font-bold leading-none text-green-600 dark:text-green-400">
+                 Día por día
+               </span>
+             </div>
+          </div>
+
+        </div>
+      </div>
 
       <>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 mb-6">

@@ -627,14 +627,14 @@ export default function Admin() {
               variant="outline" 
               onClick={saveResults}
               disabled={saving}
-              className="flex-1 md:flex-none flex items-center gap-2"
+              className="flex-1 md:flex-none flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
-              <Save className="w-4 h-4" /> {saving ? t('admin.results.savingBtn') : t('admin.results.saveBtn')}
+              <Save className="w-4 h-4" /> Guardar Cambios
             </Button>
             <Button 
               onClick={() => setConfirmAction({ type: 'calc' })}
               disabled={calculating}
-              className="flex-1 md:flex-none flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+              className="flex-1 md:flex-none flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Calculator className="w-4 h-4" /> {calculating ? t('admin.results.calculatingBtn') : t('admin.results.calcBtn')}
             </Button>

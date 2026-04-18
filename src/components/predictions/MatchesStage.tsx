@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader } from "../ui/card";
-import { Lock, Save } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Lock, Save, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { TeamFlag } from "../Fixture";
 import matchesData from "../../lib/matches.json";
 import { collection, getDocs } from "firebase/firestore";
@@ -18,6 +18,8 @@ interface MatchesStageProps {
 
 export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, handleMatchChange, savePredictions }: MatchesStageProps) {
   const [matchStats, setMatchStats] = useState<Record<string, { A: number, B: number, DRAW: number, total: number }>>({});
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
+  const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -51,9 +53,63 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
     fetchStats();
   }, []);
 
+  // Determine today date string
+  const today = new Date();
+  const todayString = today.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayCapitalized = todayString.charAt(0).toUpperCase() + todayString.slice(1);
+
+  useEffect(() => {
+    // initialize collapsed states for ALL days
+    const pastDaysState: Record<string, boolean> = {};
+    Object.entries(matchesData.reduce((acc, match) => {
+        const date = new Date(match.date);
+        const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
+        if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
+        acc[capitalizedDay].push(match);
+        return acc;
+    }, {} as Record<string, typeof matchesData>)).forEach(([day, dayMatches]) => {
+        const matchDate = new Date(dayMatches[0].date);
+        // Collapse the day UNLESS it is exactly today
+        const matchDateString = matchDate.toLocaleDateString('es-AR');
+        const todayLocaleString = today.toLocaleDateString('es-AR');
+        
+        if (matchDateString === todayLocaleString) {
+            pastDaysState[day] = false; // Open today
+        } else {
+            pastDaysState[day] = true; // Collapse everything else
+        }
+    });
+    setCollapsedDays(pastDaysState);
+  }, []);
+
+  useEffect(() => {
+    // Attempt auto-scroll
+    setTimeout(() => {
+        if (dayRefs.current[todayCapitalized]) {
+            dayRefs.current[todayCapitalized]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 500);
+  }, [todayCapitalized]);
+
   return (
     <div className="space-y-6 pt-2">
-      <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2 transition-colors duration-200">Partidos Individuales</h2>
+      <div className="flex items-center justify-between border-b dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 transition-colors duration-200">Partidos Individuales</h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+             if (dayRefs.current[todayCapitalized]) {
+                dayRefs.current[todayCapitalized]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             }
+          }}
+          className="text-xs flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+          title="Ir a Partidos de Hoy"
+        >
+          <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">Hoy</span>
+        </Button>
+      </div>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-justify transition-colors duration-200 whitespace-pre-line">
         ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada!
 
@@ -69,21 +125,29 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
           acc[capitalizedDay].push(match);
           return acc;
         }, {} as Record<string, typeof matchesData>)).map(([day, dayMatches]) => (
-          <div key={day} className="space-y-4">
-            <div className="flex items-center justify-between border-b dark:border-gray-700 pb-2">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">{day}</h3>
+          <div key={day} className="space-y-4" ref={el => dayRefs.current[day] = el}>
+            <div className={`flex items-center justify-between border-b dark:border-gray-700 pb-2 cursor-pointer select-none group ${day === todayCapitalized ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setCollapsedDays(prev => ({...prev, [day]: !prev[day]}))}>
+              <div className="flex items-center gap-2">
+                 <div className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
+                   {collapsedDays[day] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                 </div>
+                 <h3 className={`text-xl font-bold ${day === todayCapitalized ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {day} {day === todayCapitalized && <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">Hoy</span>}
+                 </h3>
+              </div>
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => savePredictions(false)}
+                onClick={(e) => { e.stopPropagation(); savePredictions(false); }}
                 disabled={saving || effectiveIsLocked}
                 className="flex items-center gap-2"
               >
                 <Save className="w-4 h-4" /> Guardar Día
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dayMatches.map((match) => {
+            {!collapsedDays[day] && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {dayMatches.map((match) => {
                 const matchDate = new Date(match.date);
                 const isMatchLocked = Date.now() >= matchDate.getTime() - 60 * 60 * 1000;
                 // Partidos individuales se bloquean SOLO 1 hora antes de cada partido, ignorando el bloqueo global de fase de grupos
@@ -191,6 +255,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                 );
               })}
             </div>
+            )}
           </div>
         ))}
       </div>
