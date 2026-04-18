@@ -5,7 +5,7 @@ import { doc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, ser
 import { db } from '../firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Trophy, Users, Swords, UserPlus, Check, X, Clock } from 'lucide-react';
+import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen } from 'lucide-react';
 import { getUserLevel, getUserBadges, BADGES } from '../lib/gamification';
 import matchesData from '../lib/matches.json';
 import { UserPredictionsModal } from '../components/UserPredictionsModal';
@@ -264,55 +264,69 @@ export default function Profile({ user, profileId }: ProfileProps) {
               </div>
             </div>
             {!isOwnProfile && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 {friendStatus === 'none' && (
                   <Button onClick={handleSendFriendRequest} className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" /> Agregar Amigo
+                    <UserPlus className="w-4 h-4" /> Enviar Solicitud de Amistad
                   </Button>
                 )}
                 {friendStatus === 'pending_sent' && (
-                  <Button disabled variant="outline" className="flex items-center gap-2">
+                  <Button disabled variant="outline" className="border-gray-300 text-gray-600 bg-gray-50 flex items-center gap-2">
                     <Clock className="w-4 h-4" /> Solicitud Enviada
                   </Button>
                 )}
                 {friendStatus === 'pending_received' && (
-                  <Button onClick={handleAcceptFriendRequest} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
-                    <Check className="w-4 h-4" /> Aceptar Solicitud
+                  <Button onClick={handleAcceptFriendRequest} variant="success" className="flex items-center gap-2">
+                    <Check className="w-4 h-4" /> Aceptar Solicitud de Amistad
                   </Button>
                 )}
                 {friendStatus === 'friends' && (
                   <>
-                    <Button variant="outline" className="flex items-center gap-2 text-green-600 border-green-600">
-                      <Users className="w-4 h-4" /> Amigos
+                    <Button variant="outline" disabled className="text-green-700 border-green-200 bg-green-50 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 font-bold flex items-center gap-2">
+                      <Users className="w-4 h-4" /> Son Amigos
                     </Button>
-                    <Button onClick={() => setIsPredictionsModalOpen(true)} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white">
-                      <Swords className="w-4 h-4" /> Duelos / Predicciones
+                    <Button onClick={() => setIsPredictionsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-bold flex items-center gap-2">
+                      <Swords className="w-4 h-4" /> Ver sus predicciones y Retar
                     </Button>
                   </>
                 )}
               </div>
+            )}
+            
+            {/* Si es su perfil, mostrar botón directo a ver predicciones propias compartibles */}
+            {isOwnProfile && (
+               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <Button onClick={() => setIsPredictionsModalOpen(true)} variant="outline" className="font-bold flex items-center gap-2 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30">
+                    <BookOpen className="w-4 h-4" /> Ver predicciones
+                  </Button>
+               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
       {/* Tabs */}
-      <div className="flex border-b dark:border-gray-700">
+      <div className="flex border-b dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-xl sticky top-2 z-10 shadow-sm mt-4">
         <button
           onClick={() => setActiveTab('stats')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
         >
-          Estadísticas
+          Resumen
         </button>
         <button
           onClick={() => setActiveTab('friends')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
         >
-          Amigos
+          <div className="flex items-center justify-center gap-2">
+            Amigos
+            {isOwnProfile && pendingRequestsList.length > 0 && (
+              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-bounce">{pendingRequestsList.length}</span>
+            )}
+          </div>
         </button>
         <button
           onClick={() => setActiveTab('duels')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
         >
           Duelos
         </button>
@@ -322,12 +336,23 @@ export default function Profile({ user, profileId }: ProfileProps) {
       <div className="py-4">
         {activeTab === 'stats' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Medallas Destacadas</h3>
+            <div className="grid grid-cols-1 gap-4">
+               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center text-center">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-bold mb-1">POSICIÓN GLOBAL</div>
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2"># -</div>
+                  <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">Ir a la tabla general</Link>
+               </div>
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Medallero
+            </h3>
             {badges.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {badges.slice(0, 4).map((badge: any) => (
-                  <div key={badge.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2">
-                    <span className="text-4xl">{badge.icon}</span>
+                {badges.map((badge: any) => (
+                  <div key={badge.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow">
+                    <span className="text-4xl hover:scale-110 transition-transform">{badge.icon}</span>
                     <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{badge.name}</span>
                   </div>
                 ))}
@@ -522,8 +547,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         
                         {isOwnProfile && duel.challengedId === targetUserId && duel.status === 'pending' && (
                           <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'accepted' })}>Aceptar</Button>
-                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' })}>Rechazar</Button>
+                            <Button size="sm" variant="success" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'accepted' })}>Aceptar</Button>
+                            <Button size="sm" variant="destructive" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' })}>Rechazar</Button>
                           </div>
                         )}
                       </div>

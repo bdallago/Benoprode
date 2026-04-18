@@ -97,6 +97,30 @@ export default function Welcome() {
     matches: 0
   });
 
+  const [todayMatches, setTodayMatches] = useState<typeof matchesData>([]);
+
+  useEffect(() => {
+    // Current date logic: check if any matches are played today, 
+    // Format YYYY-MM-DD
+    const today = new Date();
+    // Use Argentina's timezone to match the game's context
+    const options = { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' } as const;
+    const formatter = new Intl.DateTimeFormat('en-CA', options);
+    
+    try {
+      const formattedToday = formatter.format(today); // YYYY-MM-DD format
+      const matchesForToday = matchesData.filter(m => {
+        if (!m.date) return false;
+        return m.date.startsWith(formattedToday);
+      });
+      setTodayMatches(matchesForToday);
+    } catch(e) {
+      // Fallback if Intl fails
+      const currentIso = today.toISOString().split('T')[0];
+      setTodayMatches(matchesData.filter(m => m.date && m.date.startsWith(currentIso)));
+    }
+  }, []);
+
   useEffect(() => {
     if (!auth.currentUser) return;
     
@@ -238,44 +262,84 @@ export default function Welcome() {
           </div>
         </div>
         
-        <div className="w-full mt-4 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 text-left">Progreso de tus Predicciones</h3>
+        <div className="w-full mt-4 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden group">
+          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-5 text-left border-b border-gray-100 dark:border-gray-700 pb-2">Progreso de tus predicciones</h3>
           <div className="flex flex-col gap-3">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium text-gray-600 dark:text-gray-400">Fase de Grupos</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{progress.groups} / 12</span>
-              </div>
-              <div className="flex w-full gap-[2px] h-2">
+            <div className="flex items-center gap-2">
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Fase de Grupos</span>
+              <div className="flex-1 flex gap-1 h-3">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className={`flex-1 rounded-sm ${i < progress.groups ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.groups ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
+              <span className="text-sm font-bold w-12 text-right">{progress.groups} / 12</span>
             </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium text-gray-600 dark:text-gray-400">Preguntas Especiales</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">{progress.specials} / 10</span>
-              </div>
-              <div className="flex w-full gap-[2px] h-2">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className={`flex-1 rounded-sm ${i < progress.specials ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium text-gray-600 dark:text-gray-400">Partidos Individuales</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{progress.matches} / 72</span>
-              </div>
-              <div className="flex w-full gap-[1px] h-2">
+            <div className="flex items-center gap-2">
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Partidos Individuales</span>
+              <div className="flex-1 flex gap-[1px] h-3">
                 {Array.from({ length: 72 }).map((_, i) => (
-                  <div key={i} className={`flex-1 rounded-sm ${i < progress.matches ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.matches ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
+              <span className="text-sm font-bold w-12 text-right">{progress.matches} / 72</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Preg. Especiales</span>
+              <div className="flex-1 flex gap-1 h-3">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.specials ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                ))}
+              </div>
+              <span className="text-sm font-bold w-12 text-right">{progress.specials} / 10</span>
             </div>
           </div>
         </div>
+
+        {/* Partidos de Hoy */}
+        {todayMatches.length > 0 && (
+           <div className="w-full mt-4 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm text-left">
+             <div className="flex items-center justify-between mb-4">
+               <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Hoy Juegan</h3>
+               </div>
+               <div className="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                  {new Date().toLocaleDateString('es-AR', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' })}
+               </div>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+               {todayMatches.map(match => {
+                 const dateObj = new Date(match.date);
+                 const timeStr = dateObj.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute:'2-digit' });
+                 return (
+                   <div key={match.id} className="relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+                     {/* Fondo sutil indicando el grupo */}
+                     <div className="absolute top-0 right-0 p-2 opacity-10 font-black text-6xl pointer-events-none -mt-4 -mr-2 text-gray-900 dark:text-white">
+                        {match.group || 'E'}
+                     </div>
+
+                     <div className="flex items-center justify-between z-10 w-full mb-3">
+                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-sm">
+                           GRUPO {(match.group || '').replace('group_', '').toUpperCase()}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-sm">
+                           <Clock className="w-3 h-3" />
+                           {timeStr} hs
+                        </div>
+                     </div>
+
+                     <div className="flex justify-between items-center z-10 w-full">
+                       <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 truncate text-base">{match.teamA}</div>
+                       <div className="px-3 text-xs font-bold text-gray-400 dark:text-gray-500">VS</div>
+                       <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 text-right truncate text-base">{match.teamB}</div>
+                     </div>
+                   </div>
+                 );
+               })}
+             </div>
+           </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -322,7 +386,7 @@ export default function Welcome() {
                 navigator.clipboard.writeText(`https://www.elprodedebeno.com.ar/?ref=${auth.currentUser?.uid}`);
                 alert("Link copiado al portapapeles");
               }}
-              className="bg-sky-600 hover:bg-sky-700 text-white whitespace-nowrap"
+              className="whitespace-nowrap"
             >
               Copiar Link
             </Button>
@@ -340,7 +404,7 @@ export default function Welcome() {
           <p className="mb-4">
             {t('welcome.reportDesc')}
           </p>
-          <Button onClick={() => setIsReportModalOpen(true)} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white">
+          <Button onClick={() => setIsReportModalOpen(true)} className="w-full sm:w-auto" variant="destructive">
             {t('welcome.reportBtn')}
           </Button>
         </CardContent>
@@ -422,7 +486,7 @@ export default function Welcome() {
                 </div>
                 
                 <div className="pt-2">
-                  <Button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white py-6 text-lg">
+                  <Button type="submit" disabled={isSubmitting} className="w-full py-6 text-lg">
                     {isSubmitting ? t('welcome.submitting') : t('welcome.submit')}
                   </Button>
                 </div>

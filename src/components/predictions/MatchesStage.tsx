@@ -135,15 +135,6 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                     {day} {day === todayCapitalized && <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">Hoy</span>}
                  </h3>
               </div>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={(e) => { e.stopPropagation(); savePredictions(false); }}
-                disabled={saving || effectiveIsLocked}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" /> Guardar Día
-              </Button>
             </div>
             {!collapsedDays[day] && (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

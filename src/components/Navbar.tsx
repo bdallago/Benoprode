@@ -3,7 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { User, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { Button } from "./ui/button";
-import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun } from "lucide-react";
+import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
@@ -85,6 +85,9 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               <Link href="/leagues" className={getLinkStyle("/leagues", "bg-purple-500 border-purple-700", "bg-purple-600")}>
                 <Users className="h-4 w-4 shrink-0" /> <span>Torneos</span>
               </Link>
+              <Link href="/profile" className={getLinkStyle("/profile", "bg-indigo-500 border-indigo-700", "bg-indigo-600")}>
+                <UserIcon className="h-4 w-4 shrink-0" /> <span>Mi Perfil</span>
+              </Link>
               {isAdmin && (
                 <Link href="/admin" className={getLinkStyle("/admin", "bg-gray-500 border-gray-700", "bg-gray-600")}>
                   <Settings className="h-4 w-4 shrink-0" /> <span>{t('navbar.admin')}</span>
@@ -128,37 +131,30 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
       </nav>
       
       {/* Mobile nav (Bottom) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center items-center p-2 bg-blue-950 dark:bg-gray-900 border-t border-blue-800 dark:border-gray-800 transition-colors duration-200 pb-safe gap-1 h-20">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center items-center p-1 bg-blue-950 dark:bg-gray-900 border-t border-blue-800 dark:border-gray-800 transition-colors duration-200 pb-safe gap-0.5 h-16">
         <Link href="/" className={getMobileLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
-          <Home className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Inicio</span>
+          <Home className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Inicio</span>
         </Link>
         <Link href="/instructions" className={getMobileLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>
-          <BookOpen className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Reglas</span>
+          <BookOpen className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Reglas</span>
         </Link>
         <Link href="/predictions" className={getMobileLinkStyle("/predictions", "bg-green-500 border-green-700", "bg-green-600")}>
-          <PenSquare className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Prode</span>
+          <PenSquare className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Prode</span>
         </Link>
         <Link href="/dashboard" className={getMobileLinkStyle("/dashboard", "bg-orange-500 border-orange-700", "bg-orange-600")}>
-          <Trophy className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Ranking</span>
+          <Trophy className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Ranking</span>
         </Link>
         <Link href="/leagues" className={getMobileLinkStyle("/leagues", "bg-purple-500 border-purple-700", "bg-purple-600")}>
-          <Users className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Torneos</span>
+          <Users className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Torneos</span>
+        </Link>
+        <Link href="/profile" className={getMobileLinkStyle("/profile", "bg-indigo-500 border-indigo-700", "bg-indigo-600")}>
+          <UserIcon className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Perfil</span>
         </Link>
         {isAdmin && (
           <Link href="/admin" className={getMobileLinkStyle("/admin", "bg-gray-500 border-gray-700", "bg-gray-600")}>
-            <Settings className="h-5 w-5 mb-0.5" /> <span className="text-[9px] leading-tight">Admin</span>
+            <Settings className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Admin</span>
           </Link>
         )}
-        <button 
-          onClick={toggleTheme} 
-          className="flex flex-col items-center justify-center p-2 rounded-xl text-white transition-all duration-100 ease-in-out font-bold shadow-sm flex-1 mx-1 max-w-[4rem] bg-indigo-500 border-b-[4px] border-indigo-700 hover:brightness-110 active:border-b-0 active:translate-y-[4px]"
-        >
-          {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
-            <Moon className="h-5 w-5" />
-          ) : (
-            <Sun className="h-5 w-5" />
-          )}
-        </button>
       </div>
     </>
   );

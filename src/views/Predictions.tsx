@@ -116,7 +116,7 @@ export default function Predictions({ user }: { user: User }) {
           <Button 
             onClick={() => setIsShareModalOpen(true)}
             variant="outline"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2"
           >
             <Share2 className="w-4 h-4" /> Compartir
           </Button>
@@ -126,14 +126,15 @@ export default function Predictions({ user }: { user: User }) {
                 variant="outline" 
                 onClick={() => savePredictions(false)}
                 disabled={saving || loading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 save-draft-btn"
+                className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" /> {saving ? t('predictions.saving') : t('predictions.saveDraft')}
               </Button>
               <Button 
+                variant="success"
                 onClick={() => setConfirmLock(true)}
                 disabled={saving || loading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <Lock className="w-4 h-4" /> {t('predictions.lockPredictions')}
               </Button>
@@ -154,43 +155,23 @@ export default function Predictions({ user }: { user: User }) {
         </div>
       )}
       
-      <div className="mb-4 bg-transparent p-1 sm:p-2 text-center flex justify-center w-full">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 py-3 px-4 sm:px-6">
+      <div className="mb-8 bg-transparent p-1 sm:p-2 text-center flex justify-center w-full">
+        <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:gap-6 w-full max-w-3xl px-4">
           
-          <div className="flex items-center gap-3">
-             <div className="relative flex items-center justify-center">
-                 {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? (
-                   <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-sm"></div>
-                 ) : (
-                   <>
-                     <div className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
-                     <div className="relative w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
-                   </>
-                 )}
-             </div>
-             <div className="flex flex-col text-left">
-               <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold leading-none mb-1">Grup. y Especiales</span>
-               <span className={`text-sm font-bold leading-none ${new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'text-gray-500' : 'text-green-600 dark:text-green-400'}`}>
-                 {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'Cerrado' : 'Abierto'}
-               </span>
-             </div>
+          {/* Sign 1: Phase 1 & Specials */}
+          <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
+            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-black mb-3 text-center">Fase de Grupos / Preguntas Especiales</span>
+            <div className={`font-black uppercase tracking-widest text-sm sm:text-base ${new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'Cerradas - Fijadas' : 'Abiertas - Sin fijar'}
+            </div>
           </div>
 
-          <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
-
-          <div className="flex items-center gap-3">
-             <div className="relative flex items-center justify-center">
-                   <>
-                     <div className="absolute w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
-                     <div className="relative w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
-                   </>
-             </div>
-             <div className="flex flex-col text-left">
-               <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold leading-none mb-1">Partidos Individuales</span>
-               <span className="text-sm font-bold leading-none text-green-600 dark:text-green-400">
-                 Día por día
-               </span>
-             </div>
+          {/* Sign 2: Individual Matches */}
+          <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
+            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-black mb-3 text-center">Partidos Individuales</span>
+            <div className="text-green-600 dark:text-green-400 font-black uppercase tracking-widest text-sm sm:text-base text-center leading-tight">
+              Abierto hasta 1 hora antes
+            </div>
           </div>
 
         </div>
@@ -252,7 +233,7 @@ export default function Predictions({ user }: { user: User }) {
                   setConfirmLock(false);
                   savePredictions(true);
                 }}
-                className="bg-green-600 hover:bg-green-700"
+                variant="success"
               >
                 <Lock className="w-4 h-4 mr-2" /> {t('predictions.confirmLock')}
               </Button>

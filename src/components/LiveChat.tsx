@@ -15,18 +15,14 @@ export function LiveChat() {
   const [showWarning, setShowWarning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock live match data
+  // Mock live match data (Match 1: Mexico vs South Africa)
   const liveMatch = {
     teamA: 'México',
     teamB: 'Sudáfrica',
-    scoreA: 1,
-    scoreB: 1,
-    minute: 65,
-    events: [
-      { type: 'goal', team: 'A', player: 'Chicharito', minute: 12 },
-      { type: 'goal', team: 'B', player: 'Tshabalala', minute: 55 },
-      { type: 'red_card', team: 'A', player: 'Marquez', minute: 60 }
-    ]
+    scoreA: 0,
+    scoreB: 0,
+    minute: 0,
+    events: [] as { type: string, team: string, player: string, minute: number }[]
   };
 
   useEffect(() => {
@@ -184,29 +180,20 @@ export function LiveChat() {
 
       {/* Input Area */}
       <div className="p-3 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-        {isBanned ? (
-          <div className="text-center text-red-600 dark:text-red-400 text-sm font-medium p-2 bg-red-50 dark:bg-red-900/20 rounded-md">
-            Has sido baneado del chat por violar las reglas de convivencia.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Escribe un mensaje..."
-              className="flex-1 text-sm p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              maxLength={200}
-            />
-            <Button 
-              type="submit" 
-              disabled={!newMessage.trim()}
-              className="px-4 bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        )}
+        <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="text"
+            disabled
+            placeholder="Chat en vivo - Próximamente"
+            className="flex-1 text-sm p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-400 focus:ring-0 outline-none"
+          />
+          <Button 
+            disabled
+            className="px-4 bg-gray-400 cursor-not-allowed"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </form>
       </div>
     </div>
   );
