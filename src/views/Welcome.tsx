@@ -240,13 +240,13 @@ export default function Welcome() {
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
               <img 
-                src="/portada-telefono.jpeg?v=2" 
+                src="/portada-telefono.jpeg" 
                 alt="El Prode de Beno Mobile" 
                 className="w-full h-auto block sm:hidden shrink-0"
               />
               {/* Desktop Header */}
               <img 
-                src="/portada-escritorio.jpeg?v=2" 
+                src="/portada-escritorio.jpeg" 
                 alt="El Prode de Beno Desktop" 
                 className="w-full h-auto hidden sm:block shrink-0"
               />
