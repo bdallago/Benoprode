@@ -125,7 +125,7 @@ function GlobalBadgeListener({ user }: { user: User }) {
       const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
       
       if (newEarnedBadges.length > 0) {
-        setBadgeQueue(prev => {
+        setBadgeQueue((prev: any[]) => {
           const existingIds = prev.map(p => p.id);
           const toAdd = newEarnedBadges.filter(b => b && !existingIds.includes(b.id));
           return [...prev, ...(toAdd as any[])];
@@ -178,7 +178,7 @@ function GlobalBadgeListener({ user }: { user: User }) {
       
       const timer = setTimeout(() => {
         setCurrentBadge(null);
-        setBadgeQueue(prev => prev.slice(1));
+        setBadgeQueue((prev: any[]) => prev.slice(1));
       }, 5000);
       
       return () => clearTimeout(timer);
@@ -193,7 +193,7 @@ function GlobalBadgeListener({ user }: { user: User }) {
         <button 
           onClick={() => {
             setCurrentBadge(null);
-            setBadgeQueue(prev => prev.slice(1));
+            setBadgeQueue((prev: any[]) => prev.slice(1));
           }} 
           className="absolute top-2 right-2 text-sky-200 hover:text-white transition-colors"
           title="Cerrar"

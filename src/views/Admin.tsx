@@ -168,7 +168,7 @@ export default function Admin() {
   }, []);
 
   const handleGroupChange = (groupLetter: string, index: number, value: string) => {
-    setActualGroups(prev => {
+    setActualGroups((prev: any) => {
       const newGroup = [...prev[groupLetter]];
       newGroup[index] = value;
       return { ...prev, [groupLetter]: newGroup };
@@ -176,11 +176,11 @@ export default function Admin() {
   };
 
   const handleSpecialChange = (id: string, value: string) => {
-    setActualSpecials(prev => ({ ...prev, [id]: value }));
+    setActualSpecials((prev: any) => ({ ...prev, [id]: value }));
   };
 
   const handleMatchChange = (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => {
-    setActualMatches(prev => ({
+    setActualMatches((prev: any) => ({
       ...prev,
       [matchId]: {
         ...(prev[matchId] || { teamA: '', teamB: '', outcome: '' }),

@@ -149,14 +149,14 @@ export default function Welcome() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      setReportFiles(prev => [...prev, ...newFiles]);
+      setReportFiles((prev: any[]) => [...prev, ...newFiles]);
     }
     // Reset input so the same file can be selected again if needed
     e.target.value = '';
   };
 
   const removeFile = (indexToRemove: number) => {
-    setReportFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    setReportFiles((prev: any[]) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleSubmitReport = async (e: React.FormEvent) => {

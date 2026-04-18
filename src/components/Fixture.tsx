@@ -126,11 +126,11 @@ export function Fixture() {
   }, []);
 
   const handlePrev = () => {
-    setCurrentFecha((prev) => (prev > 0 ? prev - 1 : 2));
+    setCurrentFecha((prev: number) => (prev > 0 ? prev - 1 : 2));
   };
 
   const handleNext = () => {
-    setCurrentFecha((prev) => (prev < 2 ? prev + 1 : 0));
+    setCurrentFecha((prev: number) => (prev < 2 ? prev + 1 : 0));
   };
 
   const matches = FIXTURE_DATA[currentFecha];

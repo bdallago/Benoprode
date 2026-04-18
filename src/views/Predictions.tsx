@@ -42,7 +42,7 @@ export default function Predictions({ user }: { user: User }) {
     const { active, over } = event;
 
     if (active.id !== over.id) {
-      setGroupPredictions((prev) => {
+      setGroupPredictions((prev: any) => {
         const items = prev[groupLetter];
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
@@ -62,11 +62,11 @@ export default function Predictions({ user }: { user: User }) {
 
   const handleSpecialChange = (id: string, value: string) => {
     if (effectiveIsLocked) return;
-    setSpecialPredictions(prev => ({ ...prev, [id]: value }));
+    setSpecialPredictions((prev: any) => ({ ...prev, [id]: value }));
   };
 
   const handleMatchChange = (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => {
-    setMatchPredictions(prev => {
+    setMatchPredictions((prev: any) => {
       const current = prev[matchId] || { teamA: '', teamB: '', outcome: '' };
       
       const updated = { ...current, [field]: value };

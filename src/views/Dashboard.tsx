@@ -77,8 +77,8 @@ export default function Dashboard({ user }: { user: User }) {
     // Fetch user document for referrals and stats
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        setUserStats(prev => ({ ...prev, ...data }));
+        const data = docSnap.data() as any;
+        setUserStats((prev: any) => ({ ...prev, ...data }));
         setHasInvitedFriends((data.referralsCount || 0) > 0);
       }
     });
@@ -91,7 +91,7 @@ export default function Dashboard({ user }: { user: User }) {
       setIsLeagueCreatorOrMember(userLeagues.length > 0);
       setInBenoliga(userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'));
       
-      setUserStats(prev => ({
+      setUserStats((prev: any) => ({
         ...prev,
         inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
         inPrivateLeague: userLeagues.length > 0

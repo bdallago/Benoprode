@@ -41,7 +41,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
         const userDoc = await getDoc(doc(db, 'users', targetUserId));
         if (userDoc.exists()) {
           setProfileData(userDoc.data());
-          setUserStats(prev => ({ ...prev, ...userDoc.data() }));
+          setUserStats((prev: any) => ({ ...prev, ...userDoc.data() }));
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -56,7 +56,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
       const leagues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const userLeagues = leagues.filter((l: any) => l.members?.includes(targetUserId) || l.createdBy === targetUserId);
       
-      setUserStats(prev => ({
+      setUserStats((prev: any) => ({
         ...prev,
         inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
         inPrivateLeague: userLeagues.length > 0
@@ -325,7 +325,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Medallas Destacadas</h3>
             {badges.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {badges.slice(0, 4).map(badge => (
+                {badges.slice(0, 4).map((badge: any) => (
                   <div key={badge.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2">
                     <span className="text-4xl">{badge.icon}</span>
                     <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{badge.name}</span>
