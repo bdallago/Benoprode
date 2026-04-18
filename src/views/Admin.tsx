@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
+import matchesData from "../lib/matches.json";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Save, Calculator, AlertCircle, CheckCircle2, Trash2, Users, MessageSquareWarning, Paperclip, Unlock } from "lucide-react";
@@ -38,6 +39,7 @@ export default function Admin() {
   const [actualGroups, setActualGroups] = useState<Record<string, string[]>>(GROUPS);
   const [actualSpecials, setActualSpecials] = useState<Record<string, string>>({});
   const [actualKnockouts, setActualKnockouts] = useState<Record<string, string[]>>({});
+  const [actualMatches, setActualMatches] = useState<Record<string, { teamA: number | '', teamB: number | '', outcome: string }>>({});
   
   // State for users
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -83,6 +85,7 @@ export default function Admin() {
           setActualGroups(sanitizedGroups);
           setActualSpecials(data.specials || {});
           setActualKnockouts(data.knockouts || {});
+          setActualMatches(data.matches || {});
         } else {
           setActualGroups(GROUPS);
         }
@@ -176,6 +179,16 @@ export default function Admin() {
     setActualSpecials(prev => ({ ...prev, [id]: value }));
   };
 
+  const handleMatchChange = (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => {
+    setActualMatches(prev => ({
+      ...prev,
+      [matchId]: {
+        ...(prev[matchId] || { teamA: '', teamB: '', outcome: '' }),
+        [field]: value
+      }
+    }));
+  };
+
   const saveResults = async () => {
     setSaving(true);
     setMessage(null);
@@ -186,6 +199,7 @@ export default function Admin() {
         groups: actualGroups,
         specials: actualSpecials,
         knockouts: actualKnockouts, // Keep this so it passes firestore rules
+        matches: actualMatches,
         updatedAt: new Date().toISOString()
       }, { merge: true });
       
@@ -362,6 +376,7 @@ export default function Admin() {
         groups: {},
         specials: {},
         knockouts: {},
+        matches: {},
         standings: {},
         updatedAt: new Date().toISOString()
       });
@@ -370,6 +385,7 @@ export default function Admin() {
       setActualGroups(GROUPS);
       setActualSpecials({});
       setActualKnockouts({});
+      setActualMatches({});
 
       // 3. Reset points for all users
       const usersSnap = await getDocs(collection(db, "users"));
@@ -692,6 +708,62 @@ export default function Admin() {
             </Card>
           ))}
         </div>
+      </div>
+
+      <div className="space-y-6 pt-8 pb-12 border-t border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2">Partidos Individuales (Resultados Reales)</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {matchesData.slice(0, 16).map((match) => {
+             const actual = actualMatches[match.id] || { teamA: '', teamB: '', outcome: '' };
+             return (
+              <Card key={match.id} className="overflow-visible">
+                <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center">
+                  <span className="text-sm font-medium">{t(`teams.${match.teamA}`)} vs {t(`teams.${match.teamB}`)}</span>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="number" 
+                        min="0" max="15" 
+                        className="w-12 h-10 text-center border rounded-md" 
+                        value={actual.teamA} 
+                        onChange={(e) => handleMatchChange(match.id, 'teamA', e.target.value !== '' ? parseInt(e.target.value) : '')} 
+                      />
+                    </div>
+                    <span className="font-bold">-</span>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="number" 
+                        min="0" max="15" 
+                        className="w-12 h-10 text-center border rounded-md" 
+                        value={actual.teamB} 
+                        onChange={(e) => handleMatchChange(match.id, 'teamB', e.target.value !== '' ? parseInt(e.target.value) : '')} 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <Button 
+                      size="sm" variant={actual.outcome === 'A' ? 'default' : 'outline'} 
+                      onClick={() => handleMatchChange(match.id, 'outcome', 'A')}
+                      className={`flex-1 ${actual.outcome === 'A' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>Gana A</Button>
+                    <Button 
+                      size="sm" variant={actual.outcome === 'DRAW' ? 'default' : 'outline'} 
+                      onClick={() => handleMatchChange(match.id, 'outcome', 'DRAW')}
+                      className={`flex-1 ${actual.outcome === 'DRAW' ? 'bg-amber-500 text-white hover:bg-amber-600' : ''}`}>Empate</Button>
+                    <Button 
+                      size="sm" variant={actual.outcome === 'B' ? 'default' : 'outline'} 
+                      onClick={() => handleMatchChange(match.id, 'outcome', 'B')}
+                      className={`flex-1 ${actual.outcome === 'B' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}>Gana B</Button>
+                  </div>
+                </CardContent>
+              </Card>
+             );
+          })}
+        </div>
+        {matchesData.length > 16 && (
+          <p className="text-sm text-gray-500 italic mt-4 text-center">Mostrando últimos 16 partidos en la vista rápida.</p>
+        )}
       </div>
 
       <div className="space-y-6 pt-8 pb-12 border-t border-gray-200 dark:border-gray-700 opacity-50">

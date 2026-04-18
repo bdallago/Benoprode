@@ -135,7 +135,13 @@ service cloud.firestore {
 
     match /predictions/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isAdmin() || (isOwner(userId) && (
+        request.time < timestamp.date(2026, 6, 8) || 
+        (
+          resource != null && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt'])
+        )
+      )));
     }
 
     match /results/{docId} {

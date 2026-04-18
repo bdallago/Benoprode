@@ -124,10 +124,10 @@ async function calculatePoints(database: any) {
             correctMatchCount++;
           }
           if (
-            predictedMatch.teamA !== '' && predictedMatch.teamB !== '' &&
-            actualMatch.teamA !== '' && actualMatch.teamB !== '' &&
-            predictedMatch.teamA === (actualMatch as any).teamA &&
-            predictedMatch.teamB === (actualMatch as any).teamB
+            (predictedMatch as any).teamA !== '' && (predictedMatch as any).teamB !== '' &&
+            (actualMatch as any).teamA !== '' && (actualMatch as any).teamB !== '' &&
+            (predictedMatch as any).teamA === (actualMatch as any).teamA &&
+            (predictedMatch as any).teamB === (actualMatch as any).teamB
           ) {
             totalPoints += 1; // Double points for exact match
             exactMatchCount++;

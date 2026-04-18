@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { User } from "firebase/auth";
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, getDoc, limit, getCountFromServer, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Trophy, Medal, User as UserIcon, Star, Shield, Info, CheckCircle2, BarChart2, X } from "lucide-react";
@@ -38,8 +38,12 @@ export default function Dashboard({ user }: { user: User }) {
 
   const [userStats, setUserStats] = useState<any>({});
 
+  const [totalPlayers, setTotalPlayers] = useState(0);
+  const [exactRank, setExactRank] = useState(0);
+
   useEffect(() => {
-    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"));
+    // 1. LIMIT TO TOP 100 TO AVOID MASSIVE DATABASE READ COSTS!
+    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(100));
     const unsubscribeUsers = onSnapshot(q, (snapshot) => {
       const playersData = snapshot.docs.map((doc) => ({ ...doc.data(), uid: doc.id } as Player));
       setPlayers(playersData);
@@ -48,6 +52,27 @@ export default function Dashboard({ user }: { user: User }) {
       console.error("Error fetching leaderboard", error);
       setLoading(false);
     });
+
+    // 2. FETCH EXACT RANK AND TOTAL USERS EFFICIENTLY
+    const fetchExactRank = async () => {
+      try {
+        const myDoc = await getDoc(doc(db, "users", user.uid));
+        const pts = myDoc.data()?.totalPoints || 0;
+        
+        // 2 parallel queries: Count total users, Count users with MORE points than me
+        const [totalSnap, rankSnap] = await Promise.all([
+          getCountFromServer(collection(db, "users")),
+          getCountFromServer(query(collection(db, "users"), where("totalPoints", ">", pts)))
+        ]);
+        
+        setTotalPlayers(totalSnap.data().count);
+        setExactRank(rankSnap.data().count + 1); // If 5 people have more points, I am rank 6
+      } catch (error) {
+        console.error("Error calculating exact rank", error);
+      }
+    };
+
+    fetchExactRank();
 
     // Fetch user document for referrals and stats
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
@@ -109,17 +134,16 @@ export default function Dashboard({ user }: { user: User }) {
     };
   }, [user.uid]);
 
-  const myData = players.find((p) => p.uid === user.uid);
+  const myData = players.find((p) => p.uid === user.uid) || userStats;
   const myPoints = myData?.totalPoints || 0;
-  const myRank = players.findIndex((p) => p.totalPoints === myPoints) + 1;
+  const myRank = exactRank > 0 ? exactRank : (players.findIndex((p) => p.totalPoints === myPoints) + 1);
   
   const userLevel = getUserLevel(myPoints);
   
-  const userBadgeIds = myData?.earnedBadges || [];
+  const userBadgeIds = myData?.earnedBadges || userStats?.earnedBadges || [];
   const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
   // Top 10% / Top 30% Logic
-  const totalPlayers = players.length;
   const percentile = totalPlayers > 1 ? (myRank / totalPlayers) * 100 : 100;
   
   const rankBadges = [];
