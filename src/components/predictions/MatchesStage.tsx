@@ -125,7 +125,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
           acc[capitalizedDay].push(match);
           return acc;
         }, {} as Record<string, typeof matchesData>)).map(([day, dayMatches]) => (
-          <div key={day} className="space-y-4" ref={el => dayRefs.current[day] = el}>
+          <div key={day} className="space-y-4" ref={(el) => { dayRefs.current[day] = el; }}>
             <div className={`flex items-center justify-between border-b dark:border-gray-700 pb-2 cursor-pointer select-none group ${day === todayCapitalized ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setCollapsedDays(prev => ({...prev, [day]: !prev[day]}))}>
               <div className="flex items-center gap-2">
                  <div className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
