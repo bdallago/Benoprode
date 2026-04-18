@@ -351,8 +351,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </main>
           
           <footer 
-            className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url("/footer-bg.jpeg")' }}
+            className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-center bg-no-repeat"
+            style={{ backgroundImage: 'url("/footer-bg.jpg")' }}
           >
             <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-400">
               <p>Este Prode fue realizado por <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
