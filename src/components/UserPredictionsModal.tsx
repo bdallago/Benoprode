@@ -84,7 +84,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           setUserStats(userSnap.data());
         }
 
-        const leagues = leaguesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const leagues = leaguesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
         const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
         
         setUserStats((prev: any) => ({
