@@ -312,16 +312,23 @@ export default function Welcome() {
                {todayMatches.map(match => {
                  const dateObj = new Date(match.date);
                  const timeStr = dateObj.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute:'2-digit' });
+                 
+                 // Encontrar a qué grupo pertenece el partido
+                 const groupEntry = Object.entries(GROUPS).find(([_, teams]) => 
+                   teams.includes(match.teamA) && teams.includes(match.teamB)
+                 );
+                 const groupName = groupEntry ? groupEntry[0] : 'E';
+
                  return (
                    <div key={match.id} className="relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
                      {/* Fondo sutil indicando el grupo */}
                      <div className="absolute top-0 right-0 p-2 opacity-10 font-black text-6xl pointer-events-none -mt-4 -mr-2 text-gray-900 dark:text-white">
-                        {match.group || 'E'}
+                        {groupName}
                      </div>
 
                      <div className="flex items-center justify-between z-10 w-full mb-3">
                         <span className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-sm">
-                           GRUPO {(match.group || '').replace('group_', '').toUpperCase()}
+                           GRUPO {groupName}
                         </span>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-sm">
                            <Clock className="w-3 h-3" />
@@ -372,7 +379,7 @@ export default function Welcome() {
         </CardHeader>
         <CardContent className="text-gray-700 dark:text-gray-300">
           <p className="mb-4">
-            ¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de "Sociable"!
+            ¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de \"Sociable\"!
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input 
