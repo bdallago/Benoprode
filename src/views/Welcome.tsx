@@ -239,21 +239,17 @@ export default function Welcome() {
           <div className="flex-1 flex flex-col items-center justify-center mb-6 w-full"> {/* Increased bottom margin slightly */}
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
-              <div className="w-full sm:hidden">
-                <img 
-                  src="/portada-telefono.jpg" 
-                  alt="El Prode de Beno Mobile" 
-                  className="w-full h-auto block"
-                />
-              </div>
+              <img 
+                src="/portada-telefono.jpeg?v=2" 
+                alt="El Prode de Beno Mobile" 
+                className="w-full h-auto block sm:hidden shrink-0"
+              />
               {/* Desktop Header */}
-              <div className="w-full hidden sm:block">
-                <img 
-                  src="/portada-escritorio.jpg" 
-                  alt="El Prode de Beno Desktop" 
-                  className="w-full h-auto block"
-                />
-              </div>
+              <img 
+                src="/portada-escritorio.jpeg?v=2" 
+                alt="El Prode de Beno Desktop" 
+                className="w-full h-auto hidden sm:block shrink-0"
+              />
             </div>
             
             {/* SEO & Screen readers */}
