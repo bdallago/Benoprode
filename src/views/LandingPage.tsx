@@ -49,13 +49,13 @@ export default function LandingPage() {
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
           <img 
-            src="/portada-telefono.jpeg" 
+            src="/portada-telefono.jpeg?v=2" 
             alt="El Prode de Beno Mobile" 
             className="w-full h-auto block sm:hidden shrink-0"
           />
           {/* Desktop Header */}
           <img 
-            src="/portada-escritorio.jpeg" 
+            src="/portada-escritorio.jpeg?v=2" 
             alt="El Prode de Beno Desktop" 
             className="w-full h-auto hidden sm:block shrink-0"
           />
