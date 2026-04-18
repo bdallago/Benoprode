@@ -127,8 +127,8 @@ function GlobalBadgeListener({ user }: { user: User }) {
       if (newEarnedBadges.length > 0) {
         setBadgeQueue(prev => {
           const existingIds = prev.map(p => p.id);
-          const toAdd = newEarnedBadges.filter(b => !existingIds.includes(b.id));
-          return [...prev, ...toAdd];
+          const toAdd = newEarnedBadges.filter(b => b && !existingIds.includes(b.id));
+          return [...prev, ...(toAdd as any[])];
         });
         
         const newBadgesList = Array.from(new Set([...storedBadges, ...userBadgeIds]));
