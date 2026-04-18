@@ -137,7 +137,7 @@ export function Fixture() {
 
   // Agrupar partidos por fecha
   const groupedMatches: Record<string, any[]> = {};
-  matches.forEach(match => {
+  matches.forEach((match: any) => {
     if (!groupedMatches[match.date]) {
       groupedMatches[match.date] = [];
     }
