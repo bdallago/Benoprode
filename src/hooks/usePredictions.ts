@@ -4,7 +4,8 @@ import { db } from "../firebase";
 import { GROUPS } from "../data";
 import { useTranslation } from 'react-i18next';
 
-const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
+// Fase de grupos se bloquea el 8 de Junio a las 00:00hs (-03:00 para alinear con Bs As)
+const DEADLINE = new Date('2026-06-08T00:00:00-03:00').getTime();
 
 export function usePredictions(userId: string) {
   const { t } = useTranslation();
@@ -75,14 +76,22 @@ export function usePredictions(userId: string) {
     return () => clearInterval(interval);
   }, [isLocked, loading]);
 
-  const isTimeUp = timeLeft <= 0;
-  const effectiveIsLocked = isLocked || isTimeUp;
+  const isGroupStageLocked = Date.now() >= DEADLINE || isLocked;
+  // We keep effectiveIsLocked as the global overall lock (which mostly applies to Groups / Knockout overall manual locking)
+  // but we will expose isGroupStageLocked natively.
+  const effectiveIsLocked = isLocked || isGroupStageLocked;
 
   const savePredictions = async (lock: boolean = false) => {
     setSaving(true);
     setMessage(null);
     
     try {
+      const now = Date.now();
+      const tenMins = 10 * 60 * 1000;
+      const lockedLastMinute = now >= DEADLINE - tenMins && now < DEADLINE;
+      const DEADLINE_EARLY = new Date('2026-06-01T00:00:00-03:00').getTime();
+      const lockedEarly = lock && now < DEADLINE_EARLY;
+
       const docRef = doc(db, "predictions", userId);
       await setDoc(docRef, {
         uid: userId,
@@ -91,6 +100,9 @@ export function usePredictions(userId: string) {
         knockouts: knockoutPredictions,
         matches: matchPredictions,
         isLocked: lock || effectiveIsLocked,
+        hasSavedPredictions: true,
+        ...(lockedLastMinute ? { lockedLastMinute: true } : {}),
+        ...(lockedEarly ? { lockedEarly: true } : {}),
         updatedAt: new Date().toISOString()
       }, { merge: true });
       

@@ -82,34 +82,98 @@ export function getUserLevel(points: number) {
 
 export function getUserBadges(
   points: number, 
-  userStats: any = {}
+  userStats: any = {},
+  currentEarnedIds: string[] = [], // Pass existing so we don't lose them
+  context: any = {} // Contains info like exactMatchCount, groupsPerfectCount, etc.
 ): string[] {
-  const earnedBadgeIds: string[] = [];
+  const earned = new Set<string>(currentEarnedIds);
   
-  // Logic to determine earned badges based on userStats
-  
-  // Example logic based on referrals
+  const {
+    exactMatchCount = 0,
+    groupsPerfectCount = 0,
+    perfectDaysCount = 0,
+    perfectDatesCount = 0,
+    maxStreak = 0,
+    differentDaysWithPoints = 0,
+    paloAfueraCount = 0,
+    duelsWon = 0,
+    topPercentage = 100, // 100% means lowest
+    isGroupStageFinished = false,
+    mufaGroupCount = 0,
+    argentinaPerfectGroup = false,
+    correctMatchCount = 0, // Just outcome
+    pointsByDate = {}, // Format { 'date1': points, 'date2': points, 'date3': points }
+    zeroZeroPredictionsCount = 0,
+    longShotsGuessed = 0 // Cazador de utopias
+  } = context;
+
+  // Grupos y Resultados (Solo al termino de la fase de grupos)
+  if (isGroupStageFinished) {
+    if (groupsPerfectCount >= 1) earned.add('visionario');
+    if (groupsPerfectCount >= 3) earned.add('oraculo');
+    if (groupsPerfectCount >= 6) earned.add('viajero_tiempo');
+    if (mufaGroupCount >= 1) earned.add('mufa');
+  }
+
+  if (exactMatchCount >= 1) earned.add('ojo_halcon');
+  if (exactMatchCount >= 5) earned.add('francotirador');
+  if (exactMatchCount >= 10) earned.add('cirujano');
+  if (exactMatchCount >= 20) earned.add('nostradamus');
+
+  if (userStats.hasSavedPredictions) earned.add('primer_paso');
+  if (userStats.lockedEarly) earned.add('confiado');
+  if (userStats.inBenoliga) earned.add('rival_beno');
+  if (userStats.inPrivateLeague) earned.add('competitivo');
+
+  if (perfectDaysCount >= 1) earned.add('dia_perfecto');
+  if (perfectDatesCount >= 1) earned.add('dueno_fecha');
+
+  if (maxStreak >= 3) earned.add('en_racha');
+  if (maxStreak >= 5) earned.add('on_fire');
+  if (maxStreak >= 10) earned.add('imparable');
+
   const referrals = userStats.referralsCount || 0;
-  if (referrals >= 10) earnedBadgeIds.push('embajador');
-  else if (referrals >= 5) earnedBadgeIds.push('influencer');
-  else if (referrals >= 1) earnedBadgeIds.push('sociable');
+  if (referrals >= 1) earned.add('sociable');
+  if (referrals >= 5) earned.add('influencer');
+  if (referrals >= 10) earned.add('embajador');
 
-  // Example logic based on saved predictions
-  if (userStats.hasSavedPredictions) {
-    earnedBadgeIds.push('primer_paso');
+  if (differentDaysWithPoints >= 3) earned.add('constante');
+  if (differentDaysWithPoints >= 5) earned.add('fiel');
+  if (differentDaysWithPoints >= 10) earned.add('incondicional');
+
+  if (paloAfueraCount >= 1) earned.add('palo_afuera');
+
+  if (correctMatchCount >= 10) earned.add('suma_sigue');
+  if (correctMatchCount >= 20) earned.add('hormiga');
+  if (correctMatchCount >= 30) earned.add('calculadora');
+
+  if (duelsWon >= 1) earned.add('primera_sangre');
+  if (duelsWon >= 3) earned.add('duelista');
+  if (duelsWon >= 5) earned.add('gladiador');
+  if (duelsWon >= 10) earned.add('invencible');
+
+  if (userStats.lockedLastMinute) earned.add('sobre_hora');
+  if (userStats.failedClearFavorite) earned.add('piedra');
+  if (userStats.isChampionInLargeLeague) earned.add('campeon_barrio'); // At the end of World Cup
+
+  if (topPercentage <= 30) earned.add('zona_copas');
+  if (topPercentage <= 10) earned.add('en_cima');
+  
+  if (userStats.top30AfterDate3) earned.add('siempre_arriba');
+  if (userStats.top10AfterDate3) earned.add('creme_creme');
+  
+  if (userStats.guessedUnclearMatch) earned.add('ojo_clinico');
+  if (argentinaPerfectGroup) earned.add('esta_locura');
+
+  // Secretas
+  if (pointsByDate['date3'] > pointsByDate['date1'] && pointsByDate['date3'] > pointsByDate['date2']) {
+    earned.add('estrategia');
   }
+  if (longShotsGuessed >= 1) earned.add('cazador_utopias');
+  if (userStats.pointsFromLateGoal) earned.add('hora_juez');
+  if (userStats.inLargePrivateLeague) earned.add('muchachos'); // 10+ members
+  if (zeroZeroPredictionsCount >= 1) earned.add('zzz');
+  if (userStats.secondPlaceAfterGroups) earned.add('hare_10_veces');
 
-  if (userStats.lockedEarly) {
-    earnedBadgeIds.push('confiado');
-  }
-
-  if (userStats.inBenoliga) {
-    earnedBadgeIds.push('rival_beno');
-  }
-
-  if (userStats.inPrivateLeague) {
-    earnedBadgeIds.push('competitivo');
-  }
-
-  return earnedBadgeIds;
+  return Array.from(earned);
 }

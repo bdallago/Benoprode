@@ -30,10 +30,17 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
 
   // Calculate ranks first
   const playersWithRank = useMemo(() => {
-    return players.map(player => ({
-      ...player,
-      rank: players.findIndex(p => p.totalPoints === player.totalPoints) + 1
-    }));
+    return players.map(player => {
+      const rank = players.findIndex(p => p.totalPoints === player.totalPoints) + 1;
+      const pct = players.length > 1 ? (rank / players.length) * 100 : 100;
+      let topBadges = [];
+      if (pct <= 10 && player.totalPoints > 0) {
+        topBadges.push('Top 10%');
+      } else if (pct <= 30 && player.totalPoints > 0) {
+        topBadges.push('Top 30%');
+      }
+      return { ...player, rank, topBadges };
+    });
   }, [players]);
 
   const filteredPlayers = useMemo(() => {
@@ -163,6 +170,12 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                       <span className={`font-medium ${player.uid === currentUser.uid ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
                         {player.displayName}
                         {player.uid === currentUser.uid && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">Tú</span>}
+                        {/* @ts-ignore - added dynamically */}
+                        {player.topBadges && player.topBadges.map(badge => (
+                          <span key={badge} className={`ml-2 text-xs px-2 py-0.5 rounded-full border ${badge === 'Top 10%' ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-400' : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300'}`}>
+                            {badge}
+                          </span>
+                        ))}
                       </span>
                     </div>
                   </td>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Home, Trophy, Users, PenSquare, BookOpen, MessageSquareWarning, X, FileText, Image as ImageIcon, Film, Clock, Lock } from "lucide-react";
 import Link from "next/link";
@@ -12,6 +13,8 @@ import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import matchesData from "../lib/matches.json";
 
 import { GuidedTour } from "../components/GuidedTour";
+
+// Removing JS imports for public images
 
 const WORLD_CUP_START = new Date('2026-06-11T00:00:00').getTime();
 const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
@@ -213,15 +216,15 @@ export default function Welcome() {
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
               <img 
-                src="/headertelefono.jpeg" 
+                src="/portada-telefono.jpeg" 
                 alt="El Prode de Beno Mobile" 
-                className="w-full h-auto object-cover block sm:hidden"
+                className="w-full h-auto block sm:hidden shrink-0"
               />
               {/* Desktop Header */}
               <img 
-                src="/headerescritorio.jpeg" 
+                src="/portada-escritorio.jpeg" 
                 alt="El Prode de Beno Desktop" 
-                className="w-full h-auto object-cover hidden sm:block"
+                className="w-full h-auto hidden sm:block shrink-0"
               />
             </div>
             
@@ -243,8 +246,10 @@ export default function Welcome() {
                 <span className="font-medium text-gray-600 dark:text-gray-400">Fase de Grupos</span>
                 <span className="font-bold text-blue-600 dark:text-blue-400">{progress.groups} / 12</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(progress.groups / 12) * 100}%` }}></div>
+              <div className="flex w-full gap-[2px] h-2">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.groups ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
+                ))}
               </div>
             </div>
             <div>
@@ -252,8 +257,10 @@ export default function Welcome() {
                 <span className="font-medium text-gray-600 dark:text-gray-400">Preguntas Especiales</span>
                 <span className="font-bold text-indigo-600 dark:text-indigo-400">{progress.specials} / 10</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(progress.specials / 10) * 100}%` }}></div>
+              <div className="flex w-full gap-[2px] h-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.specials ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
+                ))}
               </div>
             </div>
             <div>
@@ -261,8 +268,10 @@ export default function Welcome() {
                 <span className="font-medium text-gray-600 dark:text-gray-400">Partidos Individuales</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{progress.matches} / 72</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                <div className="bg-emerald-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(progress.matches / 72) * 100}%` }}></div>
+              <div className="flex w-full gap-[1px] h-2">
+                {Array.from({ length: 72 }).map((_, i) => (
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.matches ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-600'}`} />
+                ))}
               </div>
             </div>
           </div>

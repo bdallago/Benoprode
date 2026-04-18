@@ -86,7 +86,8 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
               {dayMatches.map((match) => {
                 const matchDate = new Date(match.date);
                 const isMatchLocked = Date.now() >= matchDate.getTime() - 60 * 60 * 1000;
-                const locked = isMatchLocked || effectiveIsLocked;
+                // Partidos individuales se bloquean SOLO 1 hora antes de cada partido, ignorando el bloqueo global de fase de grupos
+                const locked = isMatchLocked;
                 const pred = matchPredictions[match.id] || { teamA: '', teamB: '', outcome: '' };
 
                 return (

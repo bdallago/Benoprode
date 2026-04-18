@@ -118,6 +118,17 @@ export default function Dashboard({ user }: { user: User }) {
   const userBadgeIds = myData?.earnedBadges || [];
   const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
+  // Top 10% / Top 30% Logic
+  const totalPlayers = players.length;
+  const percentile = totalPlayers > 1 ? (myRank / totalPlayers) * 100 : 100;
+  
+  const rankBadges = [];
+  if (percentile <= 10 && myPoints > 0) {
+    rankBadges.push({ text: "Top 10% Mundial 🏆", className: "bg-amber-500/20 text-amber-200 border border-amber-500/50" });
+  } else if (percentile <= 30 && myPoints > 0) {
+    rankBadges.push({ text: "Top 30% Mundial 🥈", className: "bg-slate-300/20 text-slate-100 border border-slate-300/50" });
+  }
+
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
       <CountdownBanner />
@@ -152,10 +163,15 @@ export default function Dashboard({ user }: { user: User }) {
                   <BarChart2 className="h-12 w-12 text-indigo-200" />
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-2">
+              <div className="mt-6 flex flex-wrap items-center gap-2">
                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold bg-white/20 text-white backdrop-blur-sm`}>
                   Nivel: {userLevel.name}
                 </span>
+                {rankBadges.map((badge, index) => (
+                  <span key={index} className={`px-4 py-1.5 rounded-full text-sm font-bold backdrop-blur-sm shadow-sm ${badge.className}`}>
+                    {badge.text}
+                  </span>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -271,17 +287,16 @@ export default function Dashboard({ user }: { user: User }) {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto">
+                 <div className="p-6 overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {BADGES.map(badge => {
                 const isEarned = userBadgeIds.includes(badge.id);
                 const isSecretAndNotEarned = badge.isSecret && !isEarned;
                 
                 const displayIcon = isSecretAndNotEarned ? (
-                  <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-2xl font-bold">?</div>
+                  <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-2xl font-bold shrink-0">?</div>
                 ) : (
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-3xl ${isEarned ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 grayscale'}`}>
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-3xl shrink-0 ${isEarned ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 grayscale'}`}>
                     {badge.icon}
                   </div>
                 );
@@ -290,13 +305,13 @@ export default function Dashboard({ user }: { user: User }) {
                 const displayDesc = isSecretAndNotEarned ? "Sabrás su contenido cuando la obtengas" : badge.description;
 
                 return (
-                  <div key={badge.id} className={`flex items-start gap-3 p-3 rounded-xl border ${isEarned ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70'}`}>
+                  <div key={badge.id} className={`flex items-start gap-4 p-5 min-h-[140px] rounded-xl border ${isEarned ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70'}`}>
                     {displayIcon}
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-bold text-sm truncate ${isEarned ? 'text-blue-900 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <h4 className={`font-bold text-base ${isEarned ? 'text-blue-900 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                         {displayName}
                       </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-3">
                         {displayDesc}
                       </p>
                     </div>

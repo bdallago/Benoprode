@@ -59,8 +59,8 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   return (
     <>
       <nav 
-        className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover bg-center relative"
-        style={{ backgroundImage: 'url("/navbar.jpeg")' }}
+        className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover relative"
+        style={{ backgroundImage: 'url("/navbar.jpeg")', backgroundPosition: 'left center' }}
       >
         <div className="absolute inset-0 dark:bg-gray-950/80"></div>
         <div className="container mx-auto px-4 relative z-10">

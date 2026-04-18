@@ -5,6 +5,7 @@ import { auth, googleProvider } from "../firebase";
 import { useTranslation } from 'react-i18next';
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Image from "next/image";
 
 export default function LandingPage() {
   const { t } = useTranslation();
@@ -48,15 +49,15 @@ export default function LandingPage() {
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
           <img 
-            src="/headertelefono.jpeg" 
+            src="/portada-telefono.jpeg" 
             alt="El Prode de Beno Mobile" 
-            className="w-full h-auto object-cover block sm:hidden"
+            className="w-full h-auto block sm:hidden shrink-0"
           />
           {/* Desktop Header */}
           <img 
-            src="/headerescritorio.jpeg" 
+            src="/portada-escritorio.jpeg" 
             alt="El Prode de Beno Desktop" 
-            className="w-full h-auto object-cover hidden sm:block"
+            className="w-full h-auto hidden sm:block shrink-0"
           />
         </div>
         
