@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
+import portadaTelefono from "../../public/portada-telefono.jpeg";
+import portadaEscritorio from "../../public/portada-escritorio.jpeg";
 
 export default function LandingPage() {
   const { t } = useTranslation();
@@ -48,17 +50,25 @@ export default function LandingPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 text-center">
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
-          <img 
-            src="/portada-telefono.jpeg" 
-            alt="El Prode de Beno Mobile" 
-            className="w-full h-auto block sm:hidden shrink-0"
-          />
+          <div className="w-full relative block sm:hidden">
+            <Image 
+              src={portadaTelefono} 
+              alt="El Prode de Beno Mobile" 
+              className="w-full h-auto shrink-0"
+              referrerPolicy="no-referrer"
+              priority
+            />
+          </div>
           {/* Desktop Header */}
-          <img 
-            src="/portada-escritorio.jpeg" 
-            alt="El Prode de Beno Desktop" 
-            className="w-full h-auto hidden sm:block shrink-0"
-          />
+          <div className="w-full relative hidden sm:block">
+            <Image 
+              src={portadaEscritorio} 
+              alt="El Prode de Beno Desktop" 
+              className="w-full h-auto shrink-0"
+              referrerPolicy="no-referrer"
+              priority
+            />
+          </div>
         </div>
         
         <p className="mt-4 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
