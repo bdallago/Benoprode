@@ -14,9 +14,6 @@ import matchesData from "../lib/matches.json";
 
 import { GuidedTour } from "../components/GuidedTour";
 
-import portadaTelefono from "../../public/portada-telefono.jpeg";
-import portadaEscritorio from "../../public/portada-escritorio.jpeg";
-
 const WORLD_CUP_START = new Date('2026-06-11T00:00:00').getTime();
 const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
 
@@ -240,25 +237,17 @@ export default function Welcome() {
           <div className="flex-1 flex flex-col items-center justify-center mb-6 w-full"> {/* Increased bottom margin slightly */}
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
-              <div className="w-full relative block sm:hidden">
-                <Image 
-                  src={portadaTelefono} 
-                  alt="El Prode de Beno Mobile" 
-                  className="w-full h-auto shrink-0"
-                  referrerPolicy="no-referrer"
-                  priority
-                />
-              </div>
+              <img 
+                src="/portada-telefono.jpeg" 
+                alt="El Prode de Beno Mobile" 
+                className="w-full h-auto block sm:hidden shrink-0"
+              />
               {/* Desktop Header */}
-              <div className="w-full relative hidden sm:block">
-                <Image 
-                  src={portadaEscritorio} 
-                  alt="El Prode de Beno Desktop" 
-                  className="w-full h-auto shrink-0"
-                  referrerPolicy="no-referrer"
-                  priority
-                />
-              </div>
+              <img 
+                src="/portada-escritorio.jpeg" 
+                alt="El Prode de Beno Desktop" 
+                className="w-full h-auto hidden sm:block shrink-0"
+              />
             </div>
             
             {/* SEO & Screen readers */}
