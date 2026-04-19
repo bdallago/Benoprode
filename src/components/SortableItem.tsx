@@ -4,6 +4,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { TeamFlag } from './Fixture';
+
 export const SortableItem: React.FC<{ id: string, team: string, index: number, disabled?: boolean }> = ({ id, team, index, disabled = false }) => {
   const { t } = useTranslation();
   const {
@@ -50,7 +52,10 @@ export const SortableItem: React.FC<{ id: string, team: string, index: number, d
       }`}>
         {index + 1}
       </div>
-      <span className="font-medium text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">{t(`teams.${team}`)}</span>
+      <div className="flex items-center gap-2 truncate">
+        <TeamFlag teamName={team} />
+        <span className="font-medium text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">{t(`teams.${team}`)}</span>
+      </div>
     </div>
   );
 }
