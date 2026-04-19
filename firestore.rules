@@ -196,6 +196,16 @@ service cloud.firestore {
       // Only admins can read, update, delete reports
       allow read, update, delete: if isAdmin();
     }
+
+    // ===============================================================
+    // Collection: settings
+    // ===============================================================
+    match /settings/{docId} {
+      // Anyone can read visual settings, only admins can write
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ===============================================================
     // Collection: friendRequests
     // ===============================================================

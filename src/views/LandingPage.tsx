@@ -6,10 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
+import { useAuth } from "../components/Providers";
 
 export default function LandingPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { visualSettings } = useAuth();
 
   useEffect(() => {
     // Catch any successful redirect sign-ins
@@ -49,13 +51,13 @@ export default function LandingPage() {
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
           <img 
-            src="/portada-telefono.jpeg?v=2" 
+            src={visualSettings?.portadaMobileUrl || "/portada-telefono.jpeg?v=2"} 
             alt="El Prode de Beno Mobile" 
             className="w-full h-auto block sm:hidden shrink-0"
           />
           {/* Desktop Header */}
           <img 
-            src="/portada-escritorio.jpeg?v=2" 
+            src={visualSettings?.portadaDesktopUrl || "/portada-escritorio.jpeg?v=2"} 
             alt="El Prode de Beno Desktop" 
             className="w-full h-auto hidden sm:block shrink-0"
           />

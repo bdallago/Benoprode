@@ -13,13 +13,21 @@ import { X } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { TooltipProvider } from "./ui/tooltip";
 
+export interface VisualSettings {
+  navbarUrl?: string;
+  footerUrl?: string;
+  portadaMobileUrl?: string;
+  portadaDesktopUrl?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  visualSettings: VisualSettings | null;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false, visualSettings: null });
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -215,12 +223,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [visualSettings, setVisualSettings] = useState<VisualSettings | null>(null);
   const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useTheme();
 
   useEffect(() => {
+    const unsubVisual = onSnapshot(doc(db, "settings", "visual"), (snapshot) => {
+      if (snapshot.exists()) {
+        setVisualSettings(snapshot.data() as VisualSettings);
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoading(false); // Unblock UI immediately after auth state is known
@@ -329,7 +344,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubVisual();
+    };
   }, []);
 
   if (loading) {
@@ -342,7 +360,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-      <AuthContext.Provider value={{ user, loading, isAdmin }}>
+      <AuthContext.Provider value={{ user, loading, isAdmin, visualSettings }}>
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && <GlobalBadgeListener user={user} />}
@@ -352,7 +370,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           
           <footer 
             className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url("/Footer - el Prode de Beno.jpg.jpeg")' }}
+            style={{ backgroundImage: `url("${visualSettings?.footerUrl || '/Footer - el Prode de Beno.jpg.jpeg'}")` }}
           >
             <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-400">
               <p>Este Prode fue realizado por <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
