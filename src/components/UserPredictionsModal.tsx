@@ -122,7 +122,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
-            <button onClick={onClose} className="text-gray-500 dark:text-gray-400"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="text-gray-500 dark:text-gray-200"><X className="w-5 h-5" /></button>
           </div>
           <p className="text-gray-600 dark:text-gray-300 py-4 text-center">{t('userPredictions.noPredictions')}</p>
           <div className="flex justify-end mt-4">
@@ -214,7 +214,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               </div>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-500 dark:text-gray-400 p-2 bg-gray-100 dark:bg-gray-700 rounded-full ml-4"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-500 dark:text-gray-200 p-2 bg-gray-100 dark:bg-gray-700 rounded-full ml-4"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="border-b dark:border-gray-700 px-6 pt-4 bg-gray-50 dark:bg-gray-800/80">
@@ -268,7 +268,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                             return (
                               <li key={`${groupLetter}-${index}`} className="p-3 flex items-center justify-between transition-colors duration-200 bg-white dark:bg-gray-800">
                                 <div className="flex items-center gap-3">
-                                  <span className={`font-bold w-5 text-center ${index < 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                                  <span className={`font-bold w-5 text-center ${index < 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-300'}`}>
                                     {index + 1}
                                   </span>
                                   <span className="font-medium text-gray-900 dark:text-gray-100">{t(`teams.${team}`)}</span>
@@ -394,7 +394,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                          {matches.map((m: any, idx: number) => (
                            <div key={idx} className="flex flex-col bg-gray-50 dark:bg-gray-800 p-3 rounded-md border dark:border-gray-700 text-sm">
-                             <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">{m.label}</div>
+                             <div className="text-gray-500 dark:text-gray-200 text-xs mb-1">{m.label}</div>
                              <div className="flex items-center justify-between font-medium">
                                <span className="text-gray-900 dark:text-gray-100">{m.teamA} vs {m.teamB || 'TBD'}</span>
                                {canChallenge && m.winner && (

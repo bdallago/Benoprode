@@ -16,7 +16,7 @@ export function SpecialPredictions({ specialPredictions, effectiveIsLocked, hand
       <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2 transition-colors duration-200">
         {t('predictions.specialQuestions')}
       </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-justify transition-colors duration-200">
+      <p className="text-sm text-gray-600 dark:text-gray-200 mb-4 text-justify transition-colors duration-200">
         {t('predictions.specialQuestionsDesc')}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

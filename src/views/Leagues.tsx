@@ -189,7 +189,7 @@ export default function Leagues({ user }: { user: User }) {
                         <Globe className="w-3 h-3" /> {t('leagues.public')}
                       </span>
                     </div>
-                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <span className="text-sm font-normal text-gray-500 dark:text-gray-200 flex items-center gap-1">
                       <Users className="w-4 h-4" /> {benoliga ? benoliga.members.length : 1}
                     </span>
                   </CardTitle>
@@ -254,7 +254,7 @@ export default function Leagues({ user }: { user: User }) {
                         </button>
                       )}
                     </div>
-                    <span className="text-sm font-normal text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <span className="text-sm font-normal text-gray-500 dark:text-gray-200 flex items-center gap-1">
                       <Users className="w-4 h-4" /> {league.members.length}
                     </span>
                   </CardTitle>
@@ -288,7 +288,7 @@ export default function Leagues({ user }: { user: User }) {
                         <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinLeague')}
                       </Button>
                     ) : (
-                      <Button size="sm" disabled className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed transition-colors duration-200">
+                      <Button size="sm" disabled className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-200 border-gray-200 dark:border-gray-700 cursor-not-allowed transition-colors duration-200">
                         <Lock className="w-4 h-4 mr-2"/> {t('leagues.requiresInvite')}
                       </Button>
                     )
@@ -298,7 +298,7 @@ export default function Leagues({ user }: { user: User }) {
             )
           })}
           {visibleLeagues.length === 0 && (
-            <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-700 transition-colors duration-200">
+            <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-700 transition-colors duration-200">
               {t('leagues.noLeagues')}
             </div>
           )}
@@ -345,20 +345,20 @@ export default function Leagues({ user }: { user: User }) {
                       onClick={() => setIsPublic(false)}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Lock className={`w-4 h-4 ${!isPublic ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                        <Lock className={`w-4 h-4 ${!isPublic ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-200'}`} />
                         <span className={`font-medium ${!isPublic ? 'text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>{t('leagues.private')}</span>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('leagues.privateDesc')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-200">{t('leagues.privateDesc')}</p>
                     </div>
                     <div 
                       className={`border rounded-lg p-3 cursor-pointer transition-colors ${isPublic ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                       onClick={() => setIsPublic(true)}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Globe className={`w-4 h-4 ${isPublic ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                        <Globe className={`w-4 h-4 ${isPublic ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-200'}`} />
                         <span className={`font-medium ${isPublic ? 'text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>{t('leagues.public')}</span>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('leagues.publicDesc')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-200">{t('leagues.publicDesc')}</p>
                     </div>
                   </div>
                 </div>

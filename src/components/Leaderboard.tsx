@@ -108,14 +108,14 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={goToMyRank}
-              className="w-full sm:w-auto flex items-center gap-2 whitespace-nowrap"
+              className="w-full sm:w-auto flex items-center gap-2 whitespace-nowrap bg-blue-50 dark:bg-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500 text-blue-700 dark:text-white border-blue-200 dark:border-blue-500 font-medium transition-colors"
             >
               <Target className="h-4 w-4" /> Mi Posición
             </Button>
@@ -153,7 +153,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                       player.rank === 1 ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-400 border border-sky-300' :
                       player.rank === 2 ? 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300' :
                       player.rank === 3 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-400 border border-orange-300' :
-                      'text-gray-600 dark:text-gray-400'
+                      'text-gray-600 dark:text-gray-200'
                     }`}>
                       {player.rank}
                     </div>
@@ -164,7 +164,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                         <img src={player.photoURL} alt={player.displayName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
-                          <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-200" />
                         </div>
                       )}
                       <span className={`font-medium ${player.uid === currentUser.uid ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
@@ -204,7 +204,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
               ))
             ) : (
               <tr>
-                <td colSpan={onRemoveUser ? 4 : 3} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={onRemoveUser ? 4 : 3} className="py-8 text-center text-gray-500 dark:text-gray-200">
                   No se encontraron jugadores.
                 </td>
               </tr>
@@ -215,7 +215,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
 
       {totalPages > 1 && (
         <div className="bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-gray-200">
             Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredPlayers.length)} de {filteredPlayers.length}
           </span>
           <div className="flex items-center gap-2">

@@ -75,7 +75,7 @@ export function KnockoutStage() {
                 <div key={i} className="relative py-2 flex flex-col justify-center flex-1">
                   <Card className={`bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm relative z-10 ${idx === 4 ? 'border-purple-500 border-2 shadow-purple-200 dark:shadow-purple-900/20' : ''}`}>
                     <CardHeader className={`p-2 pb-1 border-b dark:border-gray-700 ${idx === 4 ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                      <span className={`text-xs font-bold ${idx === 4 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      <span className={`text-xs font-bold ${idx === 4 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-500 dark:text-gray-200'}`}>
                         {idx === 4 ? 'FINAL' : `Partido ${Math.pow(2, 5) - Math.pow(2, 5 - idx) + i + 1}`}
                       </span>
                     </CardHeader>
@@ -113,7 +113,7 @@ export function KnockoutStage() {
 
       <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-lg text-center border-2 border-dashed border-gray-300 dark:border-gray-600 transition-colors duration-200 opacity-50">
         <p className="text-gray-600 dark:text-gray-300 font-medium">{t('predictions.tbd')}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('predictions.knockoutDesc')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-200 mt-2">{t('predictions.knockoutDesc')}</p>
       </div>
     </div>
   );

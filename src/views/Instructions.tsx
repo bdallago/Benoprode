@@ -10,7 +10,7 @@ export default function Instructions() {
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           Manual de Juego
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+        <p className="text-gray-500 dark:text-gray-200 max-w-2xl mx-auto">
           Aprendé a jugar al Prode de Beno en 5 minutos. Desplegá los paneles para leer las reglas y el sistema de puntuación.
         </p>
       </div>
@@ -66,11 +66,10 @@ export default function Instructions() {
               </div>
               <div className="text-left">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">Sistema de Puntuación</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-normal mt-0.5">¿Cuántos puntos vale cada acierto?</p>
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6 pt-2">
+          <AccordionContent className="px-6 pb-6 pt-2 text-gray-700 dark:text-gray-300">
             <div className="space-y-6">
               
               {/* Groups & Matches */}
@@ -79,11 +78,11 @@ export default function Instructions() {
                   <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-700 pb-2">Fase de Grupos</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Acertar posición exacta</span>
+                      <span className="text-sm dark:text-gray-200">Acertar posición exacta</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+1</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Grupo Perfecto (4 posiciones)</span>
+                      <span className="text-sm dark:text-gray-200">Grupo Perfecto (4 posiciones)</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+3</span>
                     </div>
                   </div>
@@ -93,11 +92,11 @@ export default function Instructions() {
                   <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-700 pb-2">Partidos Individuales</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Acertar ganador o empate</span>
+                      <span className="text-sm dark:text-gray-200">Acertar ganador o empate</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+1</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Acertar resultado exacto (goles)</span>
+                      <span className="text-sm dark:text-gray-200">Acertar resultado exacto (goles)</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+2</span>
                     </div>
                   </div>
@@ -110,23 +109,23 @@ export default function Instructions() {
                   <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-700 pb-2">Fase Eliminatoria</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Equipo avanza a 16avos</span>
+                      <span className="text-sm dark:text-gray-200">Equipo avanza a 16avos</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+2</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Equipo avanza a Octavos</span>
+                      <span className="text-sm dark:text-gray-200">Equipo avanza a Octavos</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+4</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Equipo avanza a Cuartos</span>
+                      <span className="text-sm dark:text-gray-200">Equipo avanza a Cuartos</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+6</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Equipo avanza a Semis</span>
+                      <span className="text-sm dark:text-gray-200">Equipo avanza a Semis</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+8</span>
                     </div>
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <span className="text-sm">Acertar el Campeón</span>
+                      <span className="text-sm dark:text-gray-200">Acertar el Campeón</span>
                       <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+15</span>
                     </div>
                   </div>
@@ -135,7 +134,7 @@ export default function Instructions() {
                 <div className="space-y-3">
                   <h4 className="font-bold text-gray-800 dark:text-gray-200 border-b dark:border-gray-700 pb-2">Preguntas Especiales</h4>
                   <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                    <span className="text-sm">Acertar la respuesta exacta a cada consigna especial planteada.</span>
+                    <span className="text-sm dark:text-gray-200">Acertar la respuesta exacta a cada consigna especial planteada.</span>
                     <span className="font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-2 py-1 rounded text-xs">+10</span>
                   </div>
                 </div>
@@ -153,8 +152,7 @@ export default function Instructions() {
                 <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="text-left">
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Amigos y Duelos ⚔️</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-normal mt-0.5">Cómo desafiar a tus amigos si no están de acuerdo.</p>
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Amigos y Duelos</h3>
               </div>
             </div>
           </AccordionTrigger>
@@ -176,17 +174,17 @@ export default function Instructions() {
         <AccordionItem value="ligas" className="border-none bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-pink-100 dark:bg-pink-900/40 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="text-left">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">Torneos y Ligas Privadas</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-normal mt-0.5">Jugá entre el trabajo, el club o tu grupo.</p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6 pt-2 text-gray-700 dark:text-gray-300">
             <div className="space-y-3">
+              <p className="italic text-gray-500 dark:text-gray-200 mb-2">Jugá entre el trabajo, el club o tu grupo.</p>
               <p>Además del ranking global, podés ir a la sección "Ligas" y crear torneos privados.</p>
               <p>Ponele nombre y foto, e invitá a tus amigos pasándoles el enlace exclusivo. Ser miembro de una liga genera una tabla de posiciones exclusiva entre las personas que forman parte de la misma.</p>
             </div>

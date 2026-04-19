@@ -87,7 +87,7 @@ export function DuelModal({ challengedId, challengedName, matchId, matchData, ch
             <Swords className="w-5 h-5 text-blue-600" />
             Retar a {challengedName}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -118,11 +118,11 @@ export function DuelModal({ challengedId, challengedName, matchId, matchData, ch
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tu predicción</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-200 mb-1">Tu predicción</p>
                   <p className="font-bold text-blue-700 dark:text-blue-400 text-lg">{myValue}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Elige {challengedName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-200 mb-1">Elige {challengedName}</p>
                   <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">{hisValue}</p>
                 </div>
               </div>

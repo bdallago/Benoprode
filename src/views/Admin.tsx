@@ -493,7 +493,7 @@ export default function Admin() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('admin.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('admin.subtitle')}</p>
+          <p className="text-gray-500 dark:text-gray-200 mt-1">{t('admin.subtitle')}</p>
         </div>
         
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
@@ -650,7 +650,7 @@ export default function Admin() {
 
           <div className="space-y-6">
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2">{t('admin.results.groupStage')}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('admin.results.groupStageDesc')}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">{t('admin.results.groupStageDesc')}</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(actualGroups)
@@ -769,8 +769,8 @@ export default function Admin() {
       <div className="space-y-6 pt-8 pb-12 border-t border-gray-200 dark:border-gray-700 opacity-50">
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2">{t('admin.results.knockoutStage')}</h2>
         <div className="bg-gray-100 dark:bg-gray-800/50 p-8 rounded-lg text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-400 font-medium">{t('admin.results.tbd')}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">{t('admin.results.tbdDesc')}</p>
+          <p className="text-gray-600 dark:text-gray-200 font-medium">{t('admin.results.tbd')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">{t('admin.results.tbdDesc')}</p>
         </div>
       </div>
       </>
@@ -809,7 +809,7 @@ export default function Admin() {
                         )}
                         {u.displayName}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{u.email}</td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-gray-200">{u.email}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300'}`}>
                           {u.role}
@@ -865,7 +865,7 @@ export default function Admin() {
         <div className="space-y-4">
           {reports.length === 0 ? (
             <div className="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-lg text-center border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-500 dark:text-gray-400">{t('admin.reports.noReports')}</p>
+              <p className="text-gray-500 dark:text-gray-200">{t('admin.reports.noReports')}</p>
             </div>
           ) : (
             reports.map((report) => (
@@ -873,7 +873,7 @@ export default function Admin() {
                 <CardHeader className="bg-gray-50 dark:bg-gray-800/50 py-3 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-start">
                   <div>
                     <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">{report.userName || t('admin.reports.anonymous')}</CardTitle>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{report.userEmail || t('admin.reports.noEmail')} • {new Date(report.createdAt).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-200">{report.userEmail || t('admin.reports.noEmail')} • {new Date(report.createdAt).toLocaleString()}</p>
                   </div>
                   <Button 
                     variant="ghost" 
@@ -891,7 +891,7 @@ export default function Admin() {
                   
                   {report.attachments && report.attachments.length > 0 && (
                     <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-200 mb-2 flex items-center gap-1">
                         <Paperclip className="w-3 h-3" /> {t('admin.reports.attachmentsCount', { count: report.attachments.length })}
                       </p>
                       <div className="flex flex-wrap gap-2">

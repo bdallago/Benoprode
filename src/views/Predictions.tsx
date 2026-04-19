@@ -160,7 +160,7 @@ export default function Predictions({ user }: { user: User }) {
           
           {/* Sign 1: Phase 1 & Specials */}
           <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
-            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-black mb-3 text-center">Fase de Grupos / Preguntas Especiales</span>
+            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-300 font-black mb-3 text-center">Fase de Grupos / Preguntas Especiales</span>
             <div className={`font-black uppercase tracking-widest text-sm sm:text-base ${new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
               {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'Cerradas - Fijadas' : 'Abiertas - Sin fijar'}
             </div>
@@ -168,7 +168,7 @@ export default function Predictions({ user }: { user: User }) {
 
           {/* Sign 2: Individual Matches */}
           <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
-            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-black mb-3 text-center">Partidos Individuales</span>
+            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-300 font-black mb-3 text-center">Partidos Individuales</span>
             <div className="text-green-600 dark:text-green-400 font-black uppercase tracking-widest text-sm sm:text-base text-center leading-tight">
               Abierto hasta 1 hora antes
             </div>
@@ -221,7 +221,7 @@ export default function Predictions({ user }: { user: User }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('predictions.confirmLockTitle')}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-200 mb-6">
               {t('predictions.confirmLockDesc')}
             </p>
             <div className="flex gap-3 justify-end">

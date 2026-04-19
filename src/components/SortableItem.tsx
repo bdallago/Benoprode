@@ -39,14 +39,14 @@ export const SortableItem: React.FC<{ id: string, team: string, index: number, d
       }`}
     >
       {!disabled && (
-        <div className={`p-0.5 sm:p-1 shrink-0 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}`}>
+        <div className={`p-0.5 sm:p-1 shrink-0 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-400 dark:text-gray-300'}`}>
           <GripVertical className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       )}
       <div className={`w-5 h-5 sm:w-6 sm:h-6 flex shrink-0 items-center justify-center rounded-full text-[10px] sm:text-xs font-bold ${
         index === 0 ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400' : 
         index === 1 ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-500' : 
-        'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+        'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-200'
       }`}>
         {index + 1}
       </div>

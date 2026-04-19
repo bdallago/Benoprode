@@ -212,7 +212,7 @@ export default function Dashboard({ user }: { user: User }) {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-8">
               <div className="flex-1">
-                <div className="flex justify-between text-sm mb-2 text-gray-600 dark:text-gray-400 font-medium">
+                <div className="flex justify-between text-sm mb-2 text-gray-600 dark:text-gray-200 font-medium">
                   <span>Progreso de medallas</span>
                   <span>{userBadges.length} de {BADGES.length} ({Math.round((userBadges.length / BADGES.length) * 100)}%)</span>
                 </div>
@@ -237,7 +237,7 @@ export default function Dashboard({ user }: { user: User }) {
                       )}
                     </div>
                   )) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!</p>
+                    <p className="text-gray-500 dark:text-gray-200 text-sm italic">Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!</p>
                   )}
                 </div>
               </div>
@@ -265,7 +265,7 @@ export default function Dashboard({ user }: { user: User }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? 'Medalla misteriosa' : badge.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{isSecret ? 'Sabrás su contenido cuando la obtengas' : badge.description}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? 'Sabrás su contenido cuando la obtengas' : badge.description}</p>
                         </div>
                       </div>
                     );
@@ -307,7 +307,7 @@ export default function Dashboard({ user }: { user: User }) {
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Medal className="w-6 h-6 text-blue-500" /> Todas las Medallas
               </h3>
-              <button onClick={() => setIsAllBadgesModalOpen(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <button onClick={() => setIsAllBadgesModalOpen(false)} className="text-gray-500 dark:text-gray-200 hover:text-gray-700 dark:hover:text-gray-200">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -335,7 +335,7 @@ export default function Dashboard({ user }: { user: User }) {
                       <h4 className={`font-bold text-base ${isEarned ? 'text-blue-900 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                         {displayName}
                       </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-3">
+                      <p className="text-sm text-gray-500 dark:text-gray-200 mt-1 line-clamp-3">
                         {displayDesc}
                       </p>
                     </div>

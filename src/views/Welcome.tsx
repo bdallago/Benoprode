@@ -264,31 +264,31 @@ export default function Welcome() {
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-5 text-left border-b border-gray-100 dark:border-gray-700 pb-2">Progreso de tus predicciones</h3>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Fase de Grupos</span>
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-200">Fase de Grupos</span>
               <div className="flex-1 flex gap-1 h-3">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className={`flex-1 rounded-sm ${i < progress.groups ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
-              <span className="text-sm font-bold w-12 text-right">{progress.groups} / 12</span>
+              <span className="text-sm font-bold w-12 text-right dark:text-gray-100">{progress.groups} / 12</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Partidos Individuales</span>
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-200">Partidos Individuales</span>
               <div className="flex-1 flex gap-[1px] h-3">
                 {Array.from({ length: 72 }).map((_, i) => (
                   <div key={i} className={`flex-1 rounded-sm ${i < progress.matches ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
-              <span className="text-sm font-bold w-12 text-right">{progress.matches} / 72</span>
+              <span className="text-sm font-bold w-12 text-right dark:text-gray-100">{progress.matches} / 72</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-400">Preg. Especiales</span>
+              <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-200">Preg. Especiales</span>
               <div className="flex-1 flex gap-1 h-3">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div key={i} className={`flex-1 rounded-sm ${i < progress.specials ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
-              <span className="text-sm font-bold w-12 text-right">{progress.specials} / 10</span>
+              <span className="text-sm font-bold w-12 text-right dark:text-gray-100">{progress.specials} / 10</span>
             </div>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function Welcome() {
                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Hoy Juegan</h3>
                </div>
-               <div className="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+               <div className="text-xs font-bold text-gray-500 dark:text-gray-200 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
                   {new Date().toLocaleDateString('es-AR', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' })}
                </div>
              </div>
@@ -325,7 +325,7 @@ export default function Welcome() {
                      </div>
 
                      <div className="flex items-center justify-between z-10 w-full mb-3">
-                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-sm">
+                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-sm">
                            GRUPO {groupName}
                         </span>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-sm">
@@ -336,7 +336,7 @@ export default function Welcome() {
 
                      <div className="flex justify-between items-center z-10 w-full">
                        <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 truncate text-base">{match.teamA}</div>
-                       <div className="px-3 text-xs font-bold text-gray-400 dark:text-gray-500">VS</div>
+                       <div className="px-3 text-xs font-bold text-gray-400 dark:text-gray-300">VS</div>
                        <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 text-right truncate text-base">{match.teamB}</div>
                      </div>
                    </div>
@@ -369,7 +369,7 @@ export default function Welcome() {
         </Link>
       </div>
 
-      <Card className="hover:shadow-md transition-shadow border-t-4 border-t-sky-500 bg-sky-50/50 dark:bg-sky-900/10">
+      <Card className="hover:shadow-md transition-shadow border-t-4 border-t-sky-500 bg-sky-50 dark:bg-sky-950">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl flex items-center gap-2 text-sky-900 dark:text-sky-400">
             <Users className="w-5 h-5" /> Invitar Amigos
@@ -423,7 +423,7 @@ export default function Welcome() {
               <X className="w-6 h-6" />
             </button>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('welcome.reportModalTitle')}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+            <p className="text-gray-600 dark:text-gray-200 mb-6 text-sm">
               {t('welcome.reportModalDesc')}
             </p>
             
@@ -459,7 +459,7 @@ export default function Welcome() {
                     onChange={handleFileSelect}
                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/40 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/60 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">{t('welcome.allowedFormats')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-200 mt-1 mb-3">{t('welcome.allowedFormats')}</p>
                   
                   {reportFiles.length > 0 && (
                     <div className="space-y-2 mt-3 max-h-40 overflow-y-auto pr-2">
@@ -473,13 +473,13 @@ export default function Welcome() {
                             </div>
                             <div className="truncate">
                               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{file.name}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-200">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                             </div>
                           </div>
                           <button 
                             type="button" 
                             onClick={() => removeFile(index)}
-                            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors shrink-0"
+                            className="p-1.5 text-gray-400 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors shrink-0"
                             title={t('welcome.deleteFile')}
                           >
                             <X className="w-4 h-4" />
@@ -499,7 +499,7 @@ export default function Welcome() {
             )}
             
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 text-center transition-colors duration-200">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-200">
                 {t('welcome.orEmail')}<br/>
                 <a href="mailto:bdallago01@gmail.com" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">bdallago01@gmail.com</a>
               </p>

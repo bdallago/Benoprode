@@ -185,7 +185,7 @@ export function LiveChat() {
             type="text"
             disabled
             placeholder="Chat en vivo - Próximamente"
-            className="flex-1 text-sm p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-400 focus:ring-0 outline-none"
+            className="flex-1 text-sm p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 focus:ring-0 outline-none"
           />
           <Button 
             disabled

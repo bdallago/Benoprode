@@ -110,7 +110,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
           <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">Hoy</span>
         </Button>
       </div>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-justify transition-colors duration-200 whitespace-pre-line">
+      <p className="text-sm text-gray-600 dark:text-gray-200 mb-4 text-justify transition-colors duration-200 whitespace-pre-line">
         ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada!
 
         Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido. Si acertás el resultado (quién gana o si empatan) te llevás 1 punto. Si además lo hacés con el resultado exacto, te llevás 1 punto extra (Total: 2 puntos).
@@ -148,7 +148,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                 return (
                   <Card key={match.id} className={`overflow-hidden ${isMatchLocked ? 'opacity-75 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                     <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      <span className="text-xs text-gray-500 dark:text-gray-200 font-medium">
                         {matchDate.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}hs
                       </span>
                       {isMatchLocked && <Lock className="w-3 h-3 text-gray-400" />}

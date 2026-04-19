@@ -173,13 +173,13 @@ export function Fixture() {
                 <div className="divide-y divide-slate-100 dark:divide-gray-700">
                   {dayMatches.map((match, idx) => (
                     <div key={idx} className="flex items-center text-slate-800 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <div className="w-14 sm:w-16 text-center py-3 text-xs sm:text-sm font-semibold text-slate-500 dark:text-gray-400 border-r border-slate-100 dark:border-gray-700 flex-shrink-0">
+                      <div className="w-14 sm:w-16 text-center py-3 text-xs sm:text-sm font-semibold text-slate-500 dark:text-gray-200 border-r border-slate-100 dark:border-gray-700 flex-shrink-0">
                         {match.time}
                       </div>
                       <div className="flex-1 grid grid-cols-[1fr_24px_16px_24px_1fr] sm:grid-cols-[1fr_28px_20px_28px_1fr] items-center py-2 sm:py-3 px-2 sm:px-4 gap-1 sm:gap-2">
                         <div className="text-center font-semibold text-xs sm:text-sm truncate px-1">{t(`teams.${match.team1}`)}</div>
                         <div className="flex justify-center"><TeamFlag teamName={match.team1} /></div>
-                        <div className="text-center text-slate-400 dark:text-gray-500 font-bold text-xs sm:text-sm">-</div>
+                        <div className="text-center text-slate-400 dark:text-gray-300 font-bold text-xs sm:text-sm">-</div>
                         <div className="flex justify-center"><TeamFlag teamName={match.team2} /></div>
                         <div className="text-center font-semibold text-xs sm:text-sm truncate px-1">{t(`teams.${match.team2}`)}</div>
                       </div>
@@ -215,7 +215,7 @@ export function Fixture() {
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs sm:text-sm text-left table-fixed">
-                        <thead className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 uppercase transition-colors duration-200">
+                        <thead className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-200 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 uppercase transition-colors duration-200">
                           <tr>
                             <th className="w-8 sm:w-10 py-2 text-center">#</th>
                             <th className="py-2 text-left">{t('fixture.table.teams')}</th>
@@ -248,12 +248,12 @@ export function Fixture() {
                                   </div>
                                 </td>
                                 <td className="py-2 text-center font-bold text-slate-800 dark:text-gray-200">{stats.points}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.played}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.goalsFor}:{stats.goalsAgainst}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.goalsDiff > 0 ? `+${stats.goalsDiff}` : stats.goalsDiff}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.win}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.draw}</td>
-                                <td className="py-2 text-center text-slate-500 dark:text-gray-400">{stats.lose}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.played}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.goalsFor}:{stats.goalsAgainst}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.goalsDiff > 0 ? `+${stats.goalsDiff}` : stats.goalsDiff}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.win}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.draw}</td>
+                                <td className="py-2 text-center text-slate-500 dark:text-gray-200">{stats.lose}</td>
                               </tr>
                             );
                           })}

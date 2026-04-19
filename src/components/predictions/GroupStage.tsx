@@ -35,7 +35,7 @@ export function GroupStage({ groupPredictions, effectiveIsLocked, handleDragEnd 
       <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2 transition-colors duration-200">
         {t('predictions.groupStage')}
       </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-justify transition-colors duration-200">
+      <p className="text-sm text-gray-600 dark:text-gray-200 mb-4 text-justify transition-colors duration-200">
         {t('predictions.groupStageDesc')}
       </p>
   

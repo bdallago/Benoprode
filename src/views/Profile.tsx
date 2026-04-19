@@ -258,7 +258,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${level.bg} ${level.color}`}>
                   {level.name}
                 </span>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-200">
                   {profileData.totalPoints || 0} pts
                 </span>
               </div>
@@ -296,7 +296,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             {/* Si es su perfil, mostrar botón directo a ver predicciones propias compartibles */}
             {isOwnProfile && (
                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                  <Button onClick={() => setIsPredictionsModalOpen(true)} variant="outline" className="font-bold flex items-center gap-2 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/30">
+                  <Button onClick={() => setIsPredictionsModalOpen(true)} variant="outline" className="font-bold flex items-center gap-2 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:bg-blue-900/20 dark:hover:bg-blue-900/50">
                     <BookOpen className="w-4 h-4" /> Ver predicciones
                   </Button>
                </div>
@@ -309,13 +309,13 @@ export default function Profile({ user, profileId }: ProfileProps) {
       <div className="flex border-b dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-xl sticky top-2 z-10 shadow-sm mt-4">
         <button
           onClick={() => setActiveTab('stats')}
-          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
           Resumen
         </button>
         <button
           onClick={() => setActiveTab('friends')}
-          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
           <div className="flex items-center justify-center gap-2">
             Amigos
@@ -326,7 +326,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
         </button>
         <button
           onClick={() => setActiveTab('duels')}
-          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+          className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
           Duelos
         </button>
@@ -338,7 +338,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4">
                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center text-center">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 font-bold mb-1">POSICIÓN GLOBAL</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-200 font-bold mb-1">POSICIÓN GLOBAL</div>
                   <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2"># -</div>
                   <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">Ir a la tabla general</Link>
                </div>
@@ -358,7 +358,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">Aún no hay medallas para mostrar.</p>
+              <p className="text-gray-500 dark:text-gray-200 text-center py-8">Aún no hay medallas para mostrar.</p>
             )}
           </div>
         )}
@@ -426,7 +426,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 dark:text-gray-100">{friend.displayName}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{friend.totalPoints || 0} pts</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-200">{friend.totalPoints || 0} pts</div>
                       </div>
                     </Link>
                   ))}
@@ -434,7 +434,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
               ) : (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">Aún no hay amigos en esta lista.</p>
+                  <p className="text-gray-500 dark:text-gray-200">Aún no hay amigos en esta lista.</p>
                 </div>
               )}
             </div>
@@ -484,7 +484,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                       statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
                   } else if (duel.status === 'rejected') {
                       statusText = 'Rechazado';
-                      statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+                      statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                   } else if (duel.status === 'accepted') {
                       statusText = 'Aceptado (En curso)';
                       statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
@@ -497,7 +497,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
                      } else {
                         statusText = 'Empate';
-                        statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
+                        statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                      }
                   }
 
@@ -535,7 +535,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                           <div className="font-bold text-gray-900 dark:text-gray-100">
                             Duelo vs {otherUserName || 'Usuario'}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-gray-500 dark:text-gray-200">
                             Evento: {eventName} {typeLabel ? `(${typeLabel})` : ''}
                           </div>
                         </div>
@@ -559,7 +559,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             ) : (
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                 <Swords className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">No hay duelos registrados.</p>
+                <p className="text-gray-500 dark:text-gray-200">No hay duelos registrados.</p>
               </div>
             )}
           </div>

@@ -87,7 +87,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">¿Cómo funciona?</h2>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Todo lo que necesitás para vivir el Mundial de otra manera.</p>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-200">Todo lo que necesitás para vivir el Mundial de otra manera.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-10">
@@ -96,7 +96,7 @@ export default function LandingPage() {
                 <PenSquare className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">1. Hacé tus predicciones</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-200">
                 Pronosticá las posiciones de la fase de grupos, los resultados de los partidos y quiénes llegarán a la final.
               </p>
             </div>
@@ -106,7 +106,7 @@ export default function LandingPage() {
                 <Users className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">2. Creá tu Liga</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-200">
                 Armá una liga privada con tus amigos, familia o compañeros de trabajo y compartiles el link para que se unan.
               </p>
             </div>
@@ -116,7 +116,7 @@ export default function LandingPage() {
                 <Trophy className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">3. Sumá puntos</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-200">
                 A medida que se den los resultados reales, sumarás puntos. ¡El que más puntos tenga al final del Mundial, gana!
               </p>
             </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
           Empezar a jugar ahora <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
         
-        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
+        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-200 flex flex-col items-center gap-2">
           <div className="flex flex-col sm:flex-row gap-4 mb-2">
             <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Política de Privacidad</a>
             <span className="hidden sm:inline">•</span>
