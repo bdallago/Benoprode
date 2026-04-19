@@ -746,7 +746,8 @@ export default function Admin() {
                     {visualData[img.id as keyof typeof visualData] && (
                       <Button 
                         variant="destructive" 
-                        size="icon"
+                        size="sm"
+                        className="w-10 p-0 flex items-center justify-center shrink-0"
                         onClick={() => setVisualData(prev => ({ ...prev, [img.id]: '' }))}
                       >
                         <Trash2 className="w-4 h-4" />
