@@ -7,7 +7,6 @@ import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, 
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
-import { useAuth } from "./Providers";
 
 export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean }) {
   const router = useRouter();
@@ -15,7 +14,6 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { visualSettings } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -62,7 +60,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
     <>
       <nav 
         className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover relative"
-        style={{ backgroundImage: `url("${visualSettings?.navbarUrl || '/navbar.jpeg?v=2'}")`, backgroundPosition: 'left center' }}
+        style={{ backgroundImage: 'url("/navbar.jpeg")', backgroundPosition: 'left center' }}
       >
         <div className="absolute inset-0 dark:bg-gray-950/80"></div>
         <div className="container mx-auto px-4 relative z-10">

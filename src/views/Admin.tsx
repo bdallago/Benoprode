@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Save, Calculator, AlertCircle, CheckCircle2, Trash2, Users, MessageSquareWarning, Paperclip, Unlock, Palette, Upload, Image as ImageIcon } from "lucide-react";
+import { Save, Calculator, AlertCircle, CheckCircle2, Trash2, Users, MessageSquareWarning, Paperclip, Unlock } from "lucide-react";
 import { CountdownBanner } from "../components/CountdownBanner";
 import { useTranslation } from 'react-i18next';
 
@@ -47,16 +46,7 @@ export default function Admin() {
   
   // State for reports
   const [reports, setReports] = useState<Report[]>([]);
-  const [activeTab, setActiveTab] = useState<'results' | 'users' | 'reports' | 'analytics' | 'visual'>('results');
-
-  // Visual settings state
-  const [visualData, setVisualData] = useState({
-    navbarUrl: '',
-    footerUrl: '',
-    portadaMobileUrl: '',
-    portadaDesktopUrl: ''
-  });
-  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'results' | 'users' | 'reports' | 'analytics'>('results');
 
   // Analytics state
   const [analytics, setAnalytics] = useState({
@@ -165,12 +155,6 @@ export default function Admin() {
         console.log("Admin: Fetched reports.");
         const reportsData = reportsSnap.docs.map(d => ({ ...d.data(), id: d.id } as Report));
         setReports(reportsData);
-
-        // Fetch visual settings
-        const visualSnap = await getDoc(doc(db, "settings", "visual"));
-        if (visualSnap.exists()) {
-          setVisualData(visualSnap.data() as any);
-        }
         
       } catch (error) {
         console.error("Error fetching admin data:", error);
@@ -499,40 +483,6 @@ export default function Admin() {
     }
   };
 
-  const handleVisualUpload = async (field: keyof typeof visualData, file: File) => {
-    setUploadingField(field);
-    try {
-      const fileRef = ref(storage, `visual/${field}_${Date.now()}`);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      setVisualData(prev => ({ ...prev, [field]: url }));
-      setMessage({ type: 'success', text: `Imagen cargada: ${field}` });
-    } catch (error) {
-      console.error("Error uploading visual asset:", error);
-      setMessage({ type: 'error', text: "Error al subir la imagen" });
-    } finally {
-      setUploadingField(null);
-      setTimeout(() => setMessage(null), 3000);
-    }
-  };
-
-  const saveVisualSettings = async () => {
-    setSaving(true);
-    try {
-      await setDoc(doc(db, "settings", "visual"), {
-        ...visualData,
-        updatedAt: new Date().toISOString()
-      });
-      setMessage({ type: 'success', text: "Ajustes visuales guardados correctamente" });
-    } catch (error) {
-      console.error("Error saving visual settings:", error);
-      setMessage({ type: 'error', text: "Error al guardar ajustes visuales" });
-    } finally {
-      setSaving(false);
-      setTimeout(() => setMessage(null), 5000);
-    }
-  };
-
   if (loading) {
     return <div className="text-center py-10">{t('admin.loading')}</div>;
   }
@@ -574,13 +524,6 @@ export default function Admin() {
             className={activeTab === 'analytics' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             {t('admin.tabs.analytics')}
-          </Button>
-          <Button 
-            variant={activeTab === 'visual' ? 'default' : 'outline'} 
-            onClick={() => setActiveTab('visual')}
-            className={activeTab === 'visual' ? 'bg-blue-600 hover:bg-blue-700' : ''}
-          >
-            Ajustes Visuales
           </Button>
         </div>
       </div>
@@ -673,90 +616,6 @@ export default function Admin() {
             >
               {t('admin.analytics.advancedBtn')}
             </a>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'visual' && (
-        <div className="space-y-6 pt-4 pb-12">
-          <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 border-b dark:border-gray-700 pb-2 flex items-center gap-2">
-            <Palette className="w-6 h-6" /> Ajustes Visuales
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            Gestioná las imágenes principales del sitio. Estas imágenes se guardan en Firebase y no se pierden al actualizar el código.
-          </p>
-
-          <Button 
-            onClick={saveVisualSettings}
-            disabled={saving}
-            className="mb-8 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" /> Guardar Todos los Cambios Visuales
-          </Button>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[
-              { id: 'navbarUrl', label: 'Imagen Navbar', desc: 'Fondo de la barra de navegación (Recomendado: 1920x64)' },
-              { id: 'footerUrl', label: 'Imagen Footer', desc: 'Fondo del pie de página (Recomendado: 1920x200)' },
-              { id: 'portadaDesktopUrl', label: 'Portada Escritorio', desc: 'Banner principal para PC (Recomendado: 1920x400)' },
-              { id: 'portadaMobileUrl', label: 'Portada Celular', desc: 'Banner principal para móvil (Recomendado: 800x600)' }
-            ].map((img) => (
-              <Card key={img.id} className="overflow-hidden border-t-4 border-t-blue-500">
-                <CardHeader>
-                  <CardTitle className="text-lg">{img.label}</CardTitle>
-                  <p className="text-xs text-gray-500">{img.desc}</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="min-h-[150px] w-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-700 relative group overflow-hidden p-2">
-                    {visualData[img.id as keyof typeof visualData] ? (
-                      <img 
-                        src={visualData[img.id as keyof typeof visualData]} 
-                        alt={img.label} 
-                        className="max-w-full max-h-[300px] object-contain group-hover:opacity-75 transition-opacity"
-                      />
-                    ) : (
-                      <ImageIcon className="w-12 h-12 text-gray-300" />
-                    )}
-                    {uploadingField === img.id && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <input 
-                      type="file" 
-                      id={`upload-${img.id}`} 
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleVisualUpload(img.id as any, file);
-                      }}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 gap-2"
-                      onClick={() => document.getElementById(`upload-${img.id}`)?.click()}
-                      disabled={uploadingField === img.id}
-                    >
-                      <Upload className="w-4 h-4" /> {visualData[img.id as keyof typeof visualData] ? 'Cambiar Imagen' : 'Subir Imagen'}
-                    </Button>
-                    {visualData[img.id as keyof typeof visualData] && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        className="w-10 p-0 flex items-center justify-center shrink-0"
-                        onClick={() => setVisualData(prev => ({ ...prev, [img.id]: '' }))}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       )}

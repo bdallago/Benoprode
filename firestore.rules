@@ -198,15 +198,6 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // Collection: settings
-    // ===============================================================
-    match /settings/{docId} {
-      // Anyone can read visual settings, only admins can write
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // ===============================================================
     // Collection: friendRequests
     // ===============================================================
     match /friendRequests/{requestId} {

@@ -9,7 +9,6 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
 import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
-import { useAuth } from "../components/Providers";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import matchesData from "../lib/matches.json";
 
@@ -91,7 +90,6 @@ export default function Welcome() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { t } = useTranslation();
-  const { visualSettings } = useAuth();
 
   const [progress, setProgress] = useState({
     groups: 0,
@@ -242,13 +240,13 @@ export default function Welcome() {
             <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
               {/* Mobile Header */}
               <img 
-                src={visualSettings?.portadaMobileUrl || "/portada-telefono.jpeg?v=2"} 
+                src="/portada-telefono.jpeg" 
                 alt="El Prode de Beno Mobile" 
                 className="w-full h-auto block sm:hidden shrink-0"
               />
               {/* Desktop Header */}
               <img 
-                src={visualSettings?.portadaDesktopUrl || "/portada-escritorio.jpeg?v=2"} 
+                src="/portada-escritorio.jpeg" 
                 alt="El Prode de Beno Desktop" 
                 className="w-full h-auto hidden sm:block shrink-0"
               />
