@@ -92,8 +92,21 @@ export default function Welcome() {
   const [progress, setProgress] = useState({
     groups: 0,
     specials: 0,
-    matches: 0
+    matches: 0,
+    matchesByDay: 0
   });
+
+  const matchesByDayMap = React.useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const match of matchesData) {
+      const day = match.date.split('T')[0];
+      if (!map[day]) map[day] = [];
+      map[day].push(match.id);
+    }
+    return map;
+  }, []);
+
+  const totalDays = Object.keys(matchesByDayMap).length;
 
   const [todayMatches, setTodayMatches] = useState<typeof matchesData>([]);
 
@@ -148,6 +161,7 @@ export default function Welcome() {
 
         // Calculate matches progress
         let matchesCount = 0;
+        let daysCompletedCount = 0;
         if (data.matches) {
           for (const match of matchesData) {
             const m = data.matches[match.id];
@@ -155,12 +169,21 @@ export default function Welcome() {
               matchesCount++;
             }
           }
+
+          for (const day in matchesByDayMap) {
+            const allDayPredicted = matchesByDayMap[day].every(mid => {
+              const m = data.matches[mid];
+              return m && m.outcome && m.outcome !== "";
+            });
+            if (allDayPredicted) daysCompletedCount++;
+          }
         }
 
         setProgress({
           groups: groupsCount,
           specials: specialsCount,
-          matches: matchesCount
+          matches: matchesCount,
+          matchesByDay: daysCompletedCount
         });
       }
     });
@@ -274,11 +297,21 @@ export default function Welcome() {
             </div>
             <div className="flex items-center gap-2">
               <span className="w-32 text-sm font-bold text-gray-600 dark:text-gray-200">Partidos Individuales</span>
-              <div className="flex-1 flex gap-[1px] h-3">
+              
+              {/* Desktop Progress (72 tiny bars) */}
+              <div className="hidden sm:flex flex-1 gap-[1px] h-3">
                 {Array.from({ length: 72 }).map((_, i) => (
                   <div key={i} className={`flex-1 rounded-sm ${i < progress.matches ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                 ))}
               </div>
+
+              {/* Mobile Progress (Days-based) */}
+              <div className="flex sm:hidden flex-1 gap-1 h-3">
+                {Array.from({ length: totalDays }).map((_, i) => (
+                  <div key={i} className={`flex-1 rounded-sm ${i < progress.matchesByDay ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                ))}
+              </div>
+
               <span className="text-sm font-bold w-12 text-right dark:text-gray-100">{progress.matches} / 72</span>
             </div>
             <div className="flex items-center gap-2">
@@ -377,7 +410,7 @@ export default function Welcome() {
         </CardHeader>
         <CardContent className="text-gray-700 dark:text-gray-300">
           <p className="mb-4">
-            ¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de \"Sociable\"!
+            ¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de "Sociable"
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input 

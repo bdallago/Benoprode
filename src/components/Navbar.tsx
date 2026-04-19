@@ -60,7 +60,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
     <>
       <nav 
         className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover relative"
-        style={{ backgroundImage: 'url("/navbar.jpeg")', backgroundPosition: 'left center' }}
+        style={{ backgroundImage: 'url("/navbar.jpeg")', backgroundPosition: '0% center' }}
       >
         <div className="absolute inset-0 bg-black/10 dark:bg-black/30"></div>
         <div className="container mx-auto px-4 relative z-10">
@@ -100,7 +100,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                 variant="outline" 
                 size="sm" 
                 onClick={toggleTheme} 
-                className="bg-amber-500/80 hover:bg-amber-400 dark:bg-indigo-600/80 dark:hover:bg-indigo-500 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all hidden sm:flex items-center justify-center h-10 w-10 p-0 rounded-full"
+                className="bg-amber-500/80 hover:bg-amber-400 dark:bg-indigo-600/80 dark:hover:bg-indigo-500 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
                 title="Cambiar tema"
               >
                 {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
