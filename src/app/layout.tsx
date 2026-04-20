@@ -91,6 +91,29 @@ export default function RootLayout({
       <head>
       </head>
       <body className={`${inter.className} overflow-x-hidden`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "El Prode de Beno",
+              "operatingSystem": "Web",
+              "applicationCategory": "GameApplication",
+              "genre": "Sports Game",
+              "description": "El prode definitivo para el Mundial 2026. Predicciones, ligas con amigos y sistema de puntos en tiempo real.",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "ARS"
+              },
+              "author": {
+                "@type": "Person",
+                "name": "Beno"
+              }
+            })
+          }}
+        />
         <ErrorBoundary>
           <ThemeProvider defaultTheme="light" storageKey="benoprode-theme">
             <Providers>{children}</Providers>
