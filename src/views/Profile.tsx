@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { User } from 'firebase/auth';
 import { doc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen } from 'lucide-react';
+import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen, Loader2 } from 'lucide-react';
 import { getUserLevel, getUserBadges, BADGES } from '../lib/gamification';
 import matchesData from '../lib/matches.json';
 import { UserPredictionsModal } from '../components/UserPredictionsModal';
@@ -16,6 +17,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ user, profileId }: ProfileProps) {
+  const router = useRouter();
   const isOwnProfile = !profileId || profileId === user.uid;
   const targetUserId = profileId || user.uid;
 
@@ -31,9 +33,53 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
   const [duelsList, setDuelsList] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>({});
-  
-  // Duel modal state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Live search effect
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Set searching to true immediately to hide "no results" while typing
+    setIsSearching(true);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const q = query(
+          collection(db, 'users'), 
+          where('displayName', '>=', searchTerm), 
+          where('displayName', '<=', searchTerm + '\uf8ff')
+        );
+        const snap = await getDocs(q);
+        const results = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(u => u.id !== user.uid);
+        setSearchResults(results);
+      } catch (error) {
+        console.error("Error searching users:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchTerm, user.uid]);
+
+  const handleSearch = () => {
+    // Already handled by useEffect
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -365,6 +411,74 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
         {activeTab === 'friends' && (
           <div className="space-y-8">
+            {isOwnProfile && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Buscar Amigos</h3>
+                  <Button 
+                    variant={showSearch ? "ghost" : "outline"} 
+                    size="sm" 
+                    onClick={() => setShowSearch(!showSearch)}
+                  >
+                    {showSearch ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                    {showSearch ? "Cerrar" : "Agregar Amigos"}
+                  </Button>
+                </div>
+
+                {showSearch && (
+                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Buscar por nombre de Google..." 
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      {isSearching && (
+                        <div className="flex items-center px-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                        </div>
+                      )}
+                    </div>
+
+                    {searchResults.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        {searchResults.map(result => (
+                          <div key={result.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden">
+                                {result.photoURL ? (
+                                  <img src={result.photoURL} alt={result.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold">{result.displayName?.charAt(0) || 'U'}</span>
+                                )}
+                              </div>
+                              <span className="font-bold text-sm dark:text-white">{result.displayName}</span>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs" 
+                              onClick={() => router.push(`/profile/${result.id}`)}
+                            >
+                              Ver Perfil
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {searchTerm && searchResults.length === 0 && !isSearching && (
+                      <p className="text-sm text-gray-500 text-center py-2">No se encontraron usuarios con ese nombre.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {isOwnProfile && pendingRequestsList.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Solicitudes Entrantes</h3>

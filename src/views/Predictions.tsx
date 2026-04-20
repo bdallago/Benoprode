@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { User } from "firebase/auth";
 import { Button } from "../components/ui/button";
-import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2 } from "lucide-react";
+import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2, Loader2 } from "lucide-react";
 import { CountdownBanner } from "../components/CountdownBanner";
 import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,8 @@ export default function Predictions({ user }: { user: User }) {
   const [confirmLock, setConfirmLock] = useState(false);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const isFirstRender = useRef(true);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const {
     loading,
@@ -35,6 +37,27 @@ export default function Predictions({ user }: { user: User }) {
     setMatchPredictions,
     savePredictions
   } = usePredictions(user.uid);
+
+  // Auto-save logic for matches
+  useEffect(() => {
+    if (loading || effectiveIsLocked) return;
+    
+    // Skip first render to avoid saving immediately on load
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+    }
+
+    if (activeTab !== 'matches') return;
+
+    const timeout = setTimeout(async () => {
+        setIsAutoSaving(true);
+        await savePredictions(false, true); // save silently
+        setIsAutoSaving(false);
+    }, 1500); // 1.5s debounce
+    
+    return () => clearTimeout(timeout);
+  }, [matchPredictions, activeTab]);
 
   const handleDragEnd = (event: any, groupLetter: string) => {
     if (effectiveIsLocked) return;
@@ -122,6 +145,11 @@ export default function Predictions({ user }: { user: User }) {
           </Button>
           {!effectiveIsLocked && (
             <>
+              {isAutoSaving && (
+                <div className="flex items-center gap-2 text-xs text-blue-500 font-medium px-2 animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Guardando...
+                </div>
+              )}
               <Button 
                 variant="outline" 
                 onClick={() => savePredictions(false)}

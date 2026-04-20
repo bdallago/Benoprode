@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev --webpack -p 3000",
+    "dev": "node scripts/extract_images.cjs && next dev --webpack -p 3000",
     "prebuild": "node scripts/extract_images.cjs",
     "build": "next build --webpack",
     "start": "next start -p 3000",

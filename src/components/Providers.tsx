@@ -344,7 +344,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <AuthContext.Provider value={{ user, loading, isAdmin }}>
-        <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && <GlobalBadgeListener user={user} />}
           <main className="container mx-auto px-4 py-8 flex-grow">

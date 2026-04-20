@@ -81,9 +81,9 @@ export function usePredictions(userId: string) {
   // but we will expose isGroupStageLocked natively.
   const effectiveIsLocked = isLocked || isGroupStageLocked;
 
-  const savePredictions = async (lock: boolean = false) => {
-    setSaving(true);
-    setMessage(null);
+  const savePredictions = async (lock: boolean = false, silent: boolean = false) => {
+    if (!silent) setSaving(true);
+    if (!silent) setMessage(null);
     
     try {
       const now = Date.now();
@@ -110,27 +110,31 @@ export function usePredictions(userId: string) {
         setIsLocked(true);
       }
       
-      setMessage({ type: 'success', text: lock ? t('predictions.lockSuccess') : t('predictions.saveSuccess') });
-      
-      // Trigger confetti on successful save
-      import('canvas-confetti').then((confetti) => {
-        confetti.default({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
+      if (!silent) {
+        setMessage({ type: 'success', text: lock ? t('predictions.lockSuccess') : t('predictions.saveSuccess') });
+        
+        // Trigger confetti on successful save
+        import('canvas-confetti').then((confetti) => {
+          confetti.default({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
+          });
         });
-      });
+      }
     } catch (error: any) {
       console.error("Error saving predictions:", error);
-      if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
-        setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
-      } else {
-        setMessage({ type: 'error', text: t('predictions.saveError') });
+      if (!silent) {
+        if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
+          setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
+        } else {
+          setMessage({ type: 'error', text: t('predictions.saveError') });
+        }
       }
     } finally {
-      setSaving(false);
-      setTimeout(() => setMessage(null), 5000);
+      if (!silent) setSaving(false);
+      if (!silent) setTimeout(() => setMessage(null), 5000);
     }
   };
 
