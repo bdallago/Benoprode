@@ -60,6 +60,16 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
 
   useEffect(() => {
     // initialize collapsed states for ALL days
+    try {
+      const storedState = localStorage.getItem('prode-collapsed-days');
+      if (storedState) {
+        setCollapsedDays(JSON.parse(storedState));
+        return;
+      }
+    } catch (e) {
+      console.error("Error reading collapsed days from local storage", e);
+    }
+
     const pastDaysState: Record<string, boolean> = {};
     Object.entries(matchesData.reduce((acc, match) => {
         const date = new Date(match.date);
@@ -81,7 +91,13 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
         }
     });
     setCollapsedDays(pastDaysState);
-  }, []);
+  }, []); // Intentionally empty to avoid infinite re-renders from the non-memoized 'today' object
+
+  useEffect(() => {
+    if (Object.keys(collapsedDays).length > 0) {
+      localStorage.setItem('prode-collapsed-days', JSON.stringify(collapsedDays));
+    }
+  }, [collapsedDays]);
 
   useEffect(() => {
     // Attempt auto-scroll

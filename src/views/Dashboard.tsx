@@ -243,13 +243,13 @@ export default function Dashboard({ user }: { user: User }) {
               </div>
               
               <div className="w-full md:w-80 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Próximas Medallas</h3>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start gap-2 mb-4">
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Todas las Medallas</h3>
                   <button 
                     onClick={() => setIsAllBadgesModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
                   >
-                    Ver galería
+                    Ver todas las medallas
                   </button>
                 </div>
                 <div 

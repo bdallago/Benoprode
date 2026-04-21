@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Share2, Camera, MessageCircle, Download, Loader2, X, Image as ImageIcon } from "lucide-react";
-import html2canvas from "html2canvas";
+import { toPng } from 'html-to-image';
 import { useTranslation } from "react-i18next";
+import shareCardImg from '../../public/sharecard2.png';
 
 interface SharePredictionsModalProps {
   isOpen: boolean;
@@ -21,6 +22,29 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
   const [localChampion, setLocalChampion] = useState(champion || '');
   const [localTopScorer, setLocalTopScorer] = useState(topScorer || '');
   const [localRevelation, setLocalRevelation] = useState(revelation || '');
+  const [bgImageStr, setBgImageStr] = useState<string>('none'); // Start with none to avoid mixed content before load
+
+  useEffect(() => {
+    // "Magic code": Pre-fetch the exact Next.js hashed image and convert to Base64.
+    // By using the imported image src, we bypass PWA caches that ignore query params.
+    const fetchImage = async () => {
+      try {
+        const response = await fetch(shareCardImg.src); 
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setBgImageStr(`url(${reader.result})`);
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.error("Failed to load background image", e);
+        setBgImageStr(`url(${shareCardImg.src})`); // fallback
+      }
+    };
+    if (isOpen) {
+       fetchImage();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -46,13 +70,15 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: '#1e1b4b', // match the dark theme background
+      const image = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#1e1b4b',
+        style: {
+          margin: '0',
+          transform: 'none',
+        }
       });
-      
-      const image = canvas.toDataURL("image/png");
       
       // 1. Always trigger download first
       const link = document.createElement('a');
@@ -95,7 +121,7 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden relative flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl relative flex flex-col max-h-[90vh]">
         <div className="p-4 border-b dark:border-gray-800 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Compartir Predicciones</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-200">
@@ -182,7 +208,9 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
               ref={cardRef}
               className="w-[300px] h-[533px] relative overflow-hidden rounded-xl flex flex-col items-center justify-between p-6 shrink-0"
               style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+                backgroundImage: bgImageStr !== 'none' ? bgImageStr : `url(${shareCardImg.src})`,
+                backgroundSize: '100% 100%',
+                backgroundColor: '#3b0764',
                 color: '#ffffff',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -193,34 +221,30 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
                 backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.2) 0%, transparent 70%)'
               }}></div>
               
-              <div className="z-10 text-center w-full mt-4">
-                <h2 className="text-sm font-bold tracking-widest uppercase mb-1" style={{ color: '#bae6fd' }}>El Prode de Beno</h2>
-                <h3 className="text-2xl font-black leading-tight" style={{ color: '#ffffff' }}>MIS CANDIDATOS<br/>AL MUNDIAL</h3>
+              <div className="relative text-center w-full mt-6">
+                <h3 className="text-2xl font-black leading-tight" style={{ color: '#ffffff', textShadow: '0px 2px 4px rgba(0,0,0,0.6), 0px 0px 10px rgba(0,0,0,0.3)' }}>MIS CANDIDATOS<br/>AL MUNDIAL</h3>
               </div>
 
-              <div className="z-10 w-full space-y-4 flex-1 flex flex-col justify-center">
-                <div className="rounded-lg p-3 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
-                  <p className="text-xs uppercase font-bold mb-1" style={{ color: '#e0f2fe' }}>Campeón</p>
-                  <p className="text-xl font-bold" style={{ color: '#ffffff' }}>{localChampion || '?'}</p>
+              <div className="relative w-full space-y-4 flex-1 flex flex-col justify-center">
+                <div className="relative rounded-lg p-3 text-center flex flex-col justify-center items-center min-h-[72px]" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
+                  <p className="absolute top-1.5 w-full left-0 text-[10px] uppercase font-bold text-center" style={{ color: '#e0f2fe', textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}>Campeón</p>
+                  <p className="text-xl font-bold leading-tight mt-3 text-center" style={{ color: '#ffffff', wordBreak: 'break-word', textShadow: '0px 2px 5px rgba(0,0,0,0.7), 0px 0px 8px rgba(0,0,0,0.3)' }}>{localChampion || '?'}</p>
                 </div>
                 
-                <div className="rounded-lg p-3 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
-                  <p className="text-xs uppercase font-bold mb-1" style={{ color: '#e0f2fe' }}>Goleador</p>
-                  <p className="text-lg font-bold" style={{ color: '#ffffff' }}>{localTopScorer || '?'}</p>
+                <div className="relative rounded-lg p-3 text-center flex flex-col justify-center items-center min-h-[72px]" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
+                  <p className="absolute top-1.5 w-full left-0 text-[10px] uppercase font-bold text-center" style={{ color: '#e0f2fe', textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}>Goleador</p>
+                  <p className="text-xl font-bold leading-tight mt-3 text-center" style={{ color: '#ffffff', wordBreak: 'break-word', textShadow: '0px 2px 5px rgba(0,0,0,0.7), 0px 0px 8px rgba(0,0,0,0.3)' }}>{localTopScorer || '?'}</p>
                 </div>
 
-                <div className="rounded-lg p-3 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
-                  <p className="text-xs uppercase font-bold mb-1" style={{ color: '#e0f2fe' }}>Revelación</p>
-                  <p className="text-lg font-bold" style={{ color: '#ffffff' }}>{localRevelation || '?'}</p>
+                <div className="relative rounded-lg p-3 text-center flex flex-col justify-center items-center min-h-[72px]" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>
+                  <p className="absolute top-1.5 w-full left-0 text-[10px] uppercase font-bold text-center" style={{ color: '#e0f2fe', textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}>Revelación</p>
+                  <p className="text-xl font-bold leading-tight mt-3 text-center" style={{ color: '#ffffff', wordBreak: 'break-word', textShadow: '0px 2px 5px rgba(0,0,0,0.7), 0px 0px 8px rgba(0,0,0,0.3)' }}>{localRevelation || '?'}</p>
                 </div>
               </div>
 
-              <div className="z-10 text-center w-full mb-2">
-                <p className="text-sm font-medium" style={{ color: '#e2e8f0' }}>Predicciones de</p>
-                <p className="text-lg font-bold" style={{ color: '#ffffff' }}>{userName}</p>
-                <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                  <p className="text-xs font-bold" style={{ color: '#bae6fd' }}>www.elprodedebeno.com.ar</p>
-                </div>
+              <div className="relative text-center w-full mb-10">
+                <p className="text-sm font-medium" style={{ color: '#e2e8f0', textShadow: '0px 1px 2px rgba(0,0,0,0.5)' }}>Predicciones de</p>
+                <p className="text-lg font-bold" style={{ color: '#ffffff', textShadow: '0px 2px 5px rgba(0,0,0,0.7)' }}>{userName}</p>
               </div>
             </div>
           </div>
