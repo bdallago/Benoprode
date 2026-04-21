@@ -9,7 +9,7 @@ import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { useTranslation } from 'react-i18next';
 import { getUserLevel, getUserBadges, BADGES } from "../lib/gamification";
 import { motion, AnimatePresence } from "framer-motion";
-import { Leaderboard } from "../components/Leaderboard";
+import { GlobalLeaderboard } from "../components/GlobalLeaderboard";
 
 interface Player {
   uid: string;
@@ -21,7 +21,6 @@ interface Player {
 }
 
 export default function Dashboard({ user }: { user: User }) {
-  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{uid: string, name: string, points: number} | null>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -42,17 +41,6 @@ export default function Dashboard({ user }: { user: User }) {
   const [exactRank, setExactRank] = useState(0);
 
   useEffect(() => {
-    // 1. LIMIT TO TOP 100 TO AVOID MASSIVE DATABASE READ COSTS!
-    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(100));
-    const unsubscribeUsers = onSnapshot(q, (snapshot) => {
-      const playersData = snapshot.docs.map((doc) => ({ ...doc.data(), uid: doc.id } as Player));
-      setPlayers(playersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching leaderboard", error);
-      setLoading(false);
-    });
-
     // 2. FETCH EXACT RANK AND TOTAL USERS EFFICIENTLY
     const fetchExactRank = async () => {
       try {
@@ -69,6 +57,8 @@ export default function Dashboard({ user }: { user: User }) {
         setExactRank(rankSnap.data().count + 1); // If 5 people have more points, I am rank 6
       } catch (error) {
         console.error("Error calculating exact rank", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -80,22 +70,9 @@ export default function Dashboard({ user }: { user: User }) {
         const data = docSnap.data() as any;
         setUserStats((prev: any) => ({ ...prev, ...data }));
         setHasInvitedFriends((data.referralsCount || 0) > 0);
+        setIsLeagueCreatorOrMember(data.inPrivateLeague || false);
+        setInBenoliga(data.inBenoliga || false);
       }
-    });
-
-    // Fetch user leagues
-    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
-      const leagues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const userLeagues = leagues.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
-      
-      setIsLeagueCreatorOrMember(userLeagues.length > 0);
-      setInBenoliga(userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'));
-      
-      setUserStats((prev: any) => ({
-        ...prev,
-        inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
-        inPrivateLeague: userLeagues.length > 0
-      }));
     });
 
     // Fetch user predictions and actual results to check for perfect group
@@ -128,16 +105,14 @@ export default function Dashboard({ user }: { user: User }) {
     checkPerfectGroup();
 
     return () => {
-      unsubscribeUsers();
-      unsubscribeLeagues();
       unsubscribeUser();
     };
   }, [user.uid]);
 
-  const myData = players.find((p) => p.uid === user.uid) || userStats;
+  const myData = userStats;
   const myPoints = myData?.totalPoints || 0;
-  const myRank = exactRank > 0 ? exactRank : (players.findIndex((p) => p.totalPoints === myPoints) + 1);
-  
+  // If exactRank isn't loaded, fake it to 0 or 1
+  const myRank = exactRank > 0 ? exactRank : 1;
   const userLevel = getUserLevel(myPoints);
   
   const userBadgeIds = myData?.earnedBadges || userStats?.earnedBadges || [];
@@ -280,12 +255,9 @@ export default function Dashboard({ user }: { user: User }) {
       <div className="space-y-4 leaderboard-container">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('dashboard.globalLeaderboard')}</h2>
         <p className="text-sm text-gray-500">Competí contra todos los usuarios registrados en el prode. Acá vas a ver la posición de cada jugador a nivel mundial.</p>
-        <Leaderboard 
-          title={t('dashboard.globalLeaderboard')} 
-          players={players} 
+        <GlobalLeaderboard 
           currentUser={user} 
           onUserClick={setSelectedUser} 
-          loading={loading} 
         />
       </div>
 

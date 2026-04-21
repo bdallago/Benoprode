@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc, getDocs, where, documentId } from "firebase/firestore";
 import { db } from "../firebase";
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from "next/navigation";
@@ -31,17 +31,47 @@ export function useLeagues(userId: string) {
   const [pendingInvitation, setPendingInvitation] = useState<{league: League, inviter: string} | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!selectedLeague?.members?.length) {
+      setPlayers([]);
+      return;
+    }
+    
+    setLoading(true);
+    const fetchLeagueMembers = async () => {
+      try {
+        const uids = selectedLeague.members;
+        // Batch in groups of 30 due to Firestore 'in' limits
+        const chunks = [];
+        for (let i = 0; i < uids.length; i += 30) {
+          chunks.push(uids.slice(i, i + 30));
+        }
+        
+        let allPlayers: Player[] = [];
+        for (const chunk of chunks) {
+          const q = query(
+            collection(db, "users"), 
+            where(documentId(), "in", chunk)
+          );
+          const snap = await getDocs(q);
+          const p = snap.docs.map(d => ({ ...d.data(), uid: d.id } as Player));
+          allPlayers = [...allPlayers, ...p];
+        }
+        
+        // sort by totalPoints desc
+        allPlayers.sort((a, b) => b.totalPoints - a.totalPoints);
+        setPlayers(allPlayers);
+      } catch (err) {
+        console.error("Error fetching league members", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchLeagueMembers();
+  }, [selectedLeague?.members]);
 
-    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"));
-    const unsubscribeUsers = onSnapshot(q, (snapshot) => {
-      const playersData = snapshot.docs.map((doc) => ({ ...doc.data(), uid: doc.id } as Player));
-      setPlayers(playersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching leaderboard", error);
-      setLoading(false);
-    });
+  useEffect(() => {
+    if (!userId) return;
 
     const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
       const leaguesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as League));
@@ -64,18 +94,23 @@ export function useLeagues(userId: string) {
         if (league) {
           if (!league.members.includes(userId)) {
             setPendingInvitation({ league, inviter });
+            setLoading(false);
           } else {
             if (typeof window !== 'undefined') {
               window.history.replaceState({}, document.title, window.location.pathname);
             }
             setSelectedLeague(league);
+            // loading will be set false by the league members fetch
           }
+        } else {
+           setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     });
 
     return () => {
-      unsubscribeUsers();
       unsubscribeLeagues();
     };
   }, [userId, searchParams, t]);

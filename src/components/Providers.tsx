@@ -88,32 +88,12 @@ function GlobalBadgeListener({ user }: { user: User }) {
       }
     });
 
-    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
-      if (!userData) return;
-      const leagues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const userLeagues = leagues.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
-      
-      const newIsLeagueCreatorOrMember = userLeagues.length > 0;
-      const newInBenoliga = userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga');
-      
-      if (newIsLeagueCreatorOrMember !== userData.inPrivateLeague || newInBenoliga !== userData.inBenoliga) {
-        updateDoc(doc(db, "users", user.uid), {
-           inPrivateLeague: newIsLeagueCreatorOrMember,
-           inBenoliga: newInBenoliga
-        }).catch(console.error);
-      }
-      
-      isLeagueCreatorOrMember = newIsLeagueCreatorOrMember;
-      inBenoliga = newInBenoliga;
-      checkBadges();
-    });
-
     const checkBadges = () => {
       // We need userStats here. Let's create a dummy one based on what we have
       const userStats = {
         referralsCount: hasInvitedFriends ? 1 : 0,
-        inBenoliga,
-        inPrivateLeague: isLeagueCreatorOrMember,
+        inBenoliga: userData?.inBenoliga || false,
+        inPrivateLeague: userData?.inPrivateLeague || false,
         hasSavedPredictions,
         lockedEarly
       };
@@ -148,7 +128,6 @@ function GlobalBadgeListener({ user }: { user: User }) {
 
     return () => {
       unsubscribeUser();
-      unsubscribeLeagues();
       unsubscribePredictions();
     };
   }, [user]);

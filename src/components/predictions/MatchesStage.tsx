@@ -24,27 +24,10 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const snap = await getDocs(collection(db, "predictions"));
-        const stats: Record<string, { A: number, B: number, DRAW: number, total: number }> = {};
-        
-        snap.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.matches) {
-            Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
-              if (pred && pred.outcome) {
-                if (!stats[matchId]) {
-                  stats[matchId] = { A: 0, B: 0, DRAW: 0, total: 0 };
-                }
-                if (pred.outcome === 'A' || pred.outcome === 'B' || pred.outcome === 'DRAW') {
-                  stats[matchId][pred.outcome as 'A' | 'B' | 'DRAW']++;
-                  stats[matchId].total++;
-                }
-              }
-            });
-          }
-        });
-        
-        setMatchStats(stats);
+        const statsRef = await import("firebase/firestore").then(m => m.getDoc(m.doc(db, "statistics", "matches")));
+        if (statsRef.exists()) {
+          setMatchStats(statsRef.data());
+        }
       } catch (error) {
         console.error("Error fetching prediction stats:", error);
       }
