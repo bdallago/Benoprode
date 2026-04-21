@@ -306,5 +306,16 @@ service cloud.firestore {
                     
       allow delete: if isAdmin();
     }
+
+    // ===============================================================
+    // Collection: statistics
+    // ===============================================================
+    match /statistics/{statsId} {
+      allow read: if isAuthenticated();
+      // Admins can do anything. 
+      // Players can update 'matches' stats (increments).
+      allow create, update: if isAuthenticated() && (isAdmin() || statsId == 'matches');
+      allow delete: if isAdmin();
+    }
   }
 }

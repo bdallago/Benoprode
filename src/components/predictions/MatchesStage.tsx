@@ -7,6 +7,7 @@ import matchesData from "../../lib/matches.json";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 import { MatchComments } from "./MatchComments";
+import { onSnapshot, doc } from "firebase/firestore";
 
 interface MatchesStageProps {
   matchPredictions: Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>;
@@ -22,18 +23,14 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
   const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const statsRef = await import("firebase/firestore").then(m => m.getDoc(m.doc(db, "statistics", "matches")));
-        if (statsRef.exists()) {
-          setMatchStats(statsRef.data());
-        }
-      } catch (error) {
-        console.error("Error fetching prediction stats:", error);
+    const statsDoc = doc(db, "statistics", "matches");
+    const unsubscribe = onSnapshot(statsDoc, (snapshot) => {
+      if (snapshot.exists()) {
+        setMatchStats(snapshot.data());
       }
-    };
+    });
     
-    fetchStats();
+    return () => unsubscribe();
   }, []);
 
   // Determine today date string
@@ -201,7 +198,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             Gana Local
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
-                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                            <span className="text-xs text-gray-500 mt-1 font-medium">
                               {Math.round((matchStats[match.id].A / matchStats[match.id].total) * 100)}%
                             </span>
                           )}
@@ -217,7 +214,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             Empate
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
-                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                            <span className="text-xs text-gray-500 mt-1 font-medium">
                               {Math.round((matchStats[match.id].DRAW / matchStats[match.id].total) * 100)}%
                             </span>
                           )}
@@ -233,7 +230,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             Gana Visita
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
-                            <span className="text-[10px] text-gray-500 mt-1 font-medium">
+                            <span className="text-xs text-gray-500 mt-1 font-medium">
                               {Math.round((matchStats[match.id].B / matchStats[match.id].total) * 100)}%
                             </span>
                           )}

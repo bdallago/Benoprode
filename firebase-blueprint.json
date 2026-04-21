@@ -91,6 +91,18 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["challengerId", "challengedId", "matchId", "challengerPrediction", "status", "createdAt"]
+    },
+    "MatchStatistics": {
+      "title": "MatchStatistics",
+      "description": "Aggregated prediction statistics for matches.",
+      "type": "object",
+      "properties": {
+        "A": { "type": "number", "description": "Count of votes for Home Win (Team A)" },
+        "B": { "type": "number", "description": "Count of votes for Away Win (Team B)" },
+        "DRAW": { "type": "number", "description": "Count of votes for Draw" },
+        "total": { "type": "number", "description": "Total count of votes for the match" }
+      },
+      "required": ["A", "B", "DRAW", "total"]
     }
   },
   "firestore": {
@@ -121,6 +133,10 @@
     "/duels/{duelId}": {
       "schema": { "$ref": "#/entities/Duel" },
       "description": "Stores duels between users."
+    },
+    "/statistics/matches": {
+      "schema": { "type": "object", "additionalProperties": { "$ref": "#/entities/MatchStatistics" } },
+      "description": "Stores aggregated prediction stats for every match ID."
     }
   }
 }

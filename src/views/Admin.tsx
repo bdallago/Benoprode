@@ -47,6 +47,39 @@ export default function Admin() {
   // State for reports
   const [reports, setReports] = useState<Report[]>([]);
   const [activeTab, setActiveTab] = useState<'results' | 'users' | 'reports' | 'analytics'>('results');
+  const [syncingStats, setSyncingStats] = useState(false);
+
+  const syncMatchStats = async () => {
+    setSyncingStats(true);
+    try {
+      const predictionsSnap = await getDocs(collection(db, "predictions"));
+      const stats: Record<string, any> = {};
+      
+      predictionsSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.matches) {
+          Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
+            if (pred && (pred.outcome === 'A' || pred.outcome === 'B' || pred.outcome === 'DRAW')) {
+              if (!stats[matchId]) {
+                stats[matchId] = { A: 0, B: 0, DRAW: 0, total: 0 };
+              }
+              stats[matchId][pred.outcome]++;
+              stats[matchId].total++;
+            }
+          });
+        }
+      });
+      
+      await setDoc(doc(db, "statistics", "matches"), stats);
+      setMessage({ type: 'success', text: "Las estadísticas globales han sido sincronizadas correctamente." });
+    } catch (e: any) {
+      console.error("Error syncing stats:", e);
+      setMessage({ type: 'error', text: "Error al sincronizar estadísticas: " + e.message });
+    } finally {
+      setSyncingStats(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
 
   // Analytics state
   const [analytics, setAnalytics] = useState({
@@ -645,6 +678,14 @@ export default function Admin() {
               className="flex-1 md:flex-none flex items-center gap-2"
             >
               <AlertCircle className="w-4 h-4" /> {t('admin.results.resetBtn')}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={syncMatchStats}
+              disabled={syncingStats}
+              className="flex-1 md:flex-none flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {syncingStats ? "Sincronizando..." : "Sincronizar Estadísticas"}
             </Button>
           </div>
 
