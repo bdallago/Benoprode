@@ -74,6 +74,9 @@ export const TeamFlag = ({ teamName }: { teamName: string }) => {
       <img 
         src={`https://flagcdn.com/w40/${code}.png`} 
         alt={`Bandera de ${t(`teams.${teamName}`)}`}
+        width="24"
+        height="16"
+        loading="lazy"
         className="w-6 h-4 object-cover rounded-sm shadow-sm flex-shrink-0"
         referrerPolicy="no-referrer"
       />
@@ -153,11 +156,11 @@ export function Fixture() {
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 dark:from-gray-900 dark:to-black text-white p-4 text-center">
             <h2 className="text-lg font-bold tracking-wider mb-4 text-white">{t('fixture.title')}</h2>
             <div className="flex items-center justify-between px-4">
-              <button onClick={handlePrev} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+              <button onClick={handlePrev} aria-label="Jornada anterior" className="p-1 hover:bg-white/20 rounded-full transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <span className="font-bold text-base">{t('fixture.matchday', { number: currentFecha + 1 })}</span>
-              <button onClick={handleNext} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+              <button onClick={handleNext} aria-label="Siguiente jornada" className="p-1 hover:bg-white/20 rounded-full transition-colors">
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>

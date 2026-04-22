@@ -158,6 +158,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamA}>{match.teamA}</span>
                           </div>
                           <input 
+                            aria-label={`Goles de ${match.teamA}`}
                             type="number" 
                             min="0" 
                             max="20"
@@ -175,6 +176,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamB}>{match.teamB}</span>
                           </div>
                           <input 
+                            aria-label={`Goles de ${match.teamB}`}
                             type="number" 
                             min="0" 
                             max="20"
