@@ -260,30 +260,71 @@ export default function Predictions({ user }: { user: User }) {
       </>
 
       {/* Confirmation Modal */}
-      {confirmLock && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('predictions.confirmLockTitle')}</h3>
-            <p className="text-gray-600 dark:text-gray-200 mb-6">
-              {t('predictions.confirmLockDesc')}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmLock(false)}>
-                {t('predictions.cancel')}
-              </Button>
-              <Button 
-                onClick={() => {
-                  setConfirmLock(false);
-                  savePredictions(true);
-                }}
-                variant="success"
-              >
-                <Lock className="w-4 h-4 mr-2" /> {t('predictions.confirmLock')}
-              </Button>
+      {confirmLock && (() => {
+        const answeredMatchesCount = Object.values(matchPredictions || {}).filter(p => typeof p.teamA === 'number' && typeof p.teamB === 'number').length;
+        const answeredSpecialsCount = Object.keys(specialPredictions || {}).filter(k => typeof specialPredictions[k] === 'string' && specialPredictions[k].trim() !== '').length;
+        
+        const totalMatches = 72;
+        const totalSpecials = 10;
+        
+        const missingMatches = totalMatches - answeredMatchesCount;
+        const missingSpecials = totalSpecials - answeredSpecialsCount;
+        const hasMissing = missingMatches > 0 || missingSpecials > 0;
+
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border ${hasMissing ? 'border-orange-500' : 'border-gray-200 dark:border-gray-700'}`}>
+              <div className="flex items-center gap-3 mb-4">
+                {hasMissing ? (
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                    <Lock className="w-5 h-5 text-blue-600" />
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  {hasMissing ? '¡Atención! Predicciones incompletas' : t('predictions.confirmLockTitle')}
+                </h3>
+              </div>
+
+              {hasMissing ? (
+                <div className="mb-6 space-y-3 text-sm text-gray-700 dark:text-gray-300 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30">
+                  <p className="font-semibold text-orange-800 dark:text-orange-300">
+                    Estás a punto de fijar tu prode, pero dejaste algunas secciones sin responder:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-orange-700 dark:text-orange-400">
+                    {missingMatches > 0 && <li>Te faltan {missingMatches} partidos individuales.</li>}
+                    {missingSpecials > 0 && <li>Te faltan {missingSpecials} preguntas especiales.</li>}
+                  </ul>
+                  <p className="pt-2">Si fijás ahora, perderás la oportunidad de sumar esos puntos. ¿Estás seguro/a?</p>
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300 mb-6 text-base">
+                  {t('predictions.confirmLockDesc')}
+                </p>
+              )}
+
+              <div className="flex gap-3 justify-end mt-2">
+                <Button variant="outline" onClick={() => setConfirmLock(false)} className="font-semibold px-5">
+                  Revisar de nuevo
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setConfirmLock(false);
+                    savePredictions(true);
+                  }}
+                  variant={hasMissing ? "destructive" : "success"}
+                  className="font-semibold px-5 flex items-center gap-2 shadow-sm"
+                >
+                  <Lock className="w-4 h-4" /> {hasMissing ? 'Fijar con espacios vacíos' : t('predictions.confirmLock')}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Share Modal */}
       {isShareModalOpen && (
