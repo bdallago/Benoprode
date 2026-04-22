@@ -90,7 +90,7 @@ export function useLeagues(userId: string) {
       }
 
       if (leagueId) {
-        const league = leaguesData.find(l => l.id === leagueId);
+        const league = leaguesData.find((l: any) => l.id === leagueId);
         if (league) {
           if (!league.members.includes(userId)) {
             setPendingInvitation({ league, inviter });
@@ -138,7 +138,7 @@ export function useLeagues(userId: string) {
   };
 
   const leaveLeague = async (leagueId: string) => {
-    const league = leagues.find(l => l.id === leagueId);
+    const league = leagues.find((l: any) => l.id === leagueId);
     if (league && league.members.length === 1 && league.members[0] === userId) {
       // If last member, delete the league
       await deleteDoc(doc(db, "leagues", leagueId));

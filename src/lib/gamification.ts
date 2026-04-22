@@ -76,7 +76,7 @@ export const BADGES = [
 
 export function getUserLevel(points: number) {
   // Find the highest level where the user's points are greater than or equal to the minPoints
-  const level = [...LEVELS].reverse().find(l => points >= l.minPoints);
+  const level = [...LEVELS].reverse().find((l: any) => points >= l.minPoints);
   return level || LEVELS[0];
 }
 

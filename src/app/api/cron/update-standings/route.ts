@@ -82,8 +82,8 @@ async function calculatePoints(database: any) {
       const userData = userMap.get(userId);
       if (!userData) return;
 
-      const userLeagues = leagues.filter(l => l.members?.includes(userId) || l.createdBy === userId);
-      const inBenoliga = userLeagues.some(l => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
+      const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
+      const inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
       const inPrivateLeague = userLeagues.length > 0;
       
       // Inject into userData to pass to the gamification lib
