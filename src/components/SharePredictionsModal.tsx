@@ -80,40 +80,39 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
         }
       });
       
-      // 1. Always trigger download first
+      const fileName = `prode-beno-${userName.replace(/\s+/g, '-').toLowerCase()}.png`;
+
+      // Intentar usar Web Share API nativa primero (Para celulares: IG, WhatsApp, etc)
+      if (navigator.share) {
+        try {
+          const blob = await (await fetch(image)).blob();
+          const file = new File([blob], fileName, { type: 'image/png' });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'Mi Prode - Mundial 2026',
+              text: '¡Mirá mi prode para el Mundial 2026! Armá el tuyo y jugá con tus amigos gratis en www.elprodedebeno.com.ar 🏆',
+              files: [file]
+            });
+            return; // Terminar si se compartió con éxito
+          }
+        } catch (shareError) {
+          console.log("Web Share API falló o el usuario canceló", shareError);
+          // Si el usuario simplemente canceló, no forzamos la descarga para no ser spam
+          if ((shareError as Error).name === 'AbortError') return; 
+        }
+      }
+      
+      // Fallback: Si no hay Web Share API (PC generalmente) o falló, forzar la descarga de la imagen
       const link = document.createElement('a');
       link.href = image;
-      link.download = `prode-beno-${userName.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // 2. Try to use Web Share API
-      if (navigator.share) {
-        try {
-          const blob = await (await fetch(image)).blob();
-          const file = new File([blob], 'predicciones.png', { type: 'image/png' });
-          
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: 'Mis Predicciones - Prode de Beno',
-              text: getShareText(),
-              files: [file]
-            });
-          } else {
-            // Fallback to text share if file share not supported
-            await navigator.share({
-              title: 'Mis Predicciones - Prode de Beno',
-              text: getShareText()
-            });
-          }
-        } catch (shareError) {
-          console.log("Web Share API failed or user cancelled", shareError);
-        }
-      }
-      
     } catch (error) {
-      console.error("Error generating image:", error);
+      console.error("Error generando la imagen:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -178,11 +177,11 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
                 disabled={isGenerating}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 h-14 text-lg border-0 shadow-lg transition-colors"
               >
-                {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImageIcon className="w-6 h-6" />}
-                {isGenerating ? 'Generando...' : 'Compartir Imagen'}
+                {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Share2 className="w-6 h-6" />}
+                {isGenerating ? 'Generando imagen...' : 'Compartir / Descargar'}
               </Button>
               <p className="text-xs text-center text-gray-500 dark:text-gray-200 px-2">
-                Abre el menú de tu celular para enviar la imagen a <strong>Instagram Stories</strong> o <strong>WhatsApp</strong>. En PC, descargará la imagen.
+                Al apretar el botón, podés mandar la imagen directamente a tus historias de <strong>Instagram</strong> o estado de <strong>WhatsApp</strong>. En PC, la imagen se descargará automáticaente.
               </p>
 
               <div className="relative flex items-center py-2">

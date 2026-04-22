@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Lock, Save, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
+import { Lock, Save, CalendarDays, ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
 import { TeamFlag } from "../Fixture";
 import matchesData from "../../lib/matches.json";
 import { collection, getDocs } from "firebase/firestore";
@@ -157,16 +157,33 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             <TeamFlag teamName={match.teamA} />
                             <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamA}>{match.teamA}</span>
                           </div>
-                          <input 
-                            aria-label={`Goles de ${match.teamA}`}
-                            type="number" 
-                            min="0" 
-                            max="20"
-                            className="w-12 sm:w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold"
-                            value={pred.teamA}
-                            onChange={(e) => handleMatchChange(match.id, 'teamA', e.target.value === '' ? '' : parseInt(e.target.value))}
-                            disabled={locked}
-                          />
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <button
+                              type="button"
+                              disabled={locked}
+                              onClick={() => {
+                                const current = typeof pred.teamA === 'number' ? pred.teamA : 0;
+                                handleMatchChange(match.id, 'teamA', Math.max(0, current - 1));
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <div className="w-8 sm:w-10 text-center font-bold text-lg text-gray-900 dark:text-gray-100 flex-shrink-0">
+                              {typeof pred.teamA === 'number' ? pred.teamA : '-'}
+                            </div>
+                            <button
+                              type="button"
+                              disabled={locked}
+                              onClick={() => {
+                                const current = typeof pred.teamA === 'number' ? pred.teamA : -1;
+                                handleMatchChange(match.id, 'teamA', Math.min(20, current + 1));
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         
                         {/* Team B */}
@@ -175,16 +192,33 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             <TeamFlag teamName={match.teamB} />
                             <span className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100" title={match.teamB}>{match.teamB}</span>
                           </div>
-                          <input 
-                            aria-label={`Goles de ${match.teamB}`}
-                            type="number" 
-                            min="0" 
-                            max="20"
-                            className="w-12 sm:w-14 text-center p-1.5 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold"
-                            value={pred.teamB}
-                            onChange={(e) => handleMatchChange(match.id, 'teamB', e.target.value === '' ? '' : parseInt(e.target.value))}
-                            disabled={locked}
-                          />
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <button
+                              type="button"
+                              disabled={locked}
+                              onClick={() => {
+                                const current = typeof pred.teamB === 'number' ? pred.teamB : 0;
+                                handleMatchChange(match.id, 'teamB', Math.max(0, current - 1));
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <div className="w-8 sm:w-10 text-center font-bold text-lg text-gray-900 dark:text-gray-100 flex-shrink-0">
+                              {typeof pred.teamB === 'number' ? pred.teamB : '-'}
+                            </div>
+                            <button
+                              type="button"
+                              disabled={locked}
+                              onClick={() => {
+                                const current = typeof pred.teamB === 'number' ? pred.teamB : -1;
+                                handleMatchChange(match.id, 'teamB', Math.min(20, current + 1));
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       

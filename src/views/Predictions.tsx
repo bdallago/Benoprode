@@ -23,6 +23,16 @@ export default function Predictions({ user }: { user: User }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const isFirstRender = useRef(true);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Offset adjusted so it becomes sticky after scrolling past the padding
+      setIsSticky(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const {
     loading,
@@ -132,21 +142,22 @@ export default function Predictions({ user }: { user: User }) {
     <div className="max-w-4xl mx-auto space-y-8">
       <CountdownBanner />
 
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 text-center md:text-left">{t('predictions.title')}</h1>
+      <div className={`sticky top-[64px] md:top-0 z-40 flex flex-col md:flex-row items-center justify-between bg-white/95 backdrop-blur-md dark:bg-gray-800/95 border border-gray-100 dark:border-gray-700 shadow-md transition-all duration-300 ${isSticky ? 'p-2 md:p-4 gap-2 md:gap-4 -mx-4 sm:mx-0 rounded-none sm:rounded-b-lg' : 'p-4 sm:p-6 gap-4 sm:gap-6 rounded-lg'}`}>
+        <h1 className={`text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 text-center md:text-left transition-all duration-300 ${isSticky ? 'hidden md:block' : 'block'}`}>{t('predictions.title')}</h1>
         
-        <div className="flex flex-col sm:flex-row justify-center md:justify-end gap-3 w-full md:w-auto">
+        <div className={`flex justify-center md:justify-end w-full md:w-auto transition-all ${isSticky ? 'gap-1 sm:gap-2 flex-row' : 'flex-col sm:flex-row gap-2 sm:gap-3'}`}>
           <Button 
             onClick={() => setIsShareModalOpen(true)}
             variant="outline"
-            className="w-full sm:w-auto flex items-center justify-center gap-2"
+            className={`flex items-center justify-center gap-1 sm:gap-2 transition-all ${isSticky ? 'flex-1 md:flex-none text-xs px-2 h-9' : 'w-full sm:w-auto'}`}
           >
-            <Share2 className="w-4 h-4" /> Compartir
+            <Share2 className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
+            <span className={isSticky ? "hidden md:inline" : ""}>Compartir</span>
           </Button>
           {!effectiveIsLocked && (
             <>
               {isAutoSaving && (
-                <div className="flex items-center gap-2 text-xs text-blue-500 font-medium px-2 animate-pulse">
+                <div className={`flex items-center gap-2 text-xs text-blue-500 font-medium px-2 animate-pulse ${isSticky ? 'hidden md:flex' : 'hidden sm:flex'}`}>
                   <Loader2 className="w-3 h-3 animate-spin" /> Guardando...
                 </div>
               )}
@@ -154,23 +165,27 @@ export default function Predictions({ user }: { user: User }) {
                 variant="outline" 
                 onClick={() => savePredictions(false)}
                 disabled={saving || loading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2"
+                className={`flex items-center justify-center gap-1 sm:gap-2 transition-all ${isSticky ? 'flex-1 md:flex-none text-[11px] sm:text-xs px-2 h-9' : 'w-full sm:w-auto'}`}
               >
-                <Save className="w-4 h-4" /> {saving ? t('predictions.saving') : t('predictions.saveDraft')}
+                <Save className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
+                <span className={isSticky ? "hidden sm:inline" : ""}>{saving ? t('predictions.saving') : t('predictions.saveDraft')}</span>
+                <span className={isSticky ? "sm:hidden" : "hidden"}>{saving ? '...' : 'Borrador'}</span>
               </Button>
               <Button 
                 variant="success"
                 onClick={() => setConfirmLock(true)}
                 disabled={saving || loading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2"
+                className={`flex items-center justify-center gap-1 sm:gap-2 transition-all ${isSticky ? 'flex-1 md:flex-none text-[11px] sm:text-xs px-2 h-9' : 'w-full sm:w-auto'}`}
               >
-                <Lock className="w-4 h-4" /> {t('predictions.lockPredictions')}
+                <Lock className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
+                <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.lockPredictions')}</span>
+                <span className={isSticky ? "sm:hidden" : "hidden"}>Fijar</span>
               </Button>
             </>
           )}
           {effectiveIsLocked && (
-            <div className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-2 rounded-md border border-green-200 w-full sm:w-auto justify-center">
-              <Lock className="w-4 h-4" /> {t('predictions.predictionsLocked')}
+            <div className={`flex items-center gap-2 text-green-700 bg-green-50 rounded-md border border-green-200 justify-center transition-all ${isSticky ? 'py-1 px-2 text-xs flex-1 md:flex-none h-9' : 'px-4 py-2 w-full sm:w-auto'}`}>
+              <Lock className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'}`} /> <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.predictionsLocked')}</span><span className={isSticky ? "sm:hidden" : "hidden"}>Fijadas</span>
             </div>
           )}
         </div>
