@@ -67,6 +67,10 @@ async function calculatePoints(database: any) {
     const userMap = new Map();
     usersSnap.docs.forEach((doc: any) => userMap.set(doc.id, doc.data()));
 
+    // Fetch all leagues for badges
+    const leaguesSnap = await database.collection("leagues").get();
+    const leagues = leaguesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+
     // Fetch all predictions
     const predictionsSnap = await database.collection("predictions").get();
     
@@ -77,6 +81,14 @@ async function calculatePoints(database: any) {
       const pred = predDoc.data();
       const userData = userMap.get(userId);
       if (!userData) return;
+
+      const userLeagues = leagues.filter(l => l.members?.includes(userId) || l.createdBy === userId);
+      const inBenoliga = userLeagues.some(l => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
+      const inPrivateLeague = userLeagues.length > 0;
+      
+      // Inject into userData to pass to the gamification lib
+      userData.inBenoliga = inBenoliga;
+      userData.inPrivateLeague = inPrivateLeague;
 
       let totalPoints = 0;
       
@@ -188,7 +200,7 @@ async function calculatePoints(database: any) {
       for (const res of chunk) {
         const userRef = database.collection("users").doc(res.userId);
         const currentEarnedIds = res.userData.earnedBadges || [];
-        const unlockedBadges = assignUserBadges(res.pred, res.totalPoints, currentEarnedIds, res.context);
+        const unlockedBadges = assignUserBadges(res.userData, res.totalPoints, currentEarnedIds, res.context);
 
         batch.set(userRef, { 
           totalPoints: res.totalPoints, 

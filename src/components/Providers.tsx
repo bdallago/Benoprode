@@ -44,6 +44,49 @@ function GlobalBadgeListener({ user }: { user: User }) {
     let hasSavedPredictions = false;
     let lockedEarly = false;
     let userData: any = null;
+    let leaguesData: any[] = [];
+
+    const checkBadges = () => {
+      // We need userStats here. Let's create a dummy one based on what we have
+      const userLeagues = leaguesData.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
+      const inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
+      const inPrivateLeague = userLeagues.length > 0;
+
+      const userStats = {
+        referralsCount: hasInvitedFriends ? 1 : 0,
+        inBenoliga: inBenoliga,
+        inPrivateLeague: inPrivateLeague,
+        hasSavedPredictions,
+        lockedEarly
+      };
+      if (!userData) return;
+      const userBadgeIds = Array.from(new Set(getUserBadges(myPoints, userStats)));
+      const userBadgesFull = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
+      
+      const storedBadges = userData.earnedBadges || [];
+      const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
+      
+      if (newEarnedBadges.length > 0) {
+        setBadgeQueue((prev: any[]) => {
+          const existingIds = prev.map(p => p.id);
+          const toAdd = newEarnedBadges.filter(b => b && !existingIds.includes(b.id));
+          return [...prev, ...(toAdd as any[])];
+        });
+        
+        const newBadgesList = Array.from(new Set([...storedBadges, ...userBadgeIds]));
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: newBadgesList
+        }).catch(console.error);
+        
+        // Also update local data to prevent immediate refire
+        userData.earnedBadges = newBadgesList;
+      } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: userBadgeIds
+        }).catch(console.error);
+        userData.earnedBadges = userBadgeIds;
+      }
+    };
 
     const unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
@@ -55,6 +98,11 @@ function GlobalBadgeListener({ user }: { user: User }) {
         lockedEarly = !!data.lockedEarly;
         checkBadges();
       }
+    });
+
+    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
+      leaguesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      checkBadges();
     });
 
     const unsubscribePredictions = onSnapshot(doc(db, "predictions", user.uid), (docSnap) => {
@@ -88,46 +136,9 @@ function GlobalBadgeListener({ user }: { user: User }) {
       }
     });
 
-    const checkBadges = () => {
-      // We need userStats here. Let's create a dummy one based on what we have
-      const userStats = {
-        referralsCount: hasInvitedFriends ? 1 : 0,
-        inBenoliga: userData?.inBenoliga || false,
-        inPrivateLeague: userData?.inPrivateLeague || false,
-        hasSavedPredictions,
-        lockedEarly
-      };
-      if (!userData) return;
-      const userBadgeIds = Array.from(new Set(getUserBadges(myPoints, userStats)));
-      const userBadgesFull = userBadgeIds.map(id => BADGES.find(b => b.id === id)).filter(Boolean);
-      
-      const storedBadges = userData.earnedBadges || [];
-      const newEarnedBadges = userBadgesFull.filter(b => b && !storedBadges.includes(b.id));
-      
-      if (newEarnedBadges.length > 0) {
-        setBadgeQueue((prev: any[]) => {
-          const existingIds = prev.map(p => p.id);
-          const toAdd = newEarnedBadges.filter(b => b && !existingIds.includes(b.id));
-          return [...prev, ...(toAdd as any[])];
-        });
-        
-        const newBadgesList = Array.from(new Set([...storedBadges, ...userBadgeIds]));
-        updateDoc(doc(db, "users", user.uid), {
-          earnedBadges: newBadgesList
-        }).catch(console.error);
-        
-        // Also update local data to prevent immediate refire
-        userData.earnedBadges = newBadgesList;
-      } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
-        updateDoc(doc(db, "users", user.uid), {
-          earnedBadges: userBadgeIds
-        }).catch(console.error);
-        userData.earnedBadges = userBadgeIds;
-      }
-    };
-
     return () => {
       unsubscribeUser();
+      unsubscribeLeagues();
       unsubscribePredictions();
     };
   }, [user]);

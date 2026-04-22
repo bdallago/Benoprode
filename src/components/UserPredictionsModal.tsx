@@ -89,7 +89,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         
         setUserStats((prev: any) => ({
           ...prev,
-          inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga'),
+          inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('beno') || l.id === 'benoliga'),
           inPrivateLeague: userLeagues.length > 0
         }));
 

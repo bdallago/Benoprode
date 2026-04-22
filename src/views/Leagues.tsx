@@ -173,7 +173,7 @@ export default function Leagues({ user }: { user: User }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Benoliga Highlight Card */}
           {(() => {
-            const benoliga = leagues.find(l => l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga');
+            const benoliga = leagues.find(l => l.name.toLowerCase().includes('beno') || l.id === 'benoliga');
             const isMember = benoliga ? benoliga.members.includes(user.uid) : false;
             
             return (
@@ -227,7 +227,7 @@ export default function Leagues({ user }: { user: User }) {
             );
           })()}
 
-          {visibleLeagues.filter(l => !(l.name.toLowerCase().includes('benoliga') || l.id === 'benoliga')).map(league => {
+          {visibleLeagues.filter(l => !(l.name.toLowerCase().includes('beno') || l.id === 'benoliga')).map(league => {
             const isMember = league.members.includes(user.uid);
             return (
               <Card key={league.id} className={selectedLeague?.id === league.id ? 'ring-2 ring-blue-500' : ''}>
