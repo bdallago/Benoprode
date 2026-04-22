@@ -82,8 +82,11 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
       
       const fileName = `prode-beno-${userName.replace(/\s+/g, '-').toLowerCase()}.png`;
 
-      // Intentar usar Web Share API nativa primero (Para celulares: IG, WhatsApp, etc)
-      if (navigator.share) {
+      // Detección simple para saber si el usuario está en celular
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // Solo intentamos levantar la bandeja nativa (Web Share API) si es celular
+      if (isMobile && navigator.share) {
         try {
           const blob = await (await fetch(image)).blob();
           const file = new File([blob], fileName, { type: 'image/png' });
@@ -94,16 +97,16 @@ export function SharePredictionsModal({ isOpen, onClose, champion, topScorer, re
               text: '¡Mirá mi prode para el Mundial 2026! Armá el tuyo y jugá con tus amigos gratis en www.elprodedebeno.com.ar 🏆',
               files: [file]
             });
-            return; // Terminar si se compartió con éxito
+            return; // Terminamos acá para no descargar nada si compartió bien
           }
         } catch (shareError) {
-          console.log("Web Share API falló o el usuario canceló", shareError);
-          // Si el usuario simplemente canceló, no forzamos la descarga para no ser spam
+          console.log("Web Share API cancelado", shareError);
+          // Si el usuario simplemente canceló la ventana en el celular, frenamos todo.
           if ((shareError as Error).name === 'AbortError') return; 
         }
       }
       
-      // Fallback: Si no hay Web Share API (PC generalmente) o falló, forzar la descarga de la imagen
+      // Fallback para Escritorio (O si el celular falló de otra forma): Descargar el archivo.
       const link = document.createElement('a');
       link.href = image;
       link.download = fileName;
