@@ -19,7 +19,40 @@ interface MatchesStageProps {
 
 export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, handleMatchChange, savePredictions }: MatchesStageProps) {
   const [matchStats, setMatchStats] = useState<Record<string, { A: number, B: number, DRAW: number, total: number }>>({});
-  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const storedState = localStorage.getItem('prode-collapsed-days');
+        if (storedState) {
+          return JSON.parse(storedState);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading collapsed days from local storage", e);
+    }
+    
+    const pastDaysState: Record<string, boolean> = {};
+    const today = new Date();
+    Object.entries(matchesData.reduce((acc, match) => {
+        const date = new Date(match.date);
+        const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
+        if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
+        acc[capitalizedDay].push(match);
+        return acc;
+    }, {} as Record<string, typeof matchesData>)).forEach(([day, dayMatches]) => {
+        const matchDate = new Date(dayMatches[0].date);
+        const matchDateString = matchDate.toLocaleDateString('es-AR');
+        const todayLocaleString = today.toLocaleDateString('es-AR');
+        
+        if (matchDateString === todayLocaleString) {
+            pastDaysState[day] = false;
+        } else {
+            pastDaysState[day] = true;
+        }
+    });
+    return pastDaysState;
+  });
   const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -38,40 +71,6 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
   const todayString = today.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   const todayCapitalized = todayString.charAt(0).toUpperCase() + todayString.slice(1);
 
-  useEffect(() => {
-    // initialize collapsed states for ALL days
-    try {
-      const storedState = localStorage.getItem('prode-collapsed-days');
-      if (storedState) {
-        setCollapsedDays(JSON.parse(storedState));
-        return;
-      }
-    } catch (e) {
-      console.error("Error reading collapsed days from local storage", e);
-    }
-
-    const pastDaysState: Record<string, boolean> = {};
-    Object.entries(matchesData.reduce((acc, match) => {
-        const date = new Date(match.date);
-        const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-        const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
-        if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
-        acc[capitalizedDay].push(match);
-        return acc;
-    }, {} as Record<string, typeof matchesData>)).forEach(([day, dayMatches]) => {
-        const matchDate = new Date(dayMatches[0].date);
-        // Collapse the day UNLESS it is exactly today
-        const matchDateString = matchDate.toLocaleDateString('es-AR');
-        const todayLocaleString = today.toLocaleDateString('es-AR');
-        
-        if (matchDateString === todayLocaleString) {
-            pastDaysState[day] = false; // Open today
-        } else {
-            pastDaysState[day] = true; // Collapse everything else
-        }
-    });
-    setCollapsedDays(pastDaysState);
-  }, []); // Intentionally empty to avoid infinite re-renders from the non-memoized 'today' object
 
   useEffect(() => {
     if (Object.keys(collapsedDays).length > 0) {

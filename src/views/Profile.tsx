@@ -290,7 +290,27 @@ export default function Profile({ user, profileId }: ProfileProps) {
   };
 
   if (loading) {
-    return <div className="max-w-4xl mx-auto p-8 animate-pulse">Cargando perfil...</div>;
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+        <Card className="overflow-hidden">
+          <div className="h-32 bg-gray-200 dark:bg-gray-800"></div>
+          <CardContent className="relative pt-0 pb-6 px-6">
+             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-12 sm:-mt-16 mb-4">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white dark:border-gray-800 bg-gray-300 dark:bg-gray-700 flex-shrink-0"></div>
+                <div className="flex-1 text-center sm:text-left space-y-2 mt-4 sm:mt-0 w-full sm:w-auto">
+                   <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-48 mx-auto sm:mx-0"></div>
+                   <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <div className="h-6 w-24 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                      <div className="h-4 w-16 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                   </div>
+                </div>
+             </div>
+          </CardContent>
+        </Card>
+        <div className="flex border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 rounded-t-xl h-14"></div>
+        <div className="h-64 bg-gray-100 dark:bg-gray-800/50 rounded-xl"></div>
+      </div>
+    );
   }
 
   if (!profileData) {

@@ -26,7 +26,20 @@ export function CountdownBanner() {
     return () => clearInterval(interval);
   }, [isLocked]);
 
-  if (!mounted) return null;
+  const skeletonBanner = (
+    <div className="bg-blue-900 text-transparent p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-blue-400 mb-6 animate-pulse">
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="w-6 h-6 rounded-full bg-blue-800"></div>
+        <div className="space-y-2 w-full sm:w-48">
+          <div className="h-5 bg-blue-800 rounded w-3/4"></div>
+          <div className="h-4 bg-blue-800 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div className="w-full sm:w-64 h-12 bg-blue-950 px-4 py-2 rounded-md border border-blue-800"></div>
+    </div>
+  );
+
+  if (!mounted) return skeletonBanner;
 
   const isTimeUp = timeLeft <= 0;
 

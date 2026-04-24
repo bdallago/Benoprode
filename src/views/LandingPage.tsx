@@ -48,15 +48,21 @@ export default function LandingPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 text-center">
         <div className="mb-8 overflow-hidden rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
           {/* Mobile Header */}
-          <img 
+          <Image 
             src="/portada-telefono.jpeg" 
             alt="El Prode de Beno Mobile" 
+            width={1080}
+            height={1920}
+            priority
             className="w-full h-auto block sm:hidden shrink-0"
           />
           {/* Desktop Header */}
-          <img 
+          <Image 
             src="/portada-escritorio.jpeg" 
-            alt="El Prode de Beno Desktop" 
+            alt="El Prode de Beno Desktop"
+            width={1920}
+            height={1080}
+            priority 
             className="w-full h-auto hidden sm:block shrink-0"
           />
         </div>
