@@ -47,24 +47,6 @@ export function KnockoutStage() {
           const walk = (x - startX) * 2; // Scroll-fast
           ele.scrollLeft = scrollLeft - walk;
         }}
-        onTouchStart={(e) => {
-          const ele = e.currentTarget;
-          ele.dataset.isDown = 'true';
-          ele.dataset.startX = e.touches[0].pageX.toString();
-          ele.dataset.scrollLeft = ele.scrollLeft.toString();
-        }}
-        onTouchEnd={(e) => {
-          e.currentTarget.dataset.isDown = 'false';
-        }}
-        onTouchMove={(e) => {
-          const ele = e.currentTarget;
-          if (ele.dataset.isDown !== 'true') return;
-          const startX = parseFloat(ele.dataset.startX || '0');
-          const scrollLeft = parseFloat(ele.dataset.scrollLeft || '0');
-          const x = e.touches[0].pageX;
-          const walk = (x - startX) * 2;
-          ele.scrollLeft = scrollLeft - walk;
-        }}
       >
         {['16avos', 'Octavos', 'Cuartos', 'Semifinal', 'Final'].map((stage, idx) => {
           const numMatches = Math.pow(2, 4 - idx);

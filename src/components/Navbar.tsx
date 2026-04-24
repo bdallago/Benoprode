@@ -3,10 +3,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { User, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { Button } from "./ui/button";
-import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette } from "lucide-react";
+import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette, Newspaper } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
+
+import { NotificationCenter } from "./NotificationCenter";
 
 export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean }) {
   const router = useRouter();
@@ -111,6 +113,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               </Button>
               {user && (
                 <>
+                  <NotificationCenter user={user} />
                   <Link href="/profile" className="flex items-center gap-2 hover:bg-white/10 p-1.5 rounded-md transition-colors">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />

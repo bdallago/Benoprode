@@ -196,6 +196,31 @@ service cloud.firestore {
       // Only admins can read, update, delete reports
       allow read, update, delete: if isAdmin();
     }
+    
+    // ===============================================================
+    // Collection: notifications
+    // ===============================================================
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      
+      // Allow creation only if the notification is directed to a valid user.
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['userId', 'type', 'title', 'message', 'read', 'createdAt', 'actionUrl']) &&
+                    request.resource.data.userId is string &&
+                    request.resource.data.type in ['friend_request', 'league_invite', 'match_result', 'badge_earned', 'ranking_drop', 'system_alert', 'duel_invite', 'duel_accepted'] &&
+                    request.resource.data.title is string &&
+                    request.resource.data.message is string &&
+                    request.resource.data.read == false &&
+                    request.resource.data.createdAt is string;
+                    
+      // Only allow updating read status
+      allow update: if isAuthenticated() && 
+                    request.auth.uid == resource.data.userId &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+                    request.resource.data.read is bool;
+                    
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
 
     // ===============================================================
     // Collection: friendRequests
@@ -305,6 +330,17 @@ service cloud.firestore {
                     );
                     
       allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Collection: global_content
+    // ===============================================================
+    match /global_content/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && docId == 'news' &&
+                   hasOnlyAllowedFields(['cacheHour', 'data', 'updatedAt']) &&
+                   request.resource.data.cacheHour is string &&
+                   request.resource.data.data is map;
     }
 
     // ===============================================================

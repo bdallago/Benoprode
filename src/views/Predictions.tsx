@@ -306,8 +306,8 @@ export default function Predictions({ user }: { user: User }) {
                 </p>
               )}
 
-              <div className="flex gap-3 justify-end mt-2">
-                <Button variant="outline" onClick={() => setConfirmLock(false)} className="font-semibold px-5">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end mt-2">
+                <Button variant="outline" onClick={() => setConfirmLock(false)} className="font-semibold px-5 w-full sm:w-auto">
                   Revisar de nuevo
                 </Button>
                 <Button 
@@ -316,7 +316,7 @@ export default function Predictions({ user }: { user: User }) {
                     savePredictions(true);
                   }}
                   variant={hasMissing ? "destructive" : "success"}
-                  className="font-semibold px-5 flex items-center gap-2 shadow-sm"
+                  className="font-semibold px-5 flex justify-center items-center gap-2 shadow-sm w-full sm:w-auto"
                 >
                   <Lock className="w-4 h-4" /> {hasMissing ? 'Fijar con espacios vacíos' : t('predictions.confirmLock')}
                 </Button>

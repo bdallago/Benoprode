@@ -145,7 +145,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                   <Card key={match.id} className={`overflow-hidden ${isMatchLocked ? 'opacity-75 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                     <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-200 font-medium">
-                        {matchDate.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}hs
+                        {matchDate.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {isMatchLocked && <Lock className="w-3 h-3 text-gray-400" />}
                     </CardHeader>
@@ -165,9 +165,9 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                                 const current = typeof pred.teamA === 'number' ? pred.teamA : 0;
                                 handleMatchChange(match.id, 'teamA', Math.max(0, current - 1));
                               }}
-                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"
                             >
-                              <Minus className="w-4 h-4" />
+                              <Minus className="w-4 h-4 font-bold" />
                             </button>
                             <div className="w-8 sm:w-10 text-center font-bold text-lg text-gray-900 dark:text-gray-100 flex-shrink-0">
                               {typeof pred.teamA === 'number' ? pred.teamA : '-'}
@@ -179,9 +179,9 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                                 const current = typeof pred.teamA === 'number' ? pred.teamA : -1;
                                 handleMatchChange(match.id, 'teamA', Math.min(20, current + 1));
                               }}
-                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-4 h-4 font-bold" />
                             </button>
                           </div>
                         </div>
@@ -200,9 +200,9 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                                 const current = typeof pred.teamB === 'number' ? pred.teamB : 0;
                                 handleMatchChange(match.id, 'teamB', Math.max(0, current - 1));
                               }}
-                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"
                             >
-                              <Minus className="w-4 h-4" />
+                              <Minus className="w-4 h-4 font-bold" />
                             </button>
                             <div className="w-8 sm:w-10 text-center font-bold text-lg text-gray-900 dark:text-gray-100 flex-shrink-0">
                               {typeof pred.teamB === 'number' ? pred.teamB : '-'}
@@ -214,9 +214,9 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                                 const current = typeof pred.teamB === 'number' ? pred.teamB : -1;
                                 handleMatchChange(match.id, 'teamB', Math.min(20, current + 1));
                               }}
-                              className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-4 h-4 font-bold" />
                             </button>
                           </div>
                         </div>
@@ -226,8 +226,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                         <div className="flex-1 flex flex-col items-center">
                           <Button 
                             size="sm" 
-                            variant={pred.outcome === 'A' ? 'default' : 'outline'} 
-                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'A' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            className={`w-full text-xs h-10 font-bold border-2 active:translate-y-[2px] transition-all shadow-sm ${pred.outcome === 'A' ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'A')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
@@ -242,8 +241,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                         <div className="flex-1 flex flex-col items-center">
                           <Button 
                             size="sm" 
-                            variant={pred.outcome === 'DRAW' ? 'default' : 'outline'} 
-                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'DRAW' ? 'bg-gray-600 hover:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            className={`w-full text-xs h-10 font-bold border-2 active:translate-y-[2px] transition-all shadow-sm ${pred.outcome === 'DRAW' ? 'bg-gray-700 hover:bg-gray-800 text-white border-gray-900 dark:border-gray-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'DRAW')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
@@ -258,8 +256,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                         <div className="flex-1 flex flex-col items-center">
                           <Button 
                             size="sm" 
-                            variant={pred.outcome === 'B' ? 'default' : 'outline'} 
-                            className={`w-full text-xs h-9 font-semibold ${pred.outcome === 'B' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            className={`w-full text-xs h-10 font-bold border-2 active:translate-y-[2px] transition-all shadow-sm ${pred.outcome === 'B' ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             onClick={() => handleMatchChange(match.id, 'outcome', 'B')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >

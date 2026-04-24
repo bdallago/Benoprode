@@ -6,7 +6,7 @@ import { doc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, ser
 import { db } from '../firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen, Loader2 } from 'lucide-react';
+import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen, Loader2, PenSquare } from 'lucide-react';
 import { getUserLevel, getUserBadges, BADGES } from '../lib/gamification';
 import matchesData from '../lib/matches.json';
 import { UserPredictionsModal } from '../components/UserPredictionsModal';
@@ -38,6 +38,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Live search effect
@@ -159,22 +160,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
       getDocs(qDuels1).then(snap1 => handleDuelsSnap(snap1, snap2));
     });
 
-    let unsubReqs: any = () => {};
-    if (isOwnProfile) {
-      const qReqs = query(collection(db, 'friendRequests'), where('toUserId', '==', user.uid), where('status', '==', 'pending'));
-      unsubReqs = onSnapshot(qReqs, async (snap) => {
-        const reqsData: any[] = [];
-        for (const d of snap.docs) {
-          const fromId = d.data().fromUserId;
-          const uDoc = await getDoc(doc(db, 'users', fromId));
-          if (uDoc.exists()) {
-            reqsData.push({ id: d.id, fromUserId: fromId, ...uDoc.data() });
-          }
-        }
-        setPendingRequestsList(reqsData);
-      });
-    }
-
+    const unsubReqs = () => {};
+    // Let's implement H2H calculation here
     return () => {
       unsubF1();
       unsubF2();
@@ -183,6 +170,38 @@ export default function Profile({ user, profileId }: ProfileProps) {
       unsubReqs();
     };
   }, [targetUserId, isOwnProfile, user]);
+
+  const [h2hStats, setH2hStats] = useState({ userWins: 0, targetWins: 0, ties: 0 });
+
+  useEffect(() => {
+    if (isOwnProfile || duelsList.length === 0) return;
+
+    let userWins = 0;
+    let targetWins = 0;
+    let ties = 0;
+
+    duelsList.forEach((duel: any) => {
+      if (duel.status !== 'completed') return;
+      if (!duel.challengerId || !duel.challengedId) return;
+
+      const challengerIsUser = duel.challengerId === user.uid;
+      // Only count duels between THESE two users
+      if (!((duel.challengerId === user.uid && duel.challengedId === profileId) || 
+            (duel.challengerId === profileId && duel.challengedId === user.uid))) {
+        return;
+      }
+
+      if (duel.winnerId === 'tie') {
+        ties++;
+      } else if (duel.winnerId === user.uid) {
+        userWins++;
+      } else if (duel.winnerId === profileId) {
+        targetWins++;
+      }
+    });
+
+    setH2hStats({ userWins, targetWins, ties });
+  }, [duelsList, isOwnProfile, user.uid, profileId]);
 
   useEffect(() => {
     if (isOwnProfile) return;
@@ -345,6 +364,9 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   <Button onClick={() => setIsPredictionsModalOpen(true)} variant="outline" className="font-bold flex items-center gap-2 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:bg-blue-900/20 dark:hover:bg-blue-900/50">
                     <BookOpen className="w-4 h-4" /> Ver predicciones
                   </Button>
+                  <Button onClick={() => router.push('/predictions')} variant="default" className="font-bold flex items-center gap-2 shadow-sm bg-blue-600 hover:bg-blue-700 text-white">
+                    <PenSquare className="w-4 h-4" /> Editar predicciones
+                  </Button>
                </div>
             )}
           </div>
@@ -382,6 +404,34 @@ export default function Profile({ user, profileId }: ProfileProps) {
       <div className="py-4">
         {activeTab === 'stats' && (
           <div className="space-y-6">
+            {!isOwnProfile && (
+              <div className="bg-gradient-to-r from-blue-900 to-indigo-900 overflow-hidden relative p-6 rounded-xl border border-blue-700/50 flex flex-col justify-center text-center shadow-lg mb-6">
+                <div className="absolute inset-0 bg-black/20 mix-blend-overlay"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-400"></div>
+                
+                <h3 className="text-white/80 font-bold uppercase tracking-wider text-xs mb-3 flex items-center justify-center gap-2">
+                  <Swords className="w-4 h-4" /> Cara a Cara (H2H) vs Ti
+                </h3>
+                
+                <div className="flex items-center justify-center gap-6 md:gap-12 relative z-10 w-full mb-2">
+                  <div className="flex flex-col items-center">
+                    <span className="text-3xl md:text-5xl font-black text-white">{h2hStats.targetWins}</span>
+                    <span className="text-white/70 text-xs font-bold uppercase mt-1">{profileData?.displayName?.split(' ')[0] || 'Rival'}</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-center justify-center">
+                     <span className="text-white/50 font-bold text-sm bg-black/30 px-3 py-1 rounded-full mb-1">EMPATES</span>
+                     <span className="text-xl font-black text-yellow-500">{h2hStats.ties}</span>
+                  </div>
+
+                  <div className="flex flex-col items-center relative">
+                    <span className="text-3xl md:text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">{h2hStats.userWins}</span>
+                    <span className="text-blue-200 text-xs font-bold uppercase mt-1">TÚ</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center text-center">
                   <div className="text-sm text-gray-500 dark:text-gray-200 font-bold mb-1">POSICIÓN GLOBAL</div>
@@ -397,9 +447,18 @@ export default function Profile({ user, profileId }: ProfileProps) {
             {badges.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {badges.map((badge: any) => (
-                  <div key={badge.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow">
+                  <div key={badge.id} className="relative group bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
                     <span className="text-4xl hover:scale-110 transition-transform">{badge.icon}</span>
                     <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{badge.name}</span>
+                    
+                    {/* Tooltip that shows on click/mobile */}
+                    {activeTooltip === badge.id && (
+                      <div className="absolute -bottom-16 sm:-bottom-14 left-1/2 -translate-x-1/2 w-48 bg-gray-900 text-white text-xs p-2 rounded shadow-xl z-20 pointer-events-none">
+                        <div className="font-bold mb-1">{badge.name}</div>
+                        {badge.description}
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
