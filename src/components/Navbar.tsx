@@ -111,6 +111,16 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                   <Sun className="h-4 w-4" />
                 )}
               </Button>
+              <Link href="/news" passHref>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
+                  title="Noticias"
+                >
+                  <Newspaper className="h-4 w-4" />
+                </Button>
+              </Link>
               {user && (
                 <>
                   <NotificationCenter user={user} />

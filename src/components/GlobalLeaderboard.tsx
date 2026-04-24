@@ -228,7 +228,9 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                       
                       {!isMe && (
                         sentRequests.has(p.uid) ? (
-                          <Check className="w-5 h-5 text-gray-400 shrink-0" title="Solicitud enviada" />
+                          <div title="Solicitud enviada">
+                            <Check className="w-5 h-5 text-gray-400 shrink-0" />
+                          </div>
                         ) : (
                           <Button 
                             variant="ghost" 

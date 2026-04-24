@@ -24,6 +24,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.15.0",
     "canvas-confetti": "^1.9.4",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.12.0",
@@ -40,6 +41,7 @@
     "react-dom": "^19.2.5",
     "react-i18next": "^17.0.3",
     "react-joyride": "^3.0.2",
+    "rss-parser": "^3.13.0",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
