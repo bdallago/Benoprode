@@ -160,7 +160,17 @@ export default function Profile({ user, profileId }: ProfileProps) {
       getDocs(qDuels1).then(snap1 => handleDuelsSnap(snap1, snap2));
     });
 
-    const unsubReqs = () => {};
+    let unsubReqs = () => {};
+    if (isOwnProfile) {
+      unsubReqs = onSnapshot(query(collection(db, 'friendRequests'), where('toUserId', '==', targetUserId), where('status', '==', 'pending')), async (snap) => {
+        const p = await Promise.all(snap.docs.map(async d => {
+          const uDoc = await getDoc(doc(db, 'users', d.data().fromUserId));
+          return { id: d.id, fromUserId: d.data().fromUserId, ...uDoc.data() };
+        }));
+        setPendingRequestsList(p);
+      });
+    }
+    
     // Let's implement H2H calculation here
     return () => {
       unsubF1();
@@ -267,6 +277,16 @@ export default function Profile({ user, profileId }: ProfileProps) {
         toUserId: targetUserId,
         status: 'pending',
         createdAt: new Date().toISOString()
+      });
+      // Add notification for the user receiving request
+      await addDoc(collection(db, "notifications"), {
+        userId: targetUserId,
+        type: "friend_request",
+        title: "Nueva solicitud de amistad",
+        message: `${user.displayName || "Un usuario"} quiere añadirte como amigo.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: `/profile`
       });
     } catch (error) {
       console.error("Error sending friend request:", error);
@@ -425,27 +445,21 @@ export default function Profile({ user, profileId }: ProfileProps) {
         {activeTab === 'stats' && (
           <div className="space-y-6">
             {!isOwnProfile && (
-              <div className="bg-gradient-to-r from-blue-900 to-indigo-900 overflow-hidden relative p-6 rounded-xl border border-blue-700/50 flex flex-col justify-center text-center shadow-lg mb-6">
-                <div className="absolute inset-0 bg-black/20 mix-blend-overlay"></div>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-400"></div>
+              <div className="bg-blue-900 overflow-hidden relative p-6 rounded-xl flex flex-col justify-center text-center shadow-lg mb-6">
+                <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
                 
-                <h3 className="text-white/80 font-bold uppercase tracking-wider text-xs mb-3 flex items-center justify-center gap-2">
-                  <Swords className="w-4 h-4" /> Cara a Cara (H2H) vs Ti
+                <h3 className="text-white font-bold uppercase tracking-wider text-xs mb-3 flex items-center justify-center gap-2 relative z-10">
+                  <Swords className="w-4 h-4" /> Cara a Cara
                 </h3>
                 
-                <div className="flex items-center justify-center gap-6 md:gap-12 relative z-10 w-full mb-2">
+                <div className="flex items-center justify-center gap-12 md:gap-24 relative z-10 w-full mb-2">
                   <div className="flex flex-col items-center">
-                    <span className="text-3xl md:text-5xl font-black text-white">{h2hStats.targetWins}</span>
-                    <span className="text-white/70 text-xs font-bold uppercase mt-1">{profileData?.displayName?.split(' ')[0] || 'Rival'}</span>
-                  </div>
-                  
-                  <div className="flex flex-col items-center justify-center">
-                     <span className="text-white/50 font-bold text-sm bg-black/30 px-3 py-1 rounded-full mb-1">EMPATES</span>
-                     <span className="text-xl font-black text-yellow-500">{h2hStats.ties}</span>
+                    <span className="text-4xl md:text-6xl font-black text-white">{h2hStats.targetWins}</span>
+                    <span className="text-blue-200 text-xs font-bold uppercase mt-1">{profileData?.displayName?.split(' ')[0] || 'Rival'}</span>
                   </div>
 
                   <div className="flex flex-col items-center relative">
-                    <span className="text-3xl md:text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">{h2hStats.userWins}</span>
+                    <span className="text-4xl md:text-6xl font-black text-white">{h2hStats.userWins}</span>
                     <span className="text-blue-200 text-xs font-bold uppercase mt-1">TÚ</span>
                   </div>
                 </div>

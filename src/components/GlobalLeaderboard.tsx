@@ -13,6 +13,39 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   
   // States to track sent requests in this session to prevent double-clicks
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
+  const [friends, setFriends] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    const fetchData = async () => {
+      try {
+        const qReq = query(
+          collection(db, "friendRequests"),
+          where("fromUserId", "==", currentUser.uid),
+          where("status", "==", "pending")
+        );
+        const snapReq = await getDocs(qReq);
+        const pendingUids = new Set<string>();
+        snapReq.forEach(doc => {
+          pendingUids.add(doc.data().toUserId);
+        });
+        setSentRequests(pendingUids);
+
+        // Fetch friendships
+        const qFriends1 = query(collection(db, "friendships"), where("user1Id", "==", currentUser.uid));
+        const qFriends2 = query(collection(db, "friendships"), where("user2Id", "==", currentUser.uid));
+        
+        const [snap1, snap2] = await Promise.all([getDocs(qFriends1), getDocs(qFriends2)]);
+        const friendsUids = new Set<string>();
+        snap1.forEach(doc => friendsUids.add(doc.data().user2Id));
+        snap2.forEach(doc => friendsUids.add(doc.data().user1Id));
+        setFriends(friendsUids);
+      } catch (err) {
+        console.error("Error fetching social data:", err);
+      }
+    };
+    fetchData();
+  }, [currentUser]);
 
   // Pagination state
   const [cursors, setCursors] = useState<any[]>([]); 
@@ -26,8 +59,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
     try {
       // Create request
       await addDoc(collection(db, "friendRequests"), {
-        from: currentUser.uid,
-        to: targetUserId,
+        fromUserId: currentUser.uid,
+        toUserId: targetUserId,
         status: "pending",
         createdAt: serverTimestamp()
       });
@@ -227,9 +260,13 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                       </div>
                       
                       {!isMe && (
-                        sentRequests.has(p.uid) ? (
-                          <div title="Solicitud enviada">
-                            <Check className="w-5 h-5 text-gray-400 shrink-0" />
+                        friends.has(p.uid) ? (
+                          <div className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                            Amigos
+                          </div>
+                        ) : sentRequests.has(p.uid) ? (
+                          <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
+                            Solicitud pendiente
                           </div>
                         ) : (
                           <Button 

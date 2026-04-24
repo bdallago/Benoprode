@@ -37,8 +37,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
     try {
       await addDoc(collection(db, "friendRequests"), {
-        from: auth.currentUser.uid,
-        to: userId,
+        fromUserId: auth.currentUser.uid,
+        toUserId: userId,
         status: "pending",
         createdAt: serverTimestamp()
       });
@@ -71,6 +71,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         ];
 
         let isFriendsWithUser = false;
+        let hasPendingRequest = false;
         if (auth.currentUser) {
            promises.push(getDoc(doc(db, "predictions", auth.currentUser.uid)));
            
@@ -90,6 +91,18 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                   }
                });
                setIsFriend(isFriendsWithUser);
+
+               const qRequest = query(
+                 collection(db, 'friendRequests'),
+                 where('fromUserId', '==', auth.currentUser.uid),
+                 where('toUserId', '==', userId),
+                 where('status', '==', 'pending')
+               );
+               const requestSnap = await getDocs(qRequest);
+               if (!requestSnap.empty) {
+                 hasPendingRequest = true;
+               }
+               setRequestSent(hasPendingRequest);
            }
         }
 
@@ -134,8 +147,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
           <div className="text-center py-10 text-gray-900 dark:text-gray-100">{t('userPredictions.loading', { userName })}</div>
         </div>
       </div>
@@ -147,33 +160,40 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
   if (!predictions) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
-              <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
-                Ver Perfil
-              </Link>
-              {auth.currentUser && auth.currentUser.uid !== userId && !isFriend && (
-                requestSent ? (
-                  <span className="flex items-center gap-1 text-xs text-gray-400 px-2 py-1.5 font-medium shrink-0" title="Solicitud enviada">
-                    <Check className="w-3.5 h-3.5" />
-                  </span>
-                ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-7 w-7 p-0 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
-                    onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
-                    title="Añadir amigo"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </Button>
-                )
-              )}
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1 flex flex-col items-center sm:items-start gap-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center sm:text-left">{t('userPredictions.title', { userName })}</h3>
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+                <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors shrink-0">
+                  Ver Perfil
+                </Link>
+                {auth.currentUser && auth.currentUser.uid !== userId && (
+                  isFriend ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
+                      Amigos
+                    </span>
+                  ) : requestSent ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title="Solicitud enviada">
+                      Solicitud pendiente
+                    </span>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
+                    >
+                      <UserPlus className="w-4 h-4" /> Añadir amigo
+                    </Button>
+                  )
+                )}
+              </div>
             </div>
-            <button onClick={onClose} className="text-gray-500 dark:text-gray-200"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="text-gray-500 dark:text-gray-200 p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full shrink-0 transition-colors ml-4">
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <p className="text-gray-600 dark:text-gray-300 py-4 text-center">{t('userPredictions.noPredictions')}</p>
           <div className="flex justify-end mt-4">
@@ -219,85 +239,90 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
-        <div className="flex justify-between items-start p-6 border-b dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800 z-10 sticky top-0 transition-colors duration-200">
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('userPredictions.title', { userName })}</h3>
-              <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
+        <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-t-lg transition-colors duration-200">
+          <div className="flex flex-col items-center gap-3 w-full">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 text-center">{t('userPredictions.title', { userName })}</h3>
+            
+            <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3">
+              <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-bold hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors shrink-0">
                 Ver Perfil
               </Link>
-              {auth.currentUser && auth.currentUser.uid !== userId && !isFriend && (
-                requestSent ? (
-                  <span className="flex items-center gap-1 text-xs text-gray-400 px-2 py-1.5 font-medium shrink-0" title="Solicitud enviada">
-                    <Check className="w-3.5 h-3.5" />
+              
+              {auth.currentUser && auth.currentUser.uid !== userId && (
+                isFriend ? (
+                  <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
+                    Amigos
+                  </span>
+                ) : requestSent ? (
+                  <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title="Solicitud enviada">
+                    Solicitud pendiente
                   </span>
                 ) : (
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm" 
-                    className="h-7 w-7 p-0 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                    className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
-                    title="Añadir amigo"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4" /> Añadir amigo
                   </Button>
                 )
               )}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
+
               {isLocked ? (
-                <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md border border-green-200 dark:border-green-800">
+                <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md border border-green-200 dark:border-green-800 shrink-0">
                   <Lock className="w-3 h-3" /> {t('userPredictions.locked')}
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-200 dark:border-blue-800">
+                <span className="flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-200 dark:border-blue-800 shrink-0">
                   <Unlock className="w-3 h-3" /> {t('userPredictions.draft')}
                 </span>
               )}
             </div>
             
             {userBadges.length > 0 && (
-              <div className="mt-4">
-                <div className="flex flex-wrap gap-2">
-                  {userBadges.map((badge: any) => (
-                    <div 
-                      key={badge?.id} 
-                      className="relative flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1.5 rounded-md text-sm border border-gray-200 dark:border-gray-600 cursor-pointer"
-                      onClick={() => setActiveTooltip(activeTooltip === badge?.id ? null : badge?.id)}
-                    >
-                      <span>{badge?.icon}</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{badge?.name}</span>
-                      {activeTooltip === badge?.id && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-                          <div className="font-bold mb-1">{badge?.name}</div>
-                          <div>{badge?.description}</div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 mt-1 relative z-50">
+                {userBadges.map((badge: any) => (
+                  <div 
+                    key={badge?.id} 
+                    className="relative flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1.5 rounded-md text-sm border border-gray-200 dark:border-gray-600 cursor-pointer w-max"
+                    onClick={() => setActiveTooltip(activeTooltip === badge?.id ? null : badge?.id)}
+                  >
+                    <span>{badge?.icon}</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{badge?.name}</span>
+                    {activeTooltip === badge?.id && (
+                      <div className="absolute top-[120%] left-1/2 -translate-x-1/2 mt-2 w-[220px] max-w-[85vw] p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-[100] break-words whitespace-normal text-left">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
+                        <div className="font-bold mb-1">{badge?.name}</div>
+                        <div>{badge?.description}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-500 dark:text-gray-200 p-2 bg-gray-100 dark:bg-gray-700 rounded-full ml-4"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 dark:text-gray-200 p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full shrink-0 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="border-b dark:border-gray-700 px-6 pt-4 bg-gray-50 dark:bg-gray-800/80">
-           <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-4">
-             <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="whitespace-nowrap">Fase de Grupos</Button>
-             <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="whitespace-nowrap">Partidos Individuales</Button>
-             <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="whitespace-nowrap">Fase Eliminatoria</Button>
-             <Button variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')} className="whitespace-nowrap">Preguntas Especiales</Button>
+        <div className="px-6 pt-4 bg-white dark:bg-gray-800">
+           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 pb-0">
+             <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Fase de Grupos</Button>
+             <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Partidos Individuales</Button>
+             <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Fase Eliminatoria</Button>
+             <Button variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Preguntas Especiales</Button>
            </div>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-8 bg-white dark:bg-gray-800">
+        <div className="px-6 pb-6 pt-4 space-y-8 bg-white dark:bg-gray-800">
           {!canChallenge && auth.currentUser && auth.currentUser.uid !== userId && (
-             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.
+             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center justify-center sm:justify-start gap-2 border-0">
+                <AlertCircle className="w-4 h-4 shrink-0" /> 
+                <span>Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.</span>
              </div>
           )}
 
