@@ -68,7 +68,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between h-16">
             {/* Invisible clickable logo area */}
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl md:w-1/4 h-12 w-48" aria-label="Inicio">
+            <Link href="/" className="hidden md:flex items-center gap-2 font-bold text-xl md:w-1/4 h-12 w-48 shrink-0" aria-label="Inicio">
             </Link>
             
             <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 flex-1 px-1">
@@ -97,46 +97,48 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               )}
             </div>
               
-            <div className="flex items-center justify-end gap-3 md:w-1/4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={toggleTheme} 
-                className="bg-amber-500/80 hover:bg-amber-400 dark:bg-indigo-600/80 dark:hover:bg-indigo-500 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
-                title="Cambiar tema"
-              >
-                {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
-                  <Moon className="h-4 w-4" />
-                ) : (
-                  <Sun className="h-4 w-4" />
-                )}
-              </Button>
-              <Link href="/news" passHref>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
-                  title="Noticias"
-                >
-                  <Newspaper className="h-4 w-4" />
-                </Button>
-              </Link>
-              {user && (
-                <>
-                  <NotificationCenter user={user} />
-                  <Link href="/profile" className="flex items-center gap-2 hover:bg-white/10 p-1.5 rounded-md transition-colors">
+            <div className="flex items-center justify-between w-full md:w-1/4 md:justify-end gap-3 flex-1">
+              <div className="flex items-center justify-start gap-2 md:gap-3">
+                {user && (
+                  <Link href="/profile" className="flex items-center gap-2 hover:bg-white/10 p-1.5 rounded-md transition-colors shrink-0">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center shrink-0">
                         {user.displayName?.charAt(0) || "U"}
                       </div>
                     )}
                   </Link>
-                  <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-blue-800 dark:hover:bg-gray-800 hover:text-white px-2">
-                    <LogOut className="h-4 w-4" />
+                )}
+                {user && <NotificationCenter user={user} />}
+                <Link href="/news" passHref className="shrink-0">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
+                    title="Noticias"
+                  >
+                    <Newspaper className="h-4 w-4" />
                   </Button>
-                </>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={toggleTheme} 
+                  className="shrink-0 bg-amber-500/80 hover:bg-amber-400 dark:bg-indigo-600/80 dark:hover:bg-indigo-500 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
+                  title="Cambiar tema"
+                >
+                  {mounted && (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              {user && (
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-blue-800 dark:hover:bg-gray-800 hover:text-white px-2 shrink-0 ml-auto md:ml-0">
+                  <LogOut className="h-4 w-4" />
+                </Button>
               )}
             </div>
           </div>

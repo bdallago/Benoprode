@@ -283,7 +283,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             </div>
             
             {userBadges.length > 0 && (
-              <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 mt-1 relative z-50">
+              <div className="flex flex-row flex-wrap items-center justify-center gap-2 mt-1 relative z-50">
                 {userBadges.map((badge: any) => (
                   <div 
                     key={badge?.id} 
