@@ -117,27 +117,29 @@ export function NotificationCenter({ user }: { user: User }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
-          <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
-            <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-              <Bell className="h-4 w-4" /> Notificaciones
-            </h3>
-            {unreadCount > 0 && (
-              <button 
-                onClick={markAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Marcar leídas
-              </button>
-            )}
-          </div>
-          
-          <div className="max-h-[400px] overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-                No tienes notificaciones
-              </div>
-            ) : (
+        <>
+          <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setIsOpen(false)}></div>
+          <div className="fixed left-4 right-4 top-[72px] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[400px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in slide-in-from-top-2">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <Bell className="h-4 w-4" /> Notificaciones
+              </h3>
+              {unreadCount > 0 && (
+                <button 
+                  onClick={markAllAsRead}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Marcar leídas
+                </button>
+              )}
+            </div>
+            
+            <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  No tienes notificaciones
+                </div>
+              ) : (
               notifications.map(notif => (
                 <div 
                   key={notif.id} 
@@ -180,7 +182,8 @@ export function NotificationCenter({ user }: { user: User }) {
             )}
           </div>
         </div>
-      )}
-    </div>
+      </>
+    )}
+  </div>
   );
 }

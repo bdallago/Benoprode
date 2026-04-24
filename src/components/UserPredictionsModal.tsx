@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import matchesData from "../lib/matches.json";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { X, Lock, Unlock, CheckCircle2, XCircle, Shield, Swords, AlertCircle } from "lucide-react";
+import { X, Lock, Unlock, CheckCircle2, XCircle, Shield, Swords, AlertCircle, UserPlus, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTranslation } from 'react-i18next';
 import { getUserBadges, BADGES } from "../lib/gamification";
@@ -29,7 +29,36 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
 
   const [isFriend, setIsFriend] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
   const [userStats, setUserStats] = useState<any>({});
+
+  const handleAddFriend = async () => {
+    if (!auth.currentUser || requestSent || isFriend || auth.currentUser.uid === userId) return;
+
+    try {
+      await addDoc(collection(db, "friendRequests"), {
+        from: auth.currentUser.uid,
+        to: userId,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+      
+      await addDoc(collection(db, "notifications"), {
+        userId: userId,
+        type: "friend_request",
+        title: "Nueva solicitud de amistad",
+        message: `${auth.currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: `/profile`
+      });
+
+      setRequestSent(true);
+    } catch (err) {
+      console.error("Error sending friend request", err);
+      alert("Hubo un error al enviar la solicitud.");
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,6 +155,23 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
                 Ver Perfil
               </Link>
+              {auth.currentUser && auth.currentUser.uid !== userId && !isFriend && (
+                requestSent ? (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 px-2 py-1.5 font-medium shrink-0" title="Solicitud enviada">
+                    <Check className="w-3.5 h-3.5" />
+                  </span>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 w-7 p-0 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                    onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
+                    title="Añadir amigo"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                )
+              )}
             </div>
             <button onClick={onClose} className="text-gray-500 dark:text-gray-200"><X className="w-5 h-5" /></button>
           </div>
@@ -182,6 +228,23 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors">
                 Ver Perfil
               </Link>
+              {auth.currentUser && auth.currentUser.uid !== userId && !isFriend && (
+                requestSent ? (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 px-2 py-1.5 font-medium shrink-0" title="Solicitud enviada">
+                    <Check className="w-3.5 h-3.5" />
+                  </span>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 w-7 p-0 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                    onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
+                    title="Añadir amigo"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                )
+              )}
             </div>
             <div className="flex items-center gap-2 mt-2">
               {isLocked ? (

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit, getDocs, startAfter, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, startAfter, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Trophy, Search, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: User, onUserClick?: (u: any) => void }) {
@@ -11,12 +11,50 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // States to track sent requests in this session to prevent double-clicks
+  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
+
   // Pagination state
   const [cursors, setCursors] = useState<any[]>([]); 
   const [page, setPage] = useState(0); 
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchPage = useCallback(async (dir: 'next' | 'prev' | 'first') => {
+  const handleAddFriend = async (e: React.MouseEvent, targetUserId: string) => {
+    e.stopPropagation();
+    if (sentRequests.has(targetUserId)) return;
+
+    try {
+      // Create request
+      await addDoc(collection(db, "friendRequests"), {
+        from: currentUser.uid,
+        to: targetUserId,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+      
+      // Notify them
+      await addDoc(collection(db, "notifications"), {
+        userId: targetUserId,
+        type: "friend_request",
+        title: "Nueva solicitud de amistad",
+        message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: `/profile`
+      });
+
+      setSentRequests(prev => {
+        const next = new Set(prev);
+        next.add(targetUserId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Error sending friend request", err);
+      alert("Hubo un error al enviar la solicitud.");
+    }
+  };
+
+  const fetchPage = useCallback(async (dir: 'next' | 'prev' | 'first' | 'restore') => {
     setLoading(true);
     try {
       let q;
@@ -30,24 +68,63 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           limit(25)
         );
       } else {
+        if (dir === 'restore') {
+          // Attempt to restore page
+          let savedPage = 0;
+          try {
+            const saved = sessionStorage.getItem('globalLeaderboardPage');
+            if (saved) savedPage = parseInt(saved, 10);
+          } catch {}
+          
+          if (savedPage > 0) {
+            const neededSize = (savedPage + 1) * 25;
+            const bigQ = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(neededSize));
+            const snap = await getDocs(bigQ);
+            
+            const startIdx = savedPage * 25;
+            const fetchedPlayers = snap.docs.slice(startIdx, startIdx + 25).map(doc => ({ ...doc.data(), uid: doc.id }));
+            
+            if (fetchedPlayers.length > 0) {
+              setPlayers(fetchedPlayers);
+              const newCursors = [];
+              for (let i = 24; i < snap.docs.length; i += 25) {
+                newCursors.push(snap.docs[i]);
+              }
+              setCursors(newCursors);
+              setPage(savedPage);
+              setHasMore(snap.docs.length === neededSize);
+              setLoading(false);
+              return;
+            } else {
+              // fallback to page 0 if not enough data
+              sessionStorage.removeItem('globalLeaderboardPage');
+              dir = 'first';
+            }
+          } else {
+             dir = 'first';
+          }
+        }
+        
         if (dir === 'first') {
           q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(25));
           setCursors([]);
           setPage(0);
+          try { sessionStorage.setItem('globalLeaderboardPage', '0'); } catch {}
         } else if (dir === 'next') {
           const lastVisible = cursors[cursors.length - 1];
           q = query(collection(db, "users"), orderBy("totalPoints", "desc"), startAfter(lastVisible), limit(25));
-          setPage(p => p + 1);
+          setPage(p => { const newP = p + 1; try { sessionStorage.setItem('globalLeaderboardPage', newP.toString()); } catch {} return newP; });
         } else if (dir === 'prev') {
           if (page - 2 < 0) {
             q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(25));
             setCursors([]);
             setPage(0);
+            try { sessionStorage.setItem('globalLeaderboardPage', '0'); } catch {}
           } else {
             const cursor = cursors[page - 2];
             q = query(collection(db, "users"), orderBy("totalPoints", "desc"), startAfter(cursor), limit(25));
             setCursors(prev => prev.slice(0, prev.length - 1));
-            setPage(p => p - 1);
+            setPage(p => { const newP = p - 1; try { sessionStorage.setItem('globalLeaderboardPage', newP.toString()); } catch {} return newP; });
           }
         }
       }
@@ -74,12 +151,19 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
     }
   }, [searchQuery, cursors, page]);
 
+  const [initialMount, setInitialMount] = useState(true);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchPage('first');
+      if (initialMount && !searchQuery.trim()) {
+        fetchPage('restore');
+        setInitialMount(false);
+      } else {
+        fetchPage('first');
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, initialMount]);
 
   return (
     <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
@@ -123,22 +207,40 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                  const rank = searchQuery ? "-" : (page * 25) + index + 1;
                  const isMe = p.uid === currentUser.uid;
                  return (
-                  <tr key={p.uid} onClick={() => onUserClick && onUserClick(p)} className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer transition-colors ${isMe ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}>
+                  <tr key={p.uid} onClick={() => onUserClick && onUserClick({ uid: p.uid, name: p.displayName || 'Usuario Anónimo', points: p.totalPoints || 0 })} className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer transition-colors ${isMe ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}>
                     <td className="py-3 px-4 text-center font-bold text-gray-400">
                       {rank}
                     </td>
-                    <td className="py-3 px-4 font-medium flex items-center gap-3">
-                      {p.photoURL ? (
-                        <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full border border-gray-200" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                          {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
-                        </div>
+                    <td className="py-3 px-4 font-medium flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {p.photoURL ? (
+                          <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full border border-gray-200" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                            {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
+                          </div>
+                        )}
+                        <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
+                          {p.displayName || 'Usuario Anónimo'}
+                          {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Tú</span>}
+                        </span>
+                      </div>
+                      
+                      {!isMe && (
+                        sentRequests.has(p.uid) ? (
+                          <Check className="w-5 h-5 text-gray-400 shrink-0" title="Solicitud enviada" />
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                            onClick={(e) => handleAddFriend(e, p.uid)}
+                            title="Añadir amigo"
+                          >
+                            <UserPlus className="w-5 h-5" />
+                          </Button>
+                        )
                       )}
-                      <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
-                        {p.displayName || 'Usuario Anónimo'}
-                        {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Tú</span>}
-                      </span>
                     </td>
                     <td className="py-3 px-4 text-right font-bold text-gray-800 dark:text-gray-200">
                       {p.totalPoints || 0}

@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { User } from "firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Trophy, Search, ChevronLeft, ChevronRight, User as UserIcon, Target, Trash2 } from "lucide-react";
+import { Trophy, Search, ChevronLeft, ChevronRight, User as UserIcon, Target, Trash2, UserPlus, Check } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 interface Player {
@@ -25,8 +27,55 @@ const ITEMS_PER_PAGE = 50;
 
 export function Leaderboard({ title, players, currentUser, onUserClick, loading, onRemoveUser }: LeaderboardProps) {
   const { t } = useTranslation();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`leaderboardPage_${title}`);
+      return saved ? parseInt(saved, 10) : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [searchQuery, setSearchQuery] = useState("");
+  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(`leaderboardPage_${title}`, currentPage.toString());
+    } catch {}
+  }, [currentPage, title]);
+
+  const handleAddFriend = async (e: React.MouseEvent, targetUserId: string, targetName: string) => {
+    e.stopPropagation();
+    if (sentRequests.has(targetUserId)) return;
+
+    try {
+      await addDoc(collection(db, "friendRequests"), {
+        from: currentUser.uid,
+        to: targetUserId,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+      
+      await addDoc(collection(db, "notifications"), {
+        userId: targetUserId,
+        type: "friend_request",
+        title: "Nueva solicitud de amistad",
+        message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: `/profile`
+      });
+
+      setSentRequests(prev => {
+        const next = new Set(prev);
+        next.add(targetUserId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Error sending friend request", err);
+      alert("Hubo un error al enviar la solicitud.");
+    }
+  };
 
   // Calculate ranks first
   const playersWithRank = useMemo(() => {
@@ -159,24 +208,42 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      {player.photoURL ? (
-                        <img src={player.photoURL} alt={player.displayName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
-                          <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-200" />
-                        </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {player.photoURL ? (
+                          <img src={player.photoURL} alt={player.displayName} className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
+                            <UserIcon className="h-4 w-4 text-gray-500 dark:text-gray-200" />
+                          </div>
+                        )}
+                        <span className={`font-medium ${player.uid === currentUser.uid ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                          {player.displayName}
+                          {player.uid === currentUser.uid && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">Tú</span>}
+                          {/* @ts-ignore - added dynamically */}
+                          {player.topBadges && player.topBadges.map(badge => (
+                            <span key={badge} className={`ml-2 text-xs px-2 py-0.5 rounded-full border ${badge === 'Top 10%' ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-400' : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300'}`}>
+                              {badge}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      
+                      {player.uid !== currentUser.uid && (
+                        sentRequests.has(player.uid) ? (
+                          <Check className="w-5 h-5 text-gray-400 shrink-0" title="Solicitud enviada" />
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                            onClick={(e) => handleAddFriend(e, player.uid, player.displayName)}
+                            title="Añadir amigo"
+                          >
+                            <UserPlus className="w-5 h-5" />
+                          </Button>
+                        )
                       )}
-                      <span className={`font-medium ${player.uid === currentUser.uid ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                        {player.displayName}
-                        {player.uid === currentUser.uid && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">Tú</span>}
-                        {/* @ts-ignore - added dynamically */}
-                        {player.topBadges && player.topBadges.map(badge => (
-                          <span key={badge} className={`ml-2 text-xs px-2 py-0.5 rounded-full border ${badge === 'Top 10%' ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-400' : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300'}`}>
-                            {badge}
-                          </span>
-                        ))}
-                      </span>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right font-bold text-gray-900 dark:text-gray-100 text-lg">
