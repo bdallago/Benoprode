@@ -142,7 +142,7 @@ const getCachedNews = unstable_cache(
           }
         });
         
-        const translatedText = response.text();
+        const translatedText = response.text;
         if (translatedText) {
           const translations = JSON.parse(translatedText);
           if (Array.isArray(translations) && translations.length === formattedNews.length) {
