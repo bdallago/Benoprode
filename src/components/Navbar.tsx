@@ -16,6 +16,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -97,20 +98,9 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               )}
             </div>
               
-            <div className="flex items-center justify-between w-full md:w-1/4 md:justify-end gap-3 flex-1">
+            <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-2 flex-1 relative">
+              {/* Left Side: News & Theme */}
               <div className="flex items-center justify-start gap-2 md:gap-3">
-                {user && (
-                  <Link href="/profile" className="flex items-center gap-2 hover:bg-white/10 p-1.5 rounded-md transition-colors shrink-0">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center shrink-0">
-                        {user.displayName?.charAt(0) || "U"}
-                      </div>
-                    )}
-                  </Link>
-                )}
-                {user && <NotificationCenter user={user} />}
                 <Link href="/news" passHref className="shrink-0">
                   <Button 
                     variant="outline" 
@@ -135,11 +125,41 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                   )}
                 </Button>
               </div>
-              {user && (
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:bg-blue-800 dark:hover:bg-gray-800 hover:text-white px-2 shrink-0 ml-auto md:ml-0">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              )}
+
+              {/* Right Side: Notifications & Profile Menu */}
+              <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
+                {user && <NotificationCenter user={user} />}
+                {user && (
+                  <div className="relative">
+                    <button 
+                      onClick={() => setProfileMenuOpen(!profileMenuOpen)} 
+                      className="flex items-center hover:bg-white/10 p-1 rounded-full transition-colors shrink-0"
+                    >
+                      {user.photoURL ? (
+                        <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center shrink-0">
+                          {user.displayName?.charAt(0) || "U"}
+                        </div>
+                      )}
+                    </button>
+                    
+                    {profileMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)}></div>
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                          <Link href="/profile" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <UserIcon className="w-4 h-4" /> Ir al perfil
+                          </Link>
+                          <button onClick={() => { setProfileMenuOpen(false); handleLogout(); }} className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
+                            <LogOut className="w-4 h-4" /> Cerrar sesión
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
