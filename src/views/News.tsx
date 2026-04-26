@@ -35,7 +35,8 @@ export default function News() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await fetch('/api/news');
+        const lang = navigator.language.split('-')[0] || 'es'; // Get language, default to es
+        const res = await fetch(`/api/news?lang=${lang}`);
         if (res.ok) {
           const data = await res.json();
           setNews(data);
@@ -54,28 +55,25 @@ export default function News() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto px-4 sm:px-0">
-      <div className={`sticky top-[64px] md:top-0 z-40 flex flex-col items-center md:flex-row md:items-center justify-between bg-white/95 backdrop-blur-md dark:bg-gray-800/95 border border-gray-100 dark:border-gray-700 shadow-md transition-all duration-300 ${isSticky ? 'p-2 md:p-4 gap-2 md:gap-4 -mx-4 sm:mx-0 rounded-none sm:rounded-b-lg' : 'p-4 sm:p-6 gap-2 sm:gap-6 rounded-lg'}`}>
-        <h1 className={`text-xl sm:text-3xl font-bold flex items-center justify-center md:justify-start gap-2 text-gray-900 dark:text-gray-100 transition-all duration-300 ${isSticky ? 'hidden md:flex' : 'flex'}`}>
-          <Newspaper className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
-          Últimas Noticias
-        </h1>
-        
-        <div className={`flex justify-center md:justify-end w-full md:w-auto transition-all items-center ${isSticky ? 'gap-1 sm:gap-2 flex-row' : 'flex-col sm:flex-row gap-2 sm:gap-3'}`}>
-          {!isSticky && (
-            <p className="text-gray-600 dark:text-gray-300 text-sm font-medium mr-0 md:mr-4 text-center w-full md:w-auto">
-              Información relevante del fútbol internacional para analizar tus predicciones.
-            </p>
-          )}
-          <Button 
-            onClick={() => router.push('/predictions')}
-            variant="outline"
-            className={`flex items-center justify-center gap-1 sm:gap-2 transition-all ${isSticky ? 'flex-1 md:flex-none text-xs px-2 h-9' : 'w-full sm:w-auto mt-2 md:mt-0'}`}
-          >
-            <Pencil className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
-            <span className={isSticky ? "hidden sm:inline" : ""}>Modificar mis predicciones</span>
-            <span className={isSticky ? "sm:hidden" : "hidden"}>Predecir</span>
-          </Button>
+      <div className="sticky top-[64px] z-40 flex flex-col md:flex-row items-center justify-between bg-white/95 backdrop-blur-md dark:bg-gray-800/95 border-b border-l border-r border-t-0 md:border-t-0 border-gray-200 dark:border-gray-700 shadow-sm p-4 gap-4 rounded-b-lg">
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left w-full md:w-auto">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center justify-center gap-2 text-gray-900 dark:text-gray-100">
+            <Newspaper className="w-6 h-6 text-blue-600 dark:text-blue-400 shrink-0" />
+            Últimas Noticias
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-sm font-medium hidden md:block">
+            Información relevante para tus predicciones.
+          </p>
         </div>
+        
+        <Button 
+          onClick={() => router.push('/predictions')}
+          variant="outline"
+          className="flex items-center justify-center gap-2 w-full md:w-auto shrink-0 shadow-sm transition-all"
+        >
+          <Pencil className="w-4 h-4" /> 
+          <span className="md:inline">Modificar mis predicciones</span>
+        </Button>
       </div>
 
       <div className="space-y-6 pb-20">

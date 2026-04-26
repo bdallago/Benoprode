@@ -62,7 +62,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   return (
     <>
       <nav 
-        className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover sticky top-0 md:relative bg-center md:bg-left"
+        className="text-white shadow-md z-50 mb-6 transition-colors duration-200 bg-cover sticky top-0 bg-center md:bg-left"
         style={{ backgroundImage: 'url("/navbar.jpeg")' }}
       >
         <div className="absolute inset-0 bg-black/10 dark:bg-black/30"></div>
@@ -105,10 +105,11 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 w-10 p-0 rounded-full"
+                    className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 px-3 rounded-full font-bold text-xs gap-1.5"
                     title="Noticias"
                   >
                     <Newspaper className="h-4 w-4" />
+                    Noticias
                   </Button>
                 </Link>
                 <Button 
@@ -136,7 +137,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                       className="flex items-center hover:bg-white/10 p-1 rounded-full transition-colors shrink-0"
                     >
                       {user.photoURL ? (
-                        <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400" referrerPolicy="no-referrer" />
+                        <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-blue-400 object-cover shrink-0" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center shrink-0">
                           {user.displayName?.charAt(0) || "U"}

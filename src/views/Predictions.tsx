@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { User } from "firebase/auth";
 import { Button } from "../components/ui/button";
-import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2, Loader2 } from "lucide-react";
+import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2, Loader2, AlertTriangle } from "lucide-react";
 import { CountdownBanner } from "../components/CountdownBanner";
 import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
@@ -202,18 +202,43 @@ export default function Predictions({ user }: { user: User }) {
         <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4 sm:gap-6 w-full max-w-3xl px-4">
           
           {/* Sign 1: Phase 1 & Specials */}
-          <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
-            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-300 font-black mb-3 text-center">Fase de Grupos / Preguntas Especiales</span>
-            <div className={`font-black uppercase tracking-widest text-sm sm:text-base ${new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-              {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? 'Cerradas - Fijadas' : 'Abiertas - Sin fijar'}
+          <div className="flex-1 relative bg-white dark:bg-gray-800 border-2 border-slate-300 dark:border-slate-600 border-b-4 rounded-2xl px-5 py-6 flex items-center justify-between shadow-sm mt-4 transition-all">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00a34c] text-white px-4 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wide border-2 border-white dark:border-gray-800 shadow-sm whitespace-nowrap">
+              Fase de Grupos & Preguntas
             </div>
+            
+            {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? (
+              <>
+                <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
+                  Predicciones <strong className="font-bold text-slate-800 dark:text-white">cerradas</strong> y <strong className="font-bold text-slate-800 dark:text-white">fijadas</strong>
+                </div>
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center shrink-0">
+                  <Lock className="w-6 h-6 text-red-500 dark:text-red-400 stroke-[2.5]" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
+                  Predicciones <strong className="font-bold text-slate-800 dark:text-white">abiertas</strong> y <strong className="font-bold text-slate-800 dark:text-white">sin fijar</strong>
+                </div>
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center shrink-0">
+                  <Unlock className="w-6 h-6 text-[#00a34c] dark:text-green-400 stroke-[2.5]" />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Sign 2: Individual Matches */}
-          <div className="flex-1 bg-white dark:bg-gray-800 border-t border-x border-gray-100 dark:border-gray-700 border-b-4 border-gray-200 dark:border-gray-950 rounded-xl p-6 flex flex-col items-center justify-center shadow-sm relative transition-all">
-            <span className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-300 font-black mb-3 text-center">Partidos Individuales</span>
-            <div className="text-green-600 dark:text-green-400 font-black uppercase tracking-widest text-sm sm:text-base text-center leading-tight">
-              Abierto hasta 1 hora antes
+          <div className="flex-1 relative bg-white dark:bg-gray-800 border-2 border-slate-300 dark:border-slate-600 border-b-4 rounded-2xl px-5 py-6 flex items-center justify-between shadow-sm mt-4 sm:mt-4 transition-all">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00a34c] text-white px-4 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wide border-2 border-white dark:border-gray-800 shadow-sm whitespace-nowrap">
+              Partidos Individuales
+            </div>
+            
+            <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
+              Podés <strong className="font-bold text-slate-800 dark:text-white">modificar</strong> hasta <strong className="font-bold text-slate-800 dark:text-white">una hora antes</strong> del inicio de cada encuentro
+            </div>
+            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/40 rounded-2xl flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-orange-500 dark:text-orange-400 stroke-[2.5]" />
             </div>
           </div>
 

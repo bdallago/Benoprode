@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Lock, Save, CalendarDays, ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
+import { Lock, Save, CalendarDays, ChevronDown, ChevronUp, Minus, Plus, Trophy } from "lucide-react";
 import { TeamFlag } from "../Fixture";
 import matchesData from "../../lib/matches.json";
 import { collection, getDocs } from "firebase/firestore";
@@ -105,11 +105,31 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
           <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">Hoy</span>
         </Button>
       </div>
-      <p className="text-sm text-gray-600 dark:text-gray-200 mb-4 text-justify transition-colors duration-200 whitespace-pre-line">
-        ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada!
-
-        Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido. Si acertás el resultado (quién gana o si empatan) te llevás 1 punto. Si además lo hacés con el resultado exacto, te llevás 1 punto extra (Total: 2 puntos).
+      <p className="text-sm text-gray-600 dark:text-gray-200 mb-6 text-justify transition-colors duration-200">
+        ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada! Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido.
       </p>
+
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-100 dark:border-green-900/40 p-4 rounded-xl mb-6 shadow-sm">
+        <h4 className="font-bold text-sm text-green-800 dark:text-green-400 mb-3 flex items-center gap-2">
+          <Trophy className="w-4 h-4" /> Sistema de Puntos
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-white/80 dark:bg-gray-900/80 border border-green-100 dark:border-green-900/40 p-3 rounded-lg flex items-start gap-3 shadow-sm transition-colors hover:bg-white dark:hover:bg-gray-900">
+             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 Punto</div>
+             <div className="text-sm">
+               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5">Resultado</span>
+               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">Acertando quién gana el partido o si hay empate.</p>
+             </div>
+          </div>
+          <div className="bg-white/80 dark:bg-gray-900/80 border border-green-100 dark:border-green-900/40 p-3 rounded-lg flex items-start gap-3 shadow-sm transition-colors hover:bg-white dark:hover:bg-gray-900 relative overflow-hidden">
+             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 Punto</div>
+             <div className="text-sm relative z-10">
+               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5 flex items-center gap-1">Resultado Exacto</span>
+               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">Acertando <strong className="font-semibold text-gray-700 dark:text-gray-300">además</strong> la cantidad exacta de goles de cada equipo.</p>
+             </div>
+          </div>
+        </div>
+      </div>
       
       <div className="space-y-8">
         {Object.entries(matchesData.reduce((acc, match) => {

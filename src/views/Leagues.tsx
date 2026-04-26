@@ -198,11 +198,11 @@ export default function Leagues({ user }: { user: User }) {
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                     Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!
                   </p>
-                  {isMember ? (
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant={selectedLeague?.id === benoliga?.id ? "default" : "outline"} size="sm" onClick={() => benoliga && setSelectedLeague(benoliga)}>
-                        {t('leagues.viewRanking')}
-                      </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant={selectedLeague?.id === benoliga?.id ? "default" : "outline"} size="sm" onClick={() => benoliga && setSelectedLeague(benoliga)}>
+                      {t('leagues.viewRanking')}
+                    </Button>
+                    {isMember ? (
                       <Button variant="outline" size="sm" onClick={() => benoliga && inviteToLeague(benoliga)}>
                         {copiedLeagueId === benoliga?.id ? (
                           <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
@@ -210,18 +210,18 @@ export default function Leagues({ user }: { user: User }) {
                           <><Share2 className="w-4 h-4 mr-2"/> {t('leagues.invite')}</>
                         )}
                       </Button>
-                    </div>
-                  ) : (
-                    <Button size="sm" className="w-full sm:w-auto font-bold" onClick={() => {
-                      if (benoliga) {
-                        joinLeague(benoliga.id);
-                      } else {
-                        alert("¡Próximamente! La Benoliga oficial se abrirá pronto.");
-                      }
-                    }}>
-                      <LogIn className="w-4 h-4 mr-2"/> Unirse al Desafío
-                    </Button>
-                  )}
+                    ) : (
+                      <Button size="sm" className="font-bold" onClick={() => {
+                        if (benoliga) {
+                          joinLeague(benoliga.id);
+                        } else {
+                          alert("¡Próximamente! La Benoliga oficial se abrirá pronto.");
+                        }
+                      }}>
+                        <LogIn className="w-4 h-4 mr-2"/> Unirse al Desafío
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -260,11 +260,12 @@ export default function Leagues({ user }: { user: User }) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex gap-2 flex-wrap">
+                  <Button variant={selectedLeague?.id === league.id ? "default" : "outline"} size="sm" onClick={() => setSelectedLeague(league)}>
+                    {t('leagues.viewRanking')}
+                  </Button>
+                  
                   {isMember ? (
                     <>
-                      <Button variant={selectedLeague?.id === league.id ? "default" : "outline"} size="sm" onClick={() => setSelectedLeague(league)}>
-                        {t('leagues.viewRanking')}
-                      </Button>
                       <Button variant="outline" size="sm" onClick={() => inviteToLeague(league)}>
                         {copiedLeagueId === league.id ? (
                           <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
