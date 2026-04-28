@@ -11,13 +11,12 @@ function getDb() {
       let credential;
       
       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        let keyString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-        // Check if the service account key starts with '{' (i.e. is valid JSON)
-        if (!keyString.startsWith('{')) {
-             console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON string");
-        } else {
-             const serviceAccount = JSON.parse(keyString);
-             credential = require("firebase-admin/app").cert(serviceAccount);
+        try {
+            let keyString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+            const serviceAccount = JSON.parse(keyString);
+            credential = require("firebase-admin/app").cert(serviceAccount);
+        } catch (err: any) {
+             console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON string:", err.message);
         }
       } 
       
