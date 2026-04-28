@@ -87,6 +87,14 @@ export default function Admin() {
     totalPredictions: 0,
     usersWithPredictions: 0,
     activeToday: 0,
+    wau: 0,
+    mau: 0,
+    newUsers7d: 0,
+    returningUsers7d: 0,
+    totalLeagues: 0,
+    avgLeaguesPerUser: 0,
+    completePredictions: 0,
+    avgPoints: 0,
     mostPickedChampion: { name: '', count: 0 },
     mostPickedTopScorer: { name: '', count: 0 }
   });
@@ -135,21 +143,68 @@ export default function Admin() {
         const predictionsSnap = await getDocs(collection(db, "predictions"));
         console.log("Admin: Fetched predictions.");
         
+        // Fetch leagues
+        console.log("Admin: Fetching leagues...");
+        const leaguesSnap = await getDocs(collection(db, "leagues"));
+        console.log("Admin: Fetched leagues.");
+
         // Calculate analytics
         const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
         let activeTodayCount = 0;
+        let wau = 0;
+        let mau = 0;
+        let newUsers7d = 0;
+        let returningUsers7d = 0;
+        let totalPoints = 0;
+        let usersWithPoints = 0;
         
         usersData.forEach(u => {
-          if (u.lastLogin && u.lastLogin.startsWith(today)) {
-            activeTodayCount++;
+          if (u.totalPoints && u.totalPoints > 0) {
+            totalPoints += u.totalPoints;
+            usersWithPoints++;
+          }
+          
+          let loginDate = null;
+          if (u.lastLogin) {
+            loginDate = new Date(u.lastLogin);
+            if (u.lastLogin.startsWith(today)) activeTodayCount++;
+            if (loginDate >= sevenDaysAgo) wau++;
+            if (loginDate >= thirtyDaysAgo) mau++;
+          }
+          
+          let createDate = null;
+          if (u.createdAt) {
+            if (typeof u.createdAt === 'string') createDate = new Date(u.createdAt);
+            else if (u.createdAt.toDate) createDate = u.createdAt.toDate();
+          }
+
+          if (createDate && createDate >= sevenDaysAgo) {
+            newUsers7d++;
+          } else if (loginDate && loginDate >= sevenDaysAgo) {
+            returningUsers7d++;
           }
         });
 
         const championCounts: Record<string, number> = {};
         const topScorerCounts: Record<string, number> = {};
+        let completePredictions = 0;
 
         predictionsSnap.forEach(doc => {
           const data = doc.data();
+          
+          // Check if completion is advanced based on some metrics
+          let isComplete = true;
+          if (!data.matches || Object.keys(data.matches).length < 48) isComplete = false;
+          if (!data.groups || Object.keys(data.groups).length < 6) isComplete = false; 
+          // knockouts are not counted entirely, but check top scorer
+          if (!data.specials || !data.specials['topScorer']) isComplete = false;
+          
+          if (isComplete) completePredictions++;
+
           if (data.knockouts && data.knockouts['champion'] && data.knockouts['champion'][0]) {
             const champ = data.knockouts['champion'][0];
             championCounts[champ] = (championCounts[champ] || 0) + 1;
@@ -172,11 +227,28 @@ export default function Admin() {
           if (count > topScorer.count) topScorer = { name, count };
         }
 
+        let totalLeagues = leaguesSnap.size;
+        let membershipCount = 0;
+        leaguesSnap.forEach(doc => {
+          const lData = doc.data();
+          if (lData.members && Array.isArray(lData.members)) {
+            membershipCount += lData.members.length;
+          }
+        });
+
         setAnalytics({
           totalUsers: usersData.length,
           totalPredictions: predictionsSnap.size,
           usersWithPredictions: predictionsSnap.size, // Assuming 1 prediction doc per user
           activeToday: activeTodayCount,
+          wau,
+          mau,
+          newUsers7d,
+          returningUsers7d,
+          totalLeagues,
+          avgLeaguesPerUser: usersData.length ? +(membershipCount / usersData.length).toFixed(2) : 0,
+          completePredictions,
+          avgPoints: usersWithPoints ? +(totalPoints / usersWithPoints).toFixed(1) : 0,
           mostPickedChampion: topChamp,
           mostPickedTopScorer: topScorer
         });
@@ -632,6 +704,78 @@ export default function Admin() {
                   {analytics.mostPickedTopScorer.name}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">{analytics.mostPickedTopScorer.count} votos</p>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <h3 className="text-xl font-bold text-indigo-700 mt-8 mb-4 border-b border-indigo-100 pb-2 flex items-center gap-2">Métricas de Retención e Interacción (Lovable Bot)</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Mensuales (MAU)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-sky-600">{analytics.mau}</div>
+                <p className="text-xs text-gray-500 mt-1">Activos últimos 30 días</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Semanales (WAU)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-indigo-600">{analytics.wau}</div>
+                <p className="text-xs text-gray-500 mt-1">Activos últimos 7 días</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Nuevos vs Recurrentes (7d)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold text-teal-600">{analytics.newUsers7d}</span>
+                  <span className="text-lg text-gray-400 mb-1">/</span>
+                  <span className="text-3xl font-bold text-blue-600">{analytics.returningUsers7d}</span>
+                 </div>
+                 <p className="text-xs text-gray-500 mt-1">Registrados vs Regresaron</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Predicciones Completas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-emerald-600">{analytics.completePredictions}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {analytics.totalPredictions > 0 ? Math.round((analytics.completePredictions / analytics.totalPredictions) * 100) : 0}% del total
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Total de Ligas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-fuchsia-600">{analytics.totalLeagues}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Ligas por Usuario</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-pink-600">{analytics.avgLeaguesPerUser}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Promedio de Puntos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-amber-600">{analytics.avgPoints}</div>
+                <p className="text-xs text-gray-500 mt-1">Por usuario activo</p>
               </CardContent>
             </Card>
           </div>
