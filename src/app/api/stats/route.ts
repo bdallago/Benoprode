@@ -13,10 +13,32 @@ function getDb() {
       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
         try {
             let keyString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
-            const serviceAccount = JSON.parse(keyString);
+            let serviceAccount;
+            try {
+                serviceAccount = JSON.parse(keyString);
+            } catch (err: any) {
+                // Vercel a veces rompe el JSON al pegar saltos de linea. Fallback manual:
+                const projectIdMatch = keyString.match(/"project_id"\s*:\s*"([^"]+)"/);
+                const clientEmailMatch = keyString.match(/"client_email"\s*:\s*"([^"]+)"/);
+                const privateKeyStart = keyString.indexOf('-----BEGIN PRIVATE KEY-----');
+                const privateKeyEnd = keyString.indexOf('-----END PRIVATE KEY-----');
+                
+                if (projectIdMatch && clientEmailMatch && privateKeyStart !== -1 && privateKeyEnd !== -1) {
+                    let pkRaw = keyString.substring(privateKeyStart, privateKeyEnd + '-----END PRIVATE KEY-----'.length);
+                    // Asegurar que la key tenga saltos de línea reales y no literales pegados
+                    let pk = pkRaw.replace(/\\n/g, '\n');
+                    serviceAccount = {
+                        project_id: projectIdMatch[1],
+                        client_email: clientEmailMatch[1],
+                        private_key: pk
+                    };
+                } else {
+                    throw err; // throw original
+                }
+            }
             credential = require("firebase-admin/app").cert(serviceAccount);
         } catch (err: any) {
-             console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON string:", err.message);
+             console.warn("FIREBASE_SERVICE_ACCOUNT_KEY parse error:", err.message);
         }
       } 
       
