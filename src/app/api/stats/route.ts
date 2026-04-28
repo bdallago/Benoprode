@@ -11,11 +11,19 @@ function getDb() {
       let credential;
       
       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        credential = require("firebase-admin/app").cert(serviceAccount);
-      } else {
+        let keyString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        // Check if the service account key starts with '{' (i.e. is valid JSON)
+        if (!keyString.startsWith('{')) {
+             console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON string");
+        } else {
+             const serviceAccount = JSON.parse(keyString);
+             credential = require("firebase-admin/app").cert(serviceAccount);
+        }
+      } 
+      
+      if (!credential) {
         // En entorno de AI Studio sin clave, esto usa default pero no tendrá permisos.
-        // En Vercel, asegúrate de configurar FIREBASE_SERVICE_ACCOUNT_KEY.
+        // En Vercel, asegúrate de configurar FIREBASE_SERVICE_ACCOUNT_KEY con el JSON de tu service account.
         credential = applicationDefault();
       }
 
@@ -42,6 +50,16 @@ function getDb() {
   return null;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET() {
   const db = getDb();
   
@@ -49,6 +67,7 @@ export async function GET() {
      return NextResponse.json({
         totalUsers: 56,
         totalPredictions: 42,
+        totalLeagues: 8,
         activeToday: 12,
         wau: 30,
         mau: 55,
@@ -56,12 +75,13 @@ export async function GET() {
         returningUsers7d: 12,
         avgPoints: 145.5,
         _note: "Valores por defecto. Configura FIREBASE_SERVICE_ACCOUNT_KEY en Vercel."
-     }, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+     }, { status: 200, headers: corsHeaders });
   }
 
   try {
     const usersSnap = await db.collection("users").get();
     const predictionsSnap = await db.collection("predictions").get();
+    const leaguesSnap = await db.collection("leagues").get();
 
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
@@ -107,6 +127,7 @@ export async function GET() {
     const metrics = {
       totalUsers: usersSnap.size,
       totalPredictions: predictionsSnap.size,
+      totalLeagues: leaguesSnap.size,
       activeToday: activeTodayCount,
       wau,
       mau,
@@ -115,13 +136,13 @@ export async function GET() {
       avgPoints: usersWithPoints ? +(totalPoints / usersWithPoints).toFixed(1) : 0,
     };
 
-    return NextResponse.json(metrics, { headers: { 'Access-Control-Allow-Origin': '*' } });
+    return NextResponse.json(metrics, { headers: corsHeaders });
   } catch (error: any) {
-    // Si falla por permisos (Firebase admin sin service account en preview)
     console.error("Firebase fetch error", error.message);
     return NextResponse.json({
         totalUsers: 56,
         totalPredictions: 42,
+        totalLeagues: 8,
         activeToday: 12,
         wau: 30,
         mau: 55,
@@ -129,6 +150,6 @@ export async function GET() {
         returningUsers7d: 12,
         avgPoints: 145.5,
         _note: "Valores por defecto. Configura FIREBASE_SERVICE_ACCOUNT_KEY en Vercel. Error interno: " + error.message
-    }, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+    }, { status: 200, headers: corsHeaders });
   }
 }
