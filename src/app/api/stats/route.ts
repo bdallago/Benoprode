@@ -60,7 +60,10 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET(req: Request) {
   const db = getDb();
   
   if (!db) {
@@ -74,6 +77,18 @@ export async function GET() {
         newUsers7d: 18,
         returningUsers7d: 12,
         avgPoints: 145.5,
+        "usuariosTotales": 56,
+        "activos24h": 12,
+        "ligas": 8,
+        "predicciones": 42,
+        "UsuariosTotales": 56,
+        "Activos24h": 12,
+        "Ligas": 8,
+        "Predicciones": 42,
+        "USUARIOS_TOTALES": 56,
+        "ACTIVOS_24H": 12,
+        "LIGAS": 8,
+        "PREDICCIONES": 42,
         _note: "Valores por defecto. Configura FIREBASE_SERVICE_ACCOUNT_KEY en Vercel."
      }, { status: 200, headers: corsHeaders });
   }
@@ -134,6 +149,20 @@ export async function GET() {
       newUsers7d,
       returningUsers7d,
       avgPoints: usersWithPoints ? +(totalPoints / usersWithPoints).toFixed(1) : 0,
+      
+      // Variantes en español para Lovable
+      "usuariosTotales": usersSnap.size,
+      "activos24h": activeTodayCount,
+      "ligas": leaguesSnap.size,
+      "predicciones": predictionsSnap.size,
+      "UsuariosTotales": usersSnap.size,
+      "Activos24h": activeTodayCount,
+      "Ligas": leaguesSnap.size,
+      "Predicciones": predictionsSnap.size,
+      "USUARIOS_TOTALES": usersSnap.size,
+      "ACTIVOS_24H": activeTodayCount,
+      "LIGAS": leaguesSnap.size,
+      "PREDICCIONES": predictionsSnap.size
     };
 
     return NextResponse.json(metrics, { headers: corsHeaders });
@@ -149,6 +178,18 @@ export async function GET() {
         newUsers7d: 18,
         returningUsers7d: 12,
         avgPoints: 145.5,
+        "usuariosTotales": 56,
+        "activos24h": 12,
+        "ligas": 8,
+        "predicciones": 42,
+        "UsuariosTotales": 56,
+        "Activos24h": 12,
+        "Ligas": 8,
+        "Predicciones": 42,
+        "USUARIOS_TOTALES": 56,
+        "ACTIVOS_24H": 12,
+        "LIGAS": 8,
+        "PREDICCIONES": 42,
         _note: "Valores por defecto. Configura FIREBASE_SERVICE_ACCOUNT_KEY en Vercel. Error interno: " + error.message
     }, { status: 200, headers: corsHeaders });
   }
