@@ -240,7 +240,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
             setIsAdmin(isAdminEmail);
             
             const refId = localStorage.getItem('referralId');
-            
             const todayStr = new Date().toISOString().split('T')[0];
 
             await setDoc(userRef, {
@@ -256,7 +255,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
               lastLogin: new Date().toISOString(),
               activeDays: [todayStr],
               loginCount: 1,
-              tourCompleted: false
+              tourCompleted: false,
+              chatWarnings: 0,
+              isChatBanned: false
             });
             
             if (refId && refId !== currentUser.uid) {
@@ -273,8 +274,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
               }
             }
             
-            // New user
-            // Clear local storage badges for this user since they are starting fresh
             localStorage.removeItem(`user_badges_${currentUser.uid}`);
           } else {
             const userData = userSnap.data();
@@ -285,23 +284,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
             const updates: any = { 
               lastLogin: new Date().toISOString(),
               loginCount: increment(1),
-              activeDays: arrayUnion(todayStr)
+              activeDays: arrayUnion(todayStr),
+              uid: currentUser.uid
             };
-            if (isAdminEmail && currentRole !== "admin") {
-              updates.role = "admin";
-            } else if (!currentRole) {
-              updates.role = "player";
-            }
-            if (userData.totalPoints == null) {
-              updates.totalPoints = 0;
-            }
-            if (!userData.uid) updates.uid = currentUser.uid;
+
+            if (isAdminEmail && currentRole !== "admin") updates.role = "admin";
+            else if (!currentRole) updates.role = "player";
+            
+            if (userData.totalPoints == null) updates.totalPoints = 0;
             if (!userData.displayName) updates.displayName = currentUser.displayName || "Usuario";
             if (!userData.email) updates.email = currentUser.email || `${currentUser.uid}@no-email.com`;
             if (userData.chatWarnings == null) updates.chatWarnings = 0;
             if (userData.isChatBanned == null) updates.isChatBanned = false;
             
-            await setDoc(userRef, updates, { merge: true });
+            await updateDoc(userRef, updates);
           }
           
           // Auto-create Benoliga if admin

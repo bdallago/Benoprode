@@ -127,17 +127,19 @@ export function LiveChat() {
           <span className="w-2 h-2 bg-white rounded-full"></span> EN VIVO
         </div>
         <div className="text-sm font-medium text-blue-200 mb-2">{liveMatch.minute}'</div>
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col items-center gap-1">
+        <div className="flex justify-center items-center w-full px-2">
+          <div className="flex flex-col items-center flex-1 min-w-0">
             <TeamFlag teamName={liveMatch.teamA} />
-            <span className="font-bold text-sm">{liveMatch.teamA}</span>
+            <span className="font-bold text-xs sm:text-sm mt-1 text-center truncate w-full">{liveMatch.teamA}</span>
           </div>
-          <div className="text-3xl font-black font-mono bg-blue-950 px-4 py-1 rounded-lg border border-blue-800">
-            {liveMatch.scoreA} - {liveMatch.scoreB}
+          <div className="px-4 shrink-0">
+            <div className="text-2xl sm:text-3xl font-black font-mono bg-blue-950 px-3 sm:px-4 py-1 rounded-lg border border-blue-800 shadow-inner">
+              {liveMatch.scoreA} - {liveMatch.scoreB}
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center flex-1 min-w-0">
             <TeamFlag teamName={liveMatch.teamB} />
-            <span className="font-bold text-sm">{liveMatch.teamB}</span>
+            <span className="font-bold text-xs sm:text-sm mt-1 text-center truncate w-full">{liveMatch.teamB}</span>
           </div>
         </div>
         <div className="mt-3 text-xs text-blue-200 flex flex-wrap justify-center gap-3">

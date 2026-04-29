@@ -201,11 +201,19 @@ export default function Admin() {
             }
           }
           
-          // Activity based on activeDays
+          // Activity based on activeDays and strict 24h checks
+          let isActive24h = false;
+          if (u.lastLogin) {
+            const loginTime = new Date(u.lastLogin).getTime();
+            if (now.getTime() - loginTime <= 24 * 60 * 60 * 1000) {
+              isActive24h = true;
+            }
+          }
+          if (isActive24h) activeTodayCount++;
+
           const activeDays: string[] = Array.isArray(u.activeDays) ? u.activeDays : [];
           
           if (activeDays.length > 0) {
-             if (activeDays.includes(today)) activeTodayCount++;
              
              const stringSevenDays = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
              const stringFourteenDays = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -215,7 +223,7 @@ export default function Admin() {
              let hasMAU = false;
              let hasRecentActivity = false;
 
-             activeDays.forEach((d) => {
+             activeDays.forEach((d: string) => {
                if (d >= stringSevenDays) hasWAU = true;
                if (d >= stringThirtyDays) hasMAU = true;
                if (d >= stringFourteenDays) hasRecentActivity = true;
@@ -225,13 +233,28 @@ export default function Admin() {
              if (hasMAU) mau++;
              if (!hasRecentActivity) dormant14d++;
              
-             // Returns
-             if (activeDays.length > 1) returningUsersAtLeastOnce++;
-             if (activeDays.length > 2) returningUsersMultiple++;
+             // Smart Return Logic: If they have only 1 active day but they existed before today, they are returning!
+             let isReturning = activeDays.length > 1;
+             let isMultipleReturning = activeDays.length > 2;
+
+             // Fallbacks for older users getting added to activeDays today
+             if (activeDays.length === 1 && createDate) {
+               const dayOfCreation = createDate.toISOString().split('T')[0];
+               if (activeDays[0] > dayOfCreation) {
+                 isReturning = true;
+               }
+             }
+             // Reliable fallback from incremented login count
+             if (typeof u.loginCount === 'number') {
+                if (u.loginCount > 1) isReturning = true;
+                if (u.loginCount > 2) isMultipleReturning = true;
+             }
+
+             if (isReturning) returningUsersAtLeastOnce++;
+             if (isMultipleReturning) returningUsersMultiple++;
           } else {
             // Fallback for old tracking
             if (loginDate) {
-              if (u.lastLogin && u.lastLogin.startsWith(today)) activeTodayCount++;
               if (loginDate >= sevenDaysAgo) wau++;
               if (loginDate >= thirtyDaysAgo) mau++;
               if (loginDate < fourteenDaysAgo) dormant14d++;

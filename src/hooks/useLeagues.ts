@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc, getDocs, where, documentId } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, arrayUnion, arrayRemove, deleteDoc, getDocs, where, documentId } from "firebase/firestore";
 import { db } from "../firebase";
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from "next/navigation";
@@ -40,6 +40,10 @@ export function useLeagues(userId: string) {
     const fetchLeagueMembers = async () => {
       try {
         const uids = selectedLeague.members;
+        setLoading(true);
+        // Clear previous players list to avoid showing stale data from another league
+        setPlayers([]);
+
         // Batch in groups of 30 due to Firestore 'in' limits
         const chunks = [];
         for (let i = 0; i < uids.length; i += 30) {
@@ -56,6 +60,17 @@ export function useLeagues(userId: string) {
           const p = snap.docs.map(d => ({ ...d.data(), uid: d.id } as Player));
           allPlayers = [...allPlayers, ...p];
         }
+
+        // Diagnostic: if counts don't match, log the missing UIDs for debugging
+        if (allPlayers.length < uids.length) {
+          const foundUids = new Set(allPlayers.map(p => p.uid));
+          const missing = uids.filter(uid => !foundUids.has(uid));
+          console.warn("DISCREPANCIA DETECTADA en miembros de liga:", selectedLeague.name, "IDs sin perfil:", missing);
+          
+          // DO NOT process automatic cleanup here. New users might experience a split-second delay 
+          // between creating their auth session and having their users document synced.
+          // Doing arrayRemove here kicks legitimate new users out of their newly joined leagues instantly.
+        }
         
         // sort by totalPoints desc
         allPlayers.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -68,7 +83,7 @@ export function useLeagues(userId: string) {
     };
     
     fetchLeagueMembers();
-  }, [selectedLeague?.members]);
+  }, [JSON.stringify(selectedLeague?.members)]); 
 
   useEffect(() => {
     if (!userId) return;
@@ -76,6 +91,14 @@ export function useLeagues(userId: string) {
     const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
       const leaguesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as League));
       setLeagues(leaguesData);
+      
+      // Update selected league if it exists to keep members list in sync
+      if (selectedLeague) {
+        const updated = leaguesData.find(l => l.id === selectedLeague.id);
+        if (updated && JSON.stringify(updated.members) !== JSON.stringify(selectedLeague.members)) {
+          setSelectedLeague(updated);
+        }
+      }
       
       // Handle auto-join via URL or Hash
       let leagueId = searchParams?.get('league');
@@ -104,7 +127,6 @@ export function useLeagues(userId: string) {
               window.history.replaceState({}, document.title, window.location.pathname);
             }
             setSelectedLeague(league);
-            // loading will be set false by the league members fetch
           }
         } else {
            setLoading(false);
@@ -117,7 +139,7 @@ export function useLeagues(userId: string) {
     return () => {
       unsubscribeLeagues();
     };
-  }, [userId, searchParams, t]);
+  }, [userId, searchParams, t, !!selectedLeague]);
 
   const createLeague = async (name: string, isPublic: boolean) => {
     const newLeague = {
@@ -142,16 +164,28 @@ export function useLeagues(userId: string) {
   };
 
   const leaveLeague = async (leagueId: string) => {
-    const league = leagues.find((l: any) => l.id === leagueId);
-    if (league && league.members.length === 1 && league.members[0] === userId) {
-      // If last member, delete the league
-      await deleteDoc(doc(db, "leagues", leagueId));
-    } else {
-      await updateDoc(doc(db, "leagues", leagueId), {
-        members: arrayRemove(userId)
-      });
+    setLoading(true);
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+      
+      if (leagueSnap.exists()) {
+        const members = leagueSnap.data().members || [];
+        // Check if I'm the last one in the ACTUAL database state
+        if (members.length <= 1 && members.includes(userId)) {
+          await deleteDoc(leagueRef);
+        } else {
+          await updateDoc(leagueRef, {
+            members: arrayRemove(userId)
+          });
+        }
+      }
+      if (selectedLeague?.id === leagueId) setSelectedLeague(null);
+    } catch (error) {
+      console.error("Error al abandonar la liga:", error);
+    } finally {
+      setLoading(false);
     }
-    if (selectedLeague?.id === leagueId) setSelectedLeague(null);
   };
 
   const removeMember = async (leagueId: string, memberId: string) => {
