@@ -202,7 +202,7 @@ export default function Admin() {
           }
           
           // Activity based on activeDays
-          const activeDays = Array.isArray(u.activeDays) ? u.activeDays : [];
+          const activeDays: string[] = Array.isArray(u.activeDays) ? u.activeDays : [];
           
           if (activeDays.length > 0) {
              if (activeDays.includes(today)) activeTodayCount++;
@@ -215,7 +215,7 @@ export default function Admin() {
              let hasMAU = false;
              let hasRecentActivity = false;
 
-             activeDays.forEach(d => {
+             activeDays.forEach((d) => {
                if (d >= stringSevenDays) hasWAU = true;
                if (d >= stringThirtyDays) hasMAU = true;
                if (d >= stringFourteenDays) hasRecentActivity = true;
