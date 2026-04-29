@@ -19,6 +19,8 @@ interface Notification {
   duelId?: string;
   matchId?: string;
   duelType?: string;
+  leagueId?: string;
+  badgeId?: string;
 }
 
 function getRelativeTime(dateString: string) {
@@ -94,7 +96,7 @@ export function NotificationCenter({ user }: { user: User }) {
   const unreadCount = notifications.filter(n => !n.read).length;
   // Maximum 3 items visible before having to scroll
   // An item with buttons is roughly 85px max
-  const maxTrayHeight = 'max-h-[300px]';
+  const maxTrayHeight = 'max-h-[260px]';
 
   const markAsRead = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -110,8 +112,46 @@ export function NotificationCenter({ user }: { user: User }) {
     await batch.commit();
   };
 
-  const handleAcceptFriendRequest = async (notif: Notification, e: React.MouseEvent) => {
+  const handleAcceptLeagueInvite = async (notif: Notification, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!notif.leagueId) return;
+    setProcessingId(notif.id);
+    
+    try {
+      const { getDoc, arrayUnion } = await import('firebase/firestore');
+      const leagueRef = doc(db, 'leagues', notif.leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+      
+      if (leagueSnap.exists()) {
+        const leagueData = leagueSnap.data();
+        if (!leagueData.members.includes(user.uid)) {
+          await updateDoc(leagueRef, {
+            members: arrayUnion(user.uid)
+          });
+        }
+        
+        if (notif.fromUserId) {
+          await addDoc(collection(db, "notifications"), {
+            userId: notif.fromUserId,
+            type: 'system_alert',
+            title: 'Invitación Aceptada',
+            message: `${user.displayName || "Un usuario"} se unió a tu liga.`,
+            read: false,
+            createdAt: new Date().toISOString(),
+            actionUrl: `/dashboard?tab=leagues`
+          });
+        }
+      }
+      
+      await markAsRead(notif.id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleAcceptFriendRequest = async (notif: Notification, e: React.MouseEvent) => {
     if (!notif.fromUserId) return;
     setProcessingId(notif.id);
     
@@ -273,6 +313,14 @@ export function NotificationCenter({ user }: { user: User }) {
                         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-gray-600 dark:text-blue-400" onClick={(e) => handleAcceptFriendRequest(notif, e)} disabled={processingId === notif.id}>
                             Aceptar solicitud
+                          </Button>
+                        </div>
+                      )}
+
+                      {!notif.read && notif.type === 'league_invite' && notif.leagueId && (
+                        <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-purple-600 border-purple-200 hover:bg-purple-50 dark:bg-gray-800 dark:border-gray-600 dark:text-purple-400" onClick={(e) => handleAcceptLeagueInvite(notif, e)} disabled={processingId === notif.id}>
+                            Unirse a la Liga
                           </Button>
                         </div>
                       )}
