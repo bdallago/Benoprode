@@ -206,6 +206,24 @@ async function calculatePoints(database: any) {
           totalPoints: res.totalPoints, 
           earnedBadges: unlockedBadges
         }, { merge: true });
+
+        // Add notifications for newly unlocked badges
+        if (unlockedBadges.length > currentEarnedIds.length) {
+          const newBadges = unlockedBadges.filter((b: string) => !currentEarnedIds.includes(b));
+          for (const newBadge of newBadges) {
+            const notifRef = database.collection("notifications").doc();
+            batch.set(notifRef, {
+              userId: res.userId,
+              type: 'badge_earned',
+              title: '¡Medalla Desbloqueada!',
+              message: `Has desbloqueado la medalla: ${newBadge}`,
+              read: false,
+              createdAt: new Date().toISOString(),
+              actionUrl: '/profile?tab=stats',
+              badgeId: newBadge
+            });
+          }
+        }
       }
       
       await batch.commit();

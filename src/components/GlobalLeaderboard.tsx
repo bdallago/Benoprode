@@ -62,7 +62,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
         fromUserId: currentUser.uid,
         toUserId: targetUserId,
         status: "pending",
-        createdAt: serverTimestamp()
+        createdAt: new Date().toISOString()
       });
       
       // Notify them
@@ -73,7 +73,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
         message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
         read: false,
         createdAt: new Date().toISOString(),
-        actionUrl: `/profile`
+        actionUrl: `/profile?tab=friends`
       });
 
       setSentRequests(prev => {

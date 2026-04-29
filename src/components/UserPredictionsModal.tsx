@@ -40,7 +40,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         fromUserId: auth.currentUser.uid,
         toUserId: userId,
         status: "pending",
-        createdAt: serverTimestamp()
+        createdAt: new Date().toISOString()
       });
       
       await addDoc(collection(db, "notifications"), {
@@ -50,7 +50,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         message: `${auth.currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
         read: false,
         createdAt: new Date().toISOString(),
-        actionUrl: `/profile`
+        actionUrl: `/profile?tab=friends`
       });
 
       setRequestSent(true);

@@ -1,11 +1,10 @@
-import { Bell, Check, Trash2, Trophy, Users, ShieldAlert, Star } from "lucide-react";
+import { Bell, Check, Trash2, Trophy, Users, ShieldAlert, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc, writeBatch, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { User } from "firebase/auth";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
+import { Button } from "./ui/button";
 
 interface Notification {
   id: string;
@@ -16,11 +15,33 @@ interface Notification {
   read: boolean;
   createdAt: string;
   actionUrl?: string; // Optional URL to navigate to when clicked
+  fromUserId?: string;
+  duelId?: string;
+  matchId?: string;
+  duelType?: string;
+}
+
+function getRelativeTime(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffSecs < 60) return "hace instantes";
+  if (diffMins < 60) return `hace ${diffMins} minuto${diffMins === 1 ? '' : 's'}`;
+  if (diffHours < 24) return `hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`;
+  if (diffDays < 30) return `hace ${diffDays} día${diffDays === 1 ? '' : 's'}`;
+  return `hace ${diffMonths} mes${diffMonths === 1 ? '' : 'es'}`;
 }
 
 export function NotificationCenter({ user }: { user: User }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Ask for push notification permission on mount
   useEffect(() => {
@@ -53,7 +74,6 @@ export function NotificationCenter({ user }: { user: User }) {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         
         if (lastPushStr !== today) {
-          // We haven't pushed today. Push the first new notification!
           const notifToPush = newDocs[0];
           try {
             new Notification(notifToPush.title, {
@@ -72,8 +92,12 @@ export function NotificationCenter({ user }: { user: User }) {
   }, [user]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  // Maximum 3 items visible before having to scroll
+  // An item with buttons is roughly 85px max
+  const maxTrayHeight = 'max-h-[300px]';
 
-  const markAsRead = async (id: string) => {
+  const markAsRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     await updateDoc(doc(db, "notifications", id), { read: true });
   };
 
@@ -86,8 +110,86 @@ export function NotificationCenter({ user }: { user: User }) {
     await batch.commit();
   };
 
-  const deleteNotification = async (id: string) => {
-    await deleteDoc(doc(db, "notifications", id));
+  const handleAcceptFriendRequest = async (notif: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!notif.fromUserId) return;
+    setProcessingId(notif.id);
+    
+    try {
+      // Find the request
+      const qReq = query(collection(db, 'friendRequests'), where('fromUserId', '==', notif.fromUserId), where('toUserId', '==', user.uid), where('status', '==', 'pending'));
+      const snap = await getDocs(qReq);
+      
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => {
+        batch.update(d.ref, { status: 'accepted', updatedAt: new Date().toISOString() });
+      });
+
+      // Create friendship record
+      const friendshipRef = doc(collection(db, 'friendships'));
+      batch.set(friendshipRef, {
+        user1Id: user.uid,
+        user2Id: notif.fromUserId,
+        createdAt: new Date().toISOString()
+      });
+      
+      await batch.commit();
+
+      // Notify the requester
+      await addDoc(collection(db, "notifications"), {
+        userId: notif.fromUserId,
+        type: 'system_alert',
+        title: 'Solicitud Aceptada',
+        message: `${user.displayName || "Un usuario"} aceptó tu solicitud de amistad.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: `/profile?tab=friends`
+      });
+
+      await markAsRead(notif.id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRespondDuel = async (notif: Notification, accept: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!notif.duelId && !notif.fromUserId) return;
+    setProcessingId(notif.id);
+    
+    try {
+      if (notif.duelId) {
+        await updateDoc(doc(db, 'duels_v2', notif.duelId), { status: accept ? 'accepted' : 'rejected' });
+      } else {
+        // Find duel manually if ID wasn't provided directly (fallback)
+        const qDuel = query(collection(db, 'duels_v2'), where('challengerId', '==', notif.fromUserId), where('challengedId', '==', user.uid), where('status', '==', 'pending'));
+        const snap = await getDocs(qDuel);
+        if (!snap.empty) {
+          const docRef = snap.docs[0].ref;
+          await updateDoc(docRef, { status: accept ? 'accepted' : 'rejected' });
+        }
+      }
+
+      if (accept) {
+        await addDoc(collection(db, "notifications"), {
+          userId: notif.fromUserId,
+          type: 'duel_accepted',
+          title: 'Duelo Aceptado',
+          message: `${user.displayName || "Un usuario"} aceptó tu duelo.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+          actionUrl: `/profile?tab=duels`
+        });
+      }
+
+      await markAsRead(notif.id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const getIcon = (type: Notification['type']) => {
@@ -106,11 +208,11 @@ export function NotificationCenter({ user }: { user: User }) {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-full hover:bg-white/10 relative transition-colors"
+        className={`p-2 rounded-full relative transition-colors ${unreadCount > 0 ? 'bg-red-500 hover:bg-red-600 shadow-md' : 'hover:bg-white/10'}`}
       >
         <Bell className="h-5 w-5 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md border border-white">
+          <span className="absolute -top-1 -right-1 h-5 w-5 bg-white rounded-full flex items-center justify-center text-[11px] font-black text-red-600 shadow-md border-2 border-red-500">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -134,56 +236,75 @@ export function NotificationCenter({ user }: { user: User }) {
               )}
             </div>
             
-            <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto">
+            <div className={`overflow-y-auto ${maxTrayHeight}`}>
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
                   No tienes notificaciones
                 </div>
               ) : (
-              notifications.map(notif => (
-                <div 
-                  key={notif.id} 
-                  className={`p-3 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors flex gap-3 relative ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                >
-                  <div className="pt-1 flex-shrink-0">
-                    {getIcon(notif.type)}
-                  </div>
-                  
-                  <div className="flex-1 pr-6" onClick={() => !notif.read && markAsRead(notif.id)}>
-                    {notif.actionUrl ? (
-                      <Link href={notif.actionUrl} className="block" onClick={() => setIsOpen(false)}>
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-0.5">{notif.title}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{notif.message}</p>
-                      </Link>
-                    ) : (
-                      <div className="cursor-default">
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-0.5">{notif.title}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{notif.message}</p>
-                      </div>
-                    )}
-                    <span className="text-[10px] text-gray-400 mt-1 block">
-                      {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: es })}
-                    </span>
-                  </div>
+                notifications.map(notif => (
+                  <div 
+                    key={notif.id} 
+                    className={`p-4 border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors flex gap-3 relative ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}
+                  >
+                    <div className="pt-1 flex-shrink-0">
+                      {getIcon(notif.type)}
+                    </div>
+                    
+                    <div className="flex-1 pr-6" onClick={() => !notif.read && markAsRead(notif.id)}>
+                      {notif.actionUrl ? (
+                        <Link href={notif.actionUrl} className="block" onClick={() => setIsOpen(false)}>
+                          <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-0.5">{notif.title}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{notif.message}</p>
+                        </Link>
+                      ) : (
+                        <div className="cursor-default">
+                          <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-0.5">{notif.title}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">{notif.message}</p>
+                        </div>
+                      )}
+                      
+                      <span className="text-[10px] font-medium text-gray-400 mt-1.5 block">
+                        {getRelativeTime(notif.createdAt)}
+                      </span>
 
-                  {/* Actions */}
-                  <div className="absolute right-2 top-2 flex flex-col gap-2">
-                    {!notif.read && (
-                      <button onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }} className="text-blue-500 hover:text-blue-700">
-                        <Check className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }} className="text-gray-300 hover:text-red-500">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      {/* Action Buttons for specific types */}
+                      {!notif.read && notif.type === 'friend_request' && notif.fromUserId && (
+                        <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-gray-600 dark:text-blue-400" onClick={(e) => handleAcceptFriendRequest(notif, e)} disabled={processingId === notif.id}>
+                            Aceptar solicitud
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {!notif.read && notif.type === 'duel_invite' && notif.fromUserId && (
+                        <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="success" className="h-7 text-xs" onClick={(e) => handleRespondDuel(notif, true, e)} disabled={processingId === notif.id}>
+                            Aceptar duelo
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={(e) => handleRespondDuel(notif, false, e)} disabled={processingId === notif.id}>
+                            Rechazar
+                          </Button>
+                        </div>
+                      )}
+                      
+                    </div>
+
+                    {/* Checkmark to read */}
+                    <div className="absolute right-3 top-3">
+                      {!notif.read && (
+                        <button onClick={(e) => markAsRead(notif.id, e)} className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded-full p-1 border border-blue-100 dark:border-blue-900/30 dark:bg-blue-900/30 dark:text-blue-400">
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      </>
-    )}
-  </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { User } from 'firebase/auth';
 import { doc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -20,10 +20,19 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const router = useRouter();
   const isOwnProfile = !profileId || profileId === user.uid;
   const targetUserId = profileId || user.uid;
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as 'stats' | 'friends' | 'duels') || 'stats';
 
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'stats' | 'friends' | 'duels'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'friends' | 'duels'>(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'stats' || tab === 'friends' || tab === 'duels') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Friendship state
   const [friendStatus, setFriendStatus] = useState<'none' | 'pending_sent' | 'pending_received' | 'friends'>('none');
@@ -286,7 +295,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
         message: `${user.displayName || "Un usuario"} quiere añadirte como amigo.`,
         read: false,
         createdAt: new Date().toISOString(),
-        actionUrl: `/profile`
+        actionUrl: `/profile?tab=friends`
       });
     } catch (error) {
       console.error("Error sending friend request:", error);
@@ -582,10 +591,19 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white p-2"
-                          onClick={() => {
+                          onClick={async () => {
                             // Accept request inline
-                            updateDoc(doc(db, 'friendRequests', req.id), { status: 'accepted' });
-                            addDoc(collection(db, 'friendships'), { user1Id: user!.uid, user2Id: req.fromUserId, createdAt: new Date().toISOString() });
+                            await updateDoc(doc(db, 'friendRequests', req.id), { status: 'accepted' });
+                            await addDoc(collection(db, 'friendships'), { user1Id: user!.uid, user2Id: req.fromUserId, createdAt: new Date().toISOString() });
+                            await addDoc(collection(db, 'notifications'), {
+                              userId: req.fromUserId,
+                              type: 'system_alert',
+                              title: 'Solicitud Aceptada',
+                              message: `${user!.displayName || "Un usuario"} aceptó tu solicitud de amistad.`,
+                              read: false,
+                              createdAt: new Date().toISOString(),
+                              actionUrl: '/profile?tab=friends'
+                            });
                           }}
                         >
                           <Check className="w-4 h-4" />
@@ -744,8 +762,21 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         
                         {isOwnProfile && duel.challengedId === targetUserId && duel.status === 'pending' && (
                           <div className="flex gap-2">
-                            <Button size="sm" variant="success" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'accepted' })}>Aceptar</Button>
-                            <Button size="sm" variant="destructive" onClick={() => updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' })}>Rechazar</Button>
+                            <Button size="sm" variant="success" onClick={async () => {
+                              await updateDoc(doc(db, 'duels_v2', duel.id), { status: 'accepted' });
+                              await addDoc(collection(db, 'notifications'), {
+                                userId: duel.challengerId,
+                                type: 'duel_accepted',
+                                title: 'Duelo Aceptado',
+                                message: `${user!.displayName || "Un usuario"} aceptó tu duelo.`,
+                                read: false,
+                                createdAt: new Date().toISOString(),
+                                actionUrl: `/profile?tab=duels`
+                              });
+                            }}>Aceptar</Button>
+                            <Button size="sm" variant="destructive" onClick={async () => {
+                              await updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' });
+                            }}>Rechazar</Button>
                           </div>
                         )}
                       </div>

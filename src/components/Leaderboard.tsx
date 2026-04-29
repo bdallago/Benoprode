@@ -86,7 +86,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
         fromUserId: currentUser.uid,
         toUserId: targetUserId,
         status: "pending",
-        createdAt: serverTimestamp()
+        createdAt: new Date().toISOString()
       });
       
       await addDoc(collection(db, "notifications"), {
@@ -96,7 +96,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
         message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
         read: false,
         createdAt: new Date().toISOString(),
-        actionUrl: `/profile`
+        actionUrl: `/profile?tab=friends`
       });
 
       setSentRequests(prev => {

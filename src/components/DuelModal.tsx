@@ -38,6 +38,21 @@ export function DuelModal({ challengedId, challengedName, matchId, matchData, ch
         status: 'pending',
         createdAt: new Date().toISOString()
       });
+
+      // Notify challenged user
+      await addDoc(collection(db, 'notifications'), {
+        userId: challengedId,
+        type: 'duel_invite',
+        title: '¡Nuevo Duelo!',
+        message: `${auth.currentUser.displayName || 'Usuario'} te ha retado a un duelo.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionUrl: '/profile?tab=duels',
+        fromUserId: auth.currentUser.uid,
+        matchId: matchId,
+        duelType: internalDuelType
+      });
+
       setSuccess(true);
       setTimeout(onClose, 2000);
     } catch (error) {
