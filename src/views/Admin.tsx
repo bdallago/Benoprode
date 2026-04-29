@@ -84,19 +84,23 @@ export default function Admin() {
   // Analytics state
   const [analytics, setAnalytics] = useState({
     totalUsers: 0,
-    totalPredictions: 0,
-    usersWithPredictions: 0,
+    newUsers7d: 0,
+    returningUsersAtLeastOnce: 0,
+    returningUsersMultiple: 0,
     activeToday: 0,
     wau: 0,
     mau: 0,
-    newUsers7d: 0,
-    returningUsers7d: 0,
+    dormant14d: 0,
     totalLeagues: 0,
-    avgLeaguesPerUser: 0,
+    privateLeagues: 0,
+    publicLeagues: 0,
+    duelsCreated: 0,
+    duelsAccepted: 0,
+    usersGroupStage: 0,
+    usersSpecialQuestions: 0,
     completePredictions: 0,
-    avgPoints: 0,
-    mostPickedChampion: { name: '', count: 0 },
-    mostPickedTopScorer: { name: '', count: 0 }
+    organicUsers: 0,
+    referredUsers: 0
   });
 
   useEffect(() => {
@@ -148,32 +152,38 @@ export default function Admin() {
         const leaguesSnap = await getDocs(collection(db, "leagues"));
         console.log("Admin: Fetched leagues.");
 
+        // Fetch duels
+        console.log("Admin: Fetching duels...");
+        const duelsSnap = await getDocs(collection(db, "duels_v2"));
+        console.log("Admin: Fetched duels.");
+
         // Calculate analytics
         const today = new Date().toISOString().split('T')[0];
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         let activeTodayCount = 0;
         let wau = 0;
         let mau = 0;
         let newUsers7d = 0;
-        let returningUsers7d = 0;
-        let totalPoints = 0;
-        let usersWithPoints = 0;
+        let returningUsersAtLeastOnce = 0;
+        let returningUsersMultiple = 0;
+        let dormant14d = 0;
+        let organicUsers = 0;
+        let referredUsers = 0;
         
         usersData.forEach(u => {
-          if (u.totalPoints && u.totalPoints > 0) {
-            totalPoints += u.totalPoints;
-            usersWithPoints++;
+          if (u.referredBy) {
+            referredUsers++;
+          } else {
+            organicUsers++;
           }
-          
+
           let loginDate = null;
           if (u.lastLogin) {
             loginDate = new Date(u.lastLogin);
-            if (u.lastLogin.startsWith(today)) activeTodayCount++;
-            if (loginDate >= sevenDaysAgo) wau++;
-            if (loginDate >= thirtyDaysAgo) mau++;
           }
           
           let createDate = null;
@@ -184,73 +194,137 @@ export default function Admin() {
 
           if (createDate && createDate >= sevenDaysAgo) {
             newUsers7d++;
-          } else if (loginDate && loginDate >= sevenDaysAgo) {
-            returningUsers7d++;
+          } else if (!createDate && loginDate && loginDate >= sevenDaysAgo) {
+            // Usuarios antiguos de hace unos pocos dias que aun no tenian el campo createdAt
+            if (!u.loginCount || (u.loginCount === 1 && !u.totalPoints)) {
+               newUsers7d++;
+            }
           }
-        });
-
-        const championCounts: Record<string, number> = {};
-        const topScorerCounts: Record<string, number> = {};
-        let completePredictions = 0;
-
-        predictionsSnap.forEach(doc => {
-          const data = doc.data();
           
-          // Check if completion is advanced based on some metrics
-          let isComplete = true;
-          if (!data.matches || Object.keys(data.matches).length < 48) isComplete = false;
-          if (!data.groups || Object.keys(data.groups).length < 6) isComplete = false; 
-          // knockouts are not counted entirely, but check top scorer
-          if (!data.specials || !data.specials['topScorer']) isComplete = false;
+          // Activity based on activeDays
+          const activeDays = Array.isArray(u.activeDays) ? u.activeDays : [];
           
-          if (isComplete) completePredictions++;
+          if (activeDays.length > 0) {
+             if (activeDays.includes(today)) activeTodayCount++;
+             
+             const stringSevenDays = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+             const stringFourteenDays = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+             const stringThirtyDays = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-          if (data.knockouts && data.knockouts['champion'] && data.knockouts['champion'][0]) {
-            const champ = data.knockouts['champion'][0];
-            championCounts[champ] = (championCounts[champ] || 0) + 1;
-          }
-          if (data.specials && data.specials['topScorer']) {
-            const scorer = data.specials['topScorer'].toLowerCase().trim();
-            if (scorer) {
-              topScorerCounts[scorer] = (topScorerCounts[scorer] || 0) + 1;
+             let hasWAU = false;
+             let hasMAU = false;
+             let hasRecentActivity = false;
+
+             activeDays.forEach(d => {
+               if (d >= stringSevenDays) hasWAU = true;
+               if (d >= stringThirtyDays) hasMAU = true;
+               if (d >= stringFourteenDays) hasRecentActivity = true;
+             });
+
+             if (hasWAU) wau++;
+             if (hasMAU) mau++;
+             if (!hasRecentActivity) dormant14d++;
+             
+             // Returns
+             if (activeDays.length > 1) returningUsersAtLeastOnce++;
+             if (activeDays.length > 2) returningUsersMultiple++;
+          } else {
+            // Fallback for old tracking
+            if (loginDate) {
+              if (u.lastLogin && u.lastLogin.startsWith(today)) activeTodayCount++;
+              if (loginDate >= sevenDaysAgo) wau++;
+              if (loginDate >= thirtyDaysAgo) mau++;
+              if (loginDate < fourteenDaysAgo) dormant14d++;
+            }
+            if (typeof u.loginCount === 'number') {
+               if (u.loginCount > 1) returningUsersAtLeastOnce++;
+               if (u.loginCount > 2) returningUsersMultiple++;
+            } else if (createDate && loginDate) {
+               if (createDate.toDateString() !== loginDate.toDateString()) {
+                 returningUsersAtLeastOnce++;
+               }
+            } else if (!createDate && loginDate) {
+               returningUsersAtLeastOnce++;
+               if (u.totalPoints && u.totalPoints > 0) {
+                 returningUsersMultiple++;
+               }
             }
           }
         });
 
-        let topChamp = { name: 'N/A', count: 0 };
-        for (const [name, count] of Object.entries(championCounts)) {
-          if (count > topChamp.count) topChamp = { name, count };
-        }
+        let completePredictions = 0;
+        let usersGroupStage = 0;
+        let usersSpecialQuestions = 0;
 
-        let topScorer = { name: 'N/A', count: 0 };
-        for (const [name, count] of Object.entries(topScorerCounts)) {
-          if (count > topScorer.count) topScorer = { name, count };
-        }
+        predictionsSnap.forEach(doc => {
+          const data = doc.data();
+          
+          let matchesCount = 0;
+          if (data.matches) {
+            Object.values(data.matches).forEach((m: any) => {
+              if (m && m.outcome && m.outcome !== "") matchesCount++;
+            });
+          }
+          
+          let specialsCount = 0;
+          if (data.specials) {
+             Object.values(data.specials).forEach((s: any) => {
+               if (s && typeof s === 'string' && s.trim() !== "") specialsCount++;
+             });
+          }
+          
+          const hasMatches = matchesCount >= 48; // Llenaron los 48 de grupos o mas
+          const hasGroups = data.hasSavedPredictions === true || data.isLocked === true; // Guardaron o fijaron grupos
+          const hasSpecials = specialsCount > 0; // Guardaron al menos 1
+          
+          if (hasGroups) usersGroupStage++;
+          if (hasSpecials) usersSpecialQuestions++;
+          
+          if (matchesCount >= 72 && specialsCount >= 10 && data.isLocked === true) {
+            completePredictions++;
+          } else if (matchesCount >= 48 && specialsCount >= 10) {
+            // Cuentan como completos temporalmente si llenaron grupos y esp pero quiza no fijaron aun
+            completePredictions++;
+          }
+        });
 
         let totalLeagues = leaguesSnap.size;
-        let membershipCount = 0;
+        let privateLeagues = 0;
+        let publicLeagues = 0;
+        
         leaguesSnap.forEach(doc => {
           const lData = doc.data();
-          if (lData.members && Array.isArray(lData.members)) {
-            membershipCount += lData.members.length;
-          }
+          if (lData.isPublic) publicLeagues++;
+          else privateLeagues++;
+        });
+
+        let duelsCreated = duelsSnap.size;
+        let duelsAccepted = 0;
+        duelsSnap.forEach(doc => {
+           if (doc.data().status === 'accepted' || doc.data().status === 'completed') {
+             duelsAccepted++;
+           }
         });
 
         setAnalytics({
           totalUsers: usersData.length,
-          totalPredictions: predictionsSnap.size,
-          usersWithPredictions: predictionsSnap.size, // Assuming 1 prediction doc per user
+          newUsers7d,
+          returningUsersAtLeastOnce,
+          returningUsersMultiple,
           activeToday: activeTodayCount,
           wau,
           mau,
-          newUsers7d,
-          returningUsers7d,
+          dormant14d,
           totalLeagues,
-          avgLeaguesPerUser: usersData.length ? +(membershipCount / usersData.length).toFixed(2) : 0,
+          privateLeagues,
+          publicLeagues,
+          duelsCreated,
+          duelsAccepted,
+          usersGroupStage,
+          usersSpecialQuestions,
           completePredictions,
-          avgPoints: usersWithPoints ? +(totalPoints / usersWithPoints).toFixed(1) : 0,
-          mostPickedChampion: topChamp,
-          mostPickedTopScorer: topScorer
+          organicUsers,
+          referredUsers
         });
         
         // Fetch reports
@@ -647,152 +721,184 @@ export default function Admin() {
           </h2>
           <p className="text-sm text-gray-600 mb-4">{t('admin.analytics.description')}</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">{t('admin.analytics.totalUsers')}</CardTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Totales</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{analytics.totalUsers}</div>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.totalUsers}</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">{t('admin.analytics.activeToday')}</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Nuevos</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">{analytics.activeToday}</div>
-                <p className="text-xs text-gray-500 mt-1">{t('admin.analytics.activeTodayDesc')}</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.newUsers7d}</div>
+                <p className="text-xs text-gray-500 mt-1">Registrados últimos 7d</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">{t('admin.analytics.totalPredictions')}</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Regresaron 1+ veces</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">{analytics.totalPredictions}</div>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.returningUsersAtLeastOnce}</div>
+                <p className="text-xs text-gray-500 mt-1">Regresaron tras registro</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">{t('admin.analytics.participationRate')}</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Regresos Múltiples</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-600">
-                  {analytics.totalUsers > 0 ? Math.round((analytics.usersWithPredictions / analytics.totalUsers) * 100) : 0}%
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{t('admin.analytics.participationRateDesc')}</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.returningUsersMultiple}</div>
+                <p className="text-xs text-gray-500 mt-1">Más de 2 sesiones</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Campeón Más Elegido</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Activos Hoy</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600 truncate">
-                  {analytics.mostPickedChampion.name !== 'N/A' ? t(`teams.${analytics.mostPickedChampion.name}`) : 'N/A'}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{analytics.mostPickedChampion.count} votos</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.activeToday}</div>
+                <p className="text-xs text-gray-500 mt-1">Últimas 24h</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Goleador Más Elegido</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Activos 7 Días</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-indigo-600 truncate capitalize">
-                  {analytics.mostPickedTopScorer.name}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{analytics.mostPickedTopScorer.count} votos</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.wau}</div>
+                <p className="text-xs text-gray-500 mt-1">Últimos 7 días</p>
               </CardContent>
             </Card>
-          </div>
-          
-          <h3 className="text-xl font-bold text-indigo-700 mt-8 mb-4 border-b border-indigo-100 pb-2 flex items-center gap-2">Métricas de Retención e Interacción (Lovable Bot)</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Mensuales (MAU)</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Activos 30 Días</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-sky-600">{analytics.mau}</div>
-                <p className="text-xs text-gray-500 mt-1">Activos últimos 30 días</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.mau}</div>
+                <p className="text-xs text-gray-500 mt-1">Últimos 30 días</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Semanales (WAU)</CardTitle>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Usuarios Inactivos</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-indigo-600">{analytics.wau}</div>
-                <p className="text-xs text-gray-500 mt-1">Activos últimos 7 días</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Nuevos vs Recurrentes (7d)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="flex items-end gap-2">
-                  <span className="text-3xl font-bold text-teal-600">{analytics.newUsers7d}</span>
-                  <span className="text-lg text-gray-400 mb-1">/</span>
-                  <span className="text-3xl font-bold text-blue-600">{analytics.returningUsers7d}</span>
-                 </div>
-                 <p className="text-xs text-gray-500 mt-1">Registrados vs Regresaron</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Predicciones Completas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-emerald-600">{analytics.completePredictions}</div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {analytics.totalPredictions > 0 ? Math.round((analytics.completePredictions / analytics.totalPredictions) * 100) : 0}% del total
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Total de Ligas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-fuchsia-600">{analytics.totalLeagues}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Ligas por Usuario</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-pink-600">{analytics.avgLeaguesPerUser}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Promedio de Puntos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-amber-600">{analytics.avgPoints}</div>
-                <p className="text-xs text-gray-500 mt-1">Por usuario activo</p>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.dormant14d}</div>
+                <p className="text-xs text-gray-500 mt-1">Sin login en 14d+</p>
               </CardContent>
             </Card>
           </div>
+
+          <h3 className="text-xl font-bold text-indigo-700 mt-8 mb-4 border-b border-indigo-100 pb-2 flex items-center gap-2">Adquisición y Viralidad</h3>
           
-          <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mt-6">
-            <h3 className="font-semibold text-blue-900 mb-2">{t('admin.analytics.advancedTitle')}</h3>
-            <p className="text-sm text-blue-800 mb-4">
-              {t('admin.analytics.advancedDesc')}
-            </p>
-            <a 
-              href="https://vercel.com/dashboard" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
-            >
-              {t('admin.analytics.advancedBtn')}
-            </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Ingresos Orgánicos</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.organicUsers}</div>
+                <p className="text-xs text-gray-500 mt-1">Link limpio</p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Ingresos por Invitación</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.referredUsers}</div>
+                <p className="text-xs text-gray-500 mt-1">Links de referidos</p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Tasa de Viralidad</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {analytics.totalUsers > 0 ? ((analytics.referredUsers / analytics.totalUsers) * 100).toFixed(1) : 0}%
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Usuarios invitados</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <h3 className="text-xl font-bold text-indigo-700 mt-8 mb-4 border-b border-indigo-100 pb-2 flex items-center gap-2">Participación y Torneos</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Ligas (Torneos)</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.totalLeagues}</div>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Ligas Privadas</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.privateLeagues}</div>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Ligas Públicas</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.publicLeagues}</div>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Predicción Iniciada</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.usersGroupStage}</div>
+                <p className="text-xs text-gray-500 mt-1">Guardó o fijó predicciones</p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Preguntas Especiales</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.usersSpecialQuestions}</div>
+                <p className="text-xs text-gray-500 mt-1">Guardó al menos 1</p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Prode Completo</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.completePredictions}</div>
+                <p className="text-xs text-gray-500 mt-1">Grupos y especiales listos</p>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Duelos Creados</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.duelsCreated}</div>
+              </CardContent>
+            </Card>
+            <Card className="flex flex-col justify-center">
+              <CardHeader className="pb-2 text-center">
+                <CardTitle className="text-sm font-medium text-gray-500">Duelos Aceptados</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.duelsAccepted}</div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext, useRef } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, updateDoc, increment, arrayUnion } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { Navbar } from "./Navbar";
 import '../i18n';
@@ -241,6 +241,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             
             const refId = localStorage.getItem('referralId');
             
+            const todayStr = new Date().toISOString().split('T')[0];
+
             await setDoc(userRef, {
               uid: currentUser.uid,
               displayName: currentUser.displayName || "Usuario",
@@ -250,7 +252,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
               totalPoints: 0,
               referralsCount: 0,
               referredBy: refId || null,
+              createdAt: new Date().toISOString(),
               lastLogin: new Date().toISOString(),
+              activeDays: [todayStr],
+              loginCount: 1,
               tourCompleted: false
             });
             
@@ -276,7 +281,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
             const currentRole = userData.role;
             setIsAdmin(isAdminEmail || currentRole === "admin");
             
-            const updates: any = { lastLogin: new Date().toISOString() };
+            const todayStr = new Date().toISOString().split('T')[0];
+            const updates: any = { 
+              lastLogin: new Date().toISOString(),
+              loginCount: increment(1),
+              activeDays: arrayUnion(todayStr)
+            };
             if (isAdminEmail && currentRole !== "admin") {
               updates.role = "admin";
             } else if (!currentRole) {

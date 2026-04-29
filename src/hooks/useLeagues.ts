@@ -89,6 +89,10 @@ export function useLeagues(userId: string) {
         }
       }
 
+      if (inviter && inviter !== t('leagues.aPlayer') && typeof window !== 'undefined') {
+        localStorage.setItem('referralId', inviter);
+      }
+
       if (leagueId) {
         const league = leaguesData.find((l: any) => l.id === leagueId);
         if (league) {
