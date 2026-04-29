@@ -77,6 +77,8 @@ service cloud.firestore {
              (!('lockedEarly' in data) || data.lockedEarly is bool) &&
              (!('inPrivateLeague' in data) || data.inPrivateLeague is bool) &&
              (!('inBenoliga' in data) || data.inBenoliga is bool) &&
+             (!('activeDays' in data) || data.activeDays is list) &&
+             (!('loginCount' in data) || data.loginCount is number) &&
              data.role in ['admin', 'player'] &&
              data.totalPoints is number && data.totalPoints >= 0;
     }
@@ -106,7 +108,7 @@ service cloud.firestore {
       
       // Create: User can create their own profile. Role must be 'player' unless they are an admin.
       allow create: if isAuthenticated() && isOwner(userId) &&
-                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges']) &&
+                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned']) &&
                     isValidUser(request.resource.data) &&
                     request.resource.data.uid == userId &&
                     ((request.resource.data.role == 'player' && request.resource.data.totalPoints == 0) || isAdmin());
@@ -114,7 +116,7 @@ service cloud.firestore {
       // Update: User can update their own profile (cannot change role/points). Admin can update any profile.
       allow update: if isAuthenticated() && (
                       (isOwner(userId) &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga']) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount']) &&
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid) &&
                        (!('role' in resource.data) || request.resource.data.role == resource.data.role) &&

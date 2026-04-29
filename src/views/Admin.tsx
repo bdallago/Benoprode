@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -618,28 +618,61 @@ export default function Admin() {
 
   const deleteUser = async (uid: string, name: string) => {
     try {
-      // Delete user profile
-      await deleteDoc(doc(db, "users", uid));
-      // Delete user predictions
-      await deleteDoc(doc(db, "predictions", uid));
-      
-      // Remove user from all leagues
-      const leaguesSnap = await getDocs(collection(db, "leagues"));
       const batch = writeBatch(db);
       
+      // Delete user profile
+      const userRef = doc(db, "users", uid);
+      batch.delete(userRef);
+      
+      // Delete user predictions
+      const predRef = doc(db, "predictions", uid);
+      batch.delete(predRef);
+      
+      // 1. Remove user from all leagues
+      const leaguesSnap = await getDocs(collection(db, "leagues"));
       leaguesSnap.docs.forEach(d => {
         const leagueData = d.data();
         if (leagueData.members && leagueData.members.includes(uid)) {
           if (leagueData.members.length === 1) {
-            // If they are the only member, delete the league
             batch.delete(doc(db, "leagues", d.id));
           } else {
-            // Otherwise just remove them from the members array
             const updatedMembers = leagueData.members.filter((m: string) => m !== uid);
             batch.update(doc(db, "leagues", d.id), { members: updatedMembers });
           }
         }
       });
+      
+      // 2. Delete Friendships involving the user
+      const qF1 = query(collection(db, "friendships"), where("user1Id", "==", uid));
+      const snapF1 = await getDocs(qF1);
+      snapF1.forEach(d => batch.delete(d.ref));
+      
+      const qF2 = query(collection(db, "friendships"), where("user2Id", "==", uid));
+      const snapF2 = await getDocs(qF2);
+      snapF2.forEach(d => batch.delete(d.ref));
+      
+      // 3. Delete Friend Requests involving the user
+      const qFR1 = query(collection(db, "friendRequests"), where("fromUserId", "==", uid));
+      const snapFR1 = await getDocs(qFR1);
+      snapFR1.forEach(d => batch.delete(d.ref));
+      
+      const qFR2 = query(collection(db, "friendRequests"), where("toUserId", "==", uid));
+      const snapFR2 = await getDocs(qFR2);
+      snapFR2.forEach(d => batch.delete(d.ref));
+      
+      // 4. Delete Notifications for the user
+      const qN = query(collection(db, "notifications"), where("userId", "==", uid));
+      const snapN = await getDocs(qN);
+      snapN.forEach(d => batch.delete(d.ref));
+      
+      // 5. Delete Duels involving the user
+      const qD1 = query(collection(db, "duels_v2"), where("challengerId", "==", uid));
+      const snapD1 = await getDocs(qD1);
+      snapD1.forEach(d => batch.delete(d.ref));
+      
+      const qD2 = query(collection(db, "duels_v2"), where("challengedId", "==", uid));
+      const snapD2 = await getDocs(qD2);
+      snapD2.forEach(d => batch.delete(d.ref));
       
       await batch.commit();
       
