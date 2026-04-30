@@ -167,16 +167,16 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center sm:text-left">{t('userPredictions.title', { userName })}</h3>
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
                 <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors shrink-0">
-                  Ver Perfil
+                  {t('profile.viewProfile', 'Ver Perfil')}
                 </Link>
                 {auth.currentUser && auth.currentUser.uid !== userId && (
                   isFriend ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
-                      Amigos
+                      {t('profile.areFriends', 'Amigos')}
                     </span>
                   ) : requestSent ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title="Solicitud enviada">
-                      Solicitud pendiente
+                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title={t('profile.requestSent', 'Solicitud pendiente')}>
+                      {t('profile.requestSent', 'Solicitud pendiente')}
                     </span>
                   ) : (
                     <Button 
@@ -185,7 +185,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
                     >
-                      <UserPlus className="w-4 h-4" /> Añadir amigo
+                      <UserPlus className="w-4 h-4" /> {t('profile.addFriend', 'Añadir amigo')}
                     </Button>
                   )
                 )}
@@ -247,17 +247,17 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             
             <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3">
               <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-bold hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors shrink-0">
-                Ver Perfil
+                {t('profile.viewProfile', 'Ver Perfil')}
               </Link>
               
               {auth.currentUser && auth.currentUser.uid !== userId && (
                 isFriend ? (
                   <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
-                    Amigos
+                    {t('profile.areFriends', 'Amigos')}
                   </span>
                 ) : requestSent ? (
-                  <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title="Solicitud enviada">
-                    Solicitud pendiente
+                  <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800 shrink-0" title={t('profile.requestSent', 'Solicitud pendiente')}>
+                    {t('profile.requestSent', 'Solicitud pendiente')}
                   </span>
                 ) : (
                   <Button 
@@ -266,7 +266,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                     className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
                   >
-                    <UserPlus className="w-4 h-4" /> Añadir amigo
+                    <UserPlus className="w-4 h-4" /> {t('profile.addFriend', 'Añadir amigo')}
                   </Button>
                 )
               )}
@@ -311,10 +311,10 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
         <div className="px-6 pt-4 bg-white dark:bg-gray-800">
            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 pb-0">
-             <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Fase de Grupos</Button>
-             <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Partidos Individuales</Button>
-             <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Fase Eliminatoria</Button>
-             <Button variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">Preguntas Especiales</Button>
+             <Button variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">{t('predictions.tabGroups')}</Button>
+             <Button variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">{t('predictions.tabMatches')}</Button>
+             <Button variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">{t('predictions.tabKnockout')}</Button>
+             <Button variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')} className="flex-1 sm:flex-none text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap h-auto py-2">{t('predictions.tabSpecials')}</Button>
            </div>
         </div>
 
@@ -322,7 +322,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           {!canChallenge && auth.currentUser && auth.currentUser.uid !== userId && (
              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center justify-center sm:justify-start gap-2 border-0">
                 <AlertCircle className="w-4 h-4 shrink-0" /> 
-                <span>Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.</span>
+                <span>{t('userPredictions.needsLockToChallenge', 'Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.')}</span>
              </div>
           )}
 
@@ -341,7 +341,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                               variant="outline"
                               size="sm"
                               className="h-7 text-blue-600 border-blue-200"
-                              title="Retar grupo completo"
+                              title={t('userPredictions.challengeGroup', 'Retar grupo completo')}
                               onClick={() => setDuelData({ 
                                 duelType: 'group_complete', 
                                 matchId: `group_${groupLetter}_complete`, 
@@ -350,7 +350,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                 myPrediction: { teams: currentUserPredictions?.groups?.[groupLetter] || [] }
                               })}
                             >
-                              <Swords className="w-4 h-4 mr-1" /> Retar
+                              <Swords className="w-4 h-4 mr-1" /> {t('userPredictions.challengeBtn', 'Retar')}
                             </Button>
                           )}
                         </CardTitle>
@@ -368,7 +368,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                 </div>
                                 {canChallenge && (
                                   <Button 
-                                    variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title="Retar predicción"
+                                    variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title={t('userPredictions.challengePrediction', 'Retar predicción')}
                                     onClick={() => setDuelData({ 
                                       duelType: 'group_position', 
                                       matchId: `group_${groupLetter}_pos_${index + 1}`, 
@@ -489,7 +489,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                            <div key={idx} className="flex flex-col bg-gray-50 dark:bg-gray-800 p-3 rounded-md border dark:border-gray-700 text-sm">
                              <div className="text-gray-500 dark:text-gray-200 text-xs mb-1">{m.label}</div>
                              <div className="flex items-center justify-between font-medium">
-                               <span className="text-gray-900 dark:text-gray-100">{m.teamA} vs {m.teamB || 'TBD'}</span>
+                               <span className="text-gray-900 dark:text-gray-100">{m.teamA} vs {m.teamB || t('predictions.tbd')}</span>
                                {canChallenge && m.winner && (
                                  <Button 
                                    variant="outline" size="sm" className="h-7 text-blue-600 border-blue-200" title="Retar ganador"

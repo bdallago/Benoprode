@@ -352,8 +352,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             style={{ backgroundImage: 'url("/footer.jpeg")' }}
           >
             <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-200">
-              <p>Este Prode fue realizado por <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
-              <p>Contacto: <a href="mailto:bdallago01@gmail.com" className="text-white hover:text-blue-300 transition-colors">bdallago01@gmail.com</a></p>
+              <p>{t('footer.developedBy')} <a href="https://x.com/imbenodl" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-300 font-medium transition-colors">@imbenodl</a></p>
+              <p>{t('footer.contact')} <a href="mailto:bdallago01@gmail.com" className="text-white hover:text-blue-300 transition-colors">bdallago01@gmail.com</a></p>
             </div>
           </footer>
         </div>

@@ -10,6 +10,7 @@ import { Trophy, Users, Swords, UserPlus, Check, X, Clock, BookOpen, Loader2, Pe
 import { getUserLevel, getUserBadges, BADGES } from '../lib/gamification';
 import matchesData from '../lib/matches.json';
 import { UserPredictionsModal } from '../components/UserPredictionsModal';
+import { useTranslation } from 'react-i18next';
 
 interface ProfileProps {
   user: User;
@@ -21,6 +22,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const isOwnProfile = !profileId || profileId === user.uid;
   const targetUserId = profileId || user.uid;
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const initialTab = (searchParams.get('tab') as 'stats' | 'friends' | 'duels') || 'stats';
 
   const [profileData, setProfileData] = useState<any>(null);
@@ -370,7 +372,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{profileData.displayName}</h1>
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${level.bg} ${level.color}`}>
-                  {level.name}
+                  {t(`gamification.levels.${level.id}`, level.name)}
                 </span>
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-200">
                   {profileData.totalPoints || 0} pts
@@ -381,26 +383,26 @@ export default function Profile({ user, profileId }: ProfileProps) {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 {friendStatus === 'none' && (
                   <Button onClick={handleSendFriendRequest} className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" /> Enviar Solicitud de Amistad
+                    <UserPlus className="w-4 h-4" /> {t('profile.sendFriendRequest')}
                   </Button>
                 )}
                 {friendStatus === 'pending_sent' && (
                   <Button disabled variant="outline" className="border-gray-300 text-gray-600 bg-gray-50 flex items-center gap-2">
-                    <Clock className="w-4 h-4" /> Solicitud Enviada
+                    <Clock className="w-4 h-4" /> {t('profile.requestSent')}
                   </Button>
                 )}
                 {friendStatus === 'pending_received' && (
                   <Button onClick={handleAcceptFriendRequest} variant="success" className="flex items-center gap-2">
-                    <Check className="w-4 h-4" /> Aceptar Solicitud de Amistad
+                    <Check className="w-4 h-4" /> {t('notifications.titleAcceptRequest')}
                   </Button>
                 )}
                 {friendStatus === 'friends' && (
                   <>
                     <Button variant="outline" disabled className="text-green-700 border-green-200 bg-green-50 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 font-bold flex items-center gap-2">
-                      <Users className="w-4 h-4" /> Son Amigos
+                      <Users className="w-4 h-4" /> {t('profile.areFriends')}
                     </Button>
                     <Button onClick={() => setIsPredictionsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-bold flex items-center gap-2">
-                      <Swords className="w-4 h-4" /> Ver sus predicciones y Retar
+                      <Swords className="w-4 h-4" /> {t('profile.viewPredictionsAndChallenge')}
                     </Button>
                   </>
                 )}
@@ -411,10 +413,10 @@ export default function Profile({ user, profileId }: ProfileProps) {
             {isOwnProfile && (
                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                   <Button onClick={() => setIsPredictionsModalOpen(true)} variant="outline" className="font-bold flex items-center gap-2 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:bg-blue-900/20 dark:hover:bg-blue-900/50">
-                    <BookOpen className="w-4 h-4" /> Ver predicciones
+                    <BookOpen className="w-4 h-4" /> {t('profile.viewPredictions')}
                   </Button>
                   <Button onClick={() => router.push('/predictions')} variant="default" className="font-bold flex items-center gap-2 shadow-sm bg-blue-600 hover:bg-blue-700 text-white">
-                    <PenSquare className="w-4 h-4" /> Editar predicciones
+                    <PenSquare className="w-4 h-4" /> {t('profile.editPredictions')}
                   </Button>
                </div>
             )}
@@ -428,14 +430,14 @@ export default function Profile({ user, profileId }: ProfileProps) {
           onClick={() => setActiveTab('stats')}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'stats' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
-          Resumen
+          {t('profile.summary')}
         </button>
         <button
           onClick={() => setActiveTab('friends')}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'friends' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
           <div className="flex items-center justify-center gap-2">
-            Amigos
+            {t('profile.friends')}
             {isOwnProfile && pendingRequestsList.length > 0 && (
               <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-bounce">{pendingRequestsList.length}</span>
             )}
@@ -445,7 +447,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
           onClick={() => setActiveTab('duels')}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === 'duels' ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300'}`}
         >
-          Duelos
+          {t('profile.duels')}
         </button>
       </div>
 
@@ -458,7 +460,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
                 
                 <h3 className="text-white font-bold uppercase tracking-wider text-xs mb-3 flex items-center justify-center gap-2 relative z-10">
-                  <Swords className="w-4 h-4" /> Cara a Cara
+                  <Swords className="w-4 h-4" /> {t('profile.headToHead')}
                 </h3>
                 
                 <div className="flex items-center justify-center gap-12 md:gap-24 relative z-10 w-full mb-2">
@@ -469,7 +471,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
                   <div className="flex flex-col items-center relative">
                     <span className="text-4xl md:text-6xl font-black text-white">{h2hStats.userWins}</span>
-                    <span className="text-blue-200 text-xs font-bold uppercase mt-1">TÚ</span>
+                    <span className="text-blue-200 text-xs font-bold uppercase mt-1">{t('profile.you')}</span>
                   </div>
                 </div>
               </div>
@@ -477,28 +479,28 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
             <div className="grid grid-cols-1 gap-4">
                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center text-center">
-                  <div className="text-sm text-gray-500 dark:text-gray-200 font-bold mb-1">POSICIÓN GLOBAL</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-200 font-bold mb-1">{t('profile.globalRank')}</div>
                   <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2"># -</div>
-                  <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">Ir a la tabla general</Link>
+                  <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">{t('profile.goToLeaderboard')}</Link>
                </div>
             </div>
 
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
-              Medallero
+              {t('profile.medals')}
             </h3>
             {badges.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {badges.map((badge: any) => (
                   <div key={badge.id} className="relative group bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
                     <span className="text-4xl hover:scale-110 transition-transform">{badge.icon}</span>
-                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{badge.name}</span>
+                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{t(`gamification.badges.${badge.id}.name`, badge.name)}</span>
                     
                     {/* Tooltip that shows on click/mobile */}
                     {activeTooltip === badge.id && (
                       <div className="absolute -bottom-16 sm:-bottom-14 left-1/2 -translate-x-1/2 w-48 bg-gray-900 text-white text-xs p-2 rounded shadow-xl z-20 pointer-events-none">
-                        <div className="font-bold mb-1">{badge.name}</div>
-                        {badge.description}
+                        <div className="font-bold mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name)}</div>
+                        {t(`gamification.badges.${badge.id}.description`, badge.description)}
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
                       </div>
                     )}
@@ -506,7 +508,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-200 text-center py-8">Aún no hay medallas para mostrar.</p>
+              <p className="text-gray-500 dark:text-gray-200 text-center py-8">{t('profile.noMedals')}</p>
             )}
           </div>
         )}
@@ -516,7 +518,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             {isOwnProfile && (
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Buscar Amigos</h3>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('profile.searchFriends')}</h3>
                 </div>
 
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
@@ -525,7 +527,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                       <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input 
                         type="text" 
-                        placeholder="Buscar por nombre de Google..." 
+                        placeholder={t('profile.searchPlaceholder')} 
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -558,14 +560,14 @@ export default function Profile({ user, profileId }: ProfileProps) {
                               className="text-xs" 
                               onClick={() => router.push(`/profile/${result.id}`)}
                             >
-                              Ver Perfil
+                              {t('profile.viewProfile')}
                             </Button>
                           </div>
                         ))}
                       </div>
                     )}
                     {searchTerm && searchResults.length === 0 && !isSearching && (
-                      <p className="text-sm text-gray-500 text-center py-2">No se encontraron usuarios con ese nombre.</p>
+                      <p className="text-sm text-gray-500 text-center py-2">{t('profile.noUsersFound')}</p>
                     )}
                   </div>
               </div>
@@ -573,7 +575,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
             {isOwnProfile && pendingRequestsList.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Solicitudes Entrantes</h3>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('profile.incomingRequests')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {pendingRequestsList.map(req => (
                     <div key={req.id} className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-4">
@@ -627,7 +629,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             )}
 
             <div className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Lista de Amigos</h3>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('profile.friendsList')}</h3>
               {friendsList.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {friendsList.map(friend => (
@@ -649,7 +651,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
               ) : (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-200">Aún no hay amigos en esta lista.</p>
+                  <p className="text-gray-500 dark:text-gray-200">{t('profile.noFriends')}</p>
                 </div>
               )}
             </div>
@@ -658,24 +660,24 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
         {activeTab === 'duels' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Historial de Duelos</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{t('profile.duelHistory')}</h3>
             
             {duelsList.length > 0 && (
               <div className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="flex-1 text-center border-r border-gray-200 dark:border-gray-600">
-                  <div className="text-sm text-gray-500">Duelos Ganados</div>
+                  <div className="text-sm text-gray-500">{t('profile.wonDuels')}</div>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {duelsList.reduce((acc, d) => acc + (d.winnerId === targetUserId ? (d.duelType === 'group_complete' ? 3 : 1) : 0), 0)}
                   </div>
                 </div>
                 <div className="flex-1 text-center border-r border-gray-200 dark:border-gray-600">
-                  <div className="text-sm text-gray-500">Duelos Perdidos</div>
+                  <div className="text-sm text-gray-500">{t('profile.lostDuels')}</div>
                   <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {duelsList.filter(d => d.winnerId && d.winnerId !== targetUserId).length}
                   </div>
                 </div>
                 <div className="flex-1 text-center">
-                  <div className="text-sm text-gray-500">Puntos Extra (3 = 1 pt)</div>
+                  <div className="text-sm text-gray-500">{t('profile.extraPoints')}</div>
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {Math.floor(duelsList.reduce((acc, d) => acc + (d.winnerId === targetUserId ? (d.duelType === 'group_complete' ? 3 : 1) : 0), 0) / 3)}
                   </div>
@@ -691,27 +693,27 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   const isWinner = duel.winnerId === targetUserId;
                   const isLoser = duel.winnerId && duel.winnerId !== targetUserId;
                   
-                  let statusText = 'En curso';
+                  let statusText = t('profile.inProgress');
                   let statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
                   
                   if (duel.status === 'pending') {
-                      statusText = 'Pendiente';
+                      statusText = t('notifications.pending');
                       statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
                   } else if (duel.status === 'rejected') {
-                      statusText = 'Rechazado';
+                      statusText = t('notifications.reject');
                       statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                   } else if (duel.status === 'accepted') {
-                      statusText = 'Aceptado (En curso)';
+                      statusText = t('profile.accepted');
                       statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
                   } else if (duel.status === 'completed') {
                      if (isWinner) {
-                        statusText = 'Ganador';
+                        statusText = t('profile.winner');
                         statusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
                      } else if (isLoser) {
-                        statusText = 'Perdedor';
+                        statusText = t('profile.loser');
                         statusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
                      } else {
-                        statusText = 'Empate';
+                        statusText = t('profile.tie');
                         statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                      }
                   }
@@ -719,12 +721,12 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   const formatDuelEventName = (matchId: string, duelType: string) => {
                       if (duelType === 'group_complete') {
                           const groupLetter = matchId.replace('group_', '').replace('_complete', '');
-                          return `Grupo ${groupLetter} Completo`;
+                          return `${t('profile.groupComplete')} ${groupLetter}`;
                       }
                       if (duelType === 'group_position') {
                           const parts = matchId.split('_');
                           // check safe parsing
-                          if (parts.length >= 4) return `Puesto ${parts[3]} - Grupo ${parts[1]}`;
+                          if (parts.length >= 4) return `${t('profile.position')} ${parts[3]} - Grupo ${parts[1]}`;
                       }
                       if (duelType === 'match_exact' || duelType === 'match_winner') {
                           const matchInfo = matchesData.find((m: any) => m.id === matchId);
@@ -738,7 +740,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   };
                   
                   const eventName = formatDuelEventName(duel.matchId, duel.duelType);
-                  const typeLabel = duel.duelType === 'match_exact' ? 'Resultado Exacto' : (duel.duelType === 'match_winner' ? 'Ganador/Empate' : '');
+                  const typeLabel = duel.duelType === 'match_exact' ? t('profile.exactResult') : (duel.duelType === 'match_winner' ? t('profile.winnerOrTie') : '');
 
                   return (
                     <div key={duel.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -748,10 +750,10 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         </div>
                         <div>
                           <div className="font-bold text-gray-900 dark:text-gray-100">
-                            Duelo vs {otherUserName || 'Usuario'}
+                            {t('profile.duelVs')} {otherUserName || 'Usuario'}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-200">
-                            Evento: {eventName} {typeLabel ? `(${typeLabel})` : ''}
+                            {t('profile.event')}: {eventName} {typeLabel ? `(${typeLabel})` : ''}
                           </div>
                         </div>
                       </div>
@@ -773,10 +775,10 @@ export default function Profile({ user, profileId }: ProfileProps) {
                                 createdAt: new Date().toISOString(),
                                 actionUrl: `/profile?tab=duels`
                               });
-                            }}>Aceptar</Button>
+                            }}>{t('notifications.acceptDuel')}</Button>
                             <Button size="sm" variant="destructive" onClick={async () => {
                               await updateDoc(doc(db, 'duels_v2', duel.id), { status: 'rejected' });
-                            }}>Rechazar</Button>
+                            }}>{t('notifications.reject')}</Button>
                           </div>
                         )}
                       </div>
@@ -787,7 +789,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
             ) : (
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
                 <Swords className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-200">No hay duelos registrados.</p>
+                <p className="text-gray-500 dark:text-gray-200">{t('notifications.noDuels')}</p>
               </div>
             )}
           </div>

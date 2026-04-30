@@ -162,7 +162,7 @@ export default function Leagues({ user }: { user: User }) {
             <div className={`col-span-full space-y-4 ${selectedLeague?.id === benoliga.id ? 'mt-2' : ''}`}>
                <Card className={`border-2 border-sky-400 dark:border-sky-500 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 relative overflow-hidden ${selectedLeague?.id === benoliga.id ? 'ring-2 ring-sky-500' : ''}`}>
                   <div className="absolute top-0 right-0 bg-sky-400 text-sky-900 text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
-                    Creado por Beno
+                    {t('leagues.createdByBeno', 'Creado por Beno')}
                   </div>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center justify-between">
@@ -179,7 +179,7 @@ export default function Leagues({ user }: { user: User }) {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                      Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!
+                      {t('leagues.benoligaDesc', 'Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!')}
                     </p>
                     <div className="flex gap-2 flex-wrap">
                       <Button variant={selectedLeague?.id === benoliga.id ? "default" : "outline"} size="sm" onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}>
@@ -195,7 +195,7 @@ export default function Leagues({ user }: { user: User }) {
                         </Button>
                       ) : (
                         <Button size="sm" className="font-bold" onClick={() => joinLeague(benoliga.id)}>
-                          <LogIn className="w-4 h-4 mr-2"/> Unirse al Desafío
+                          <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinChallenge', 'Unirse al Desafío')}
                         </Button>
                       )}
                     </div>
@@ -335,16 +335,16 @@ export default function Leagues({ user }: { user: User }) {
                     <div className={`border rounded-lg p-3 cursor-pointer ${!isPublic ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-600'}`} onClick={() => setIsPublic(false)}>
                       <div className="flex items-center gap-2 mb-1">
                         <Lock className={`w-4 h-4 ${!isPublic ? 'text-blue-600' : 'text-gray-500'}`} />
-                        <span className={`font-medium ${!isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700'}`}>Privada</span>
+                        <span className={`font-medium ${!isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700'}`}>{t('leagues.privatePrivacy', 'Privada')}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500">Solo con link</p>
+                      <p className="text-[10px] text-gray-500">{t('leagues.privateDesc', 'Solo con link')}</p>
                     </div>
                     <div className={`border rounded-lg p-3 cursor-pointer ${isPublic ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-600'}`} onClick={() => setIsPublic(true)}>
                       <div className="flex items-center gap-2 mb-1">
                         <Globe className={`w-4 h-4 ${isPublic ? 'text-blue-600' : 'text-gray-500'}`} />
-                        <span className={`font-medium ${isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700'}`}>Pública</span>
+                        <span className={`font-medium ${isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700'}`}>{t('leagues.publicPrivacy', 'Pública')}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500">Para todos</p>
+                      <p className="text-[10px] text-gray-500">{t('leagues.publicDesc', 'Para todos')}</p>
                     </div>
                   </div>
                 </div>
@@ -358,11 +358,11 @@ export default function Leagues({ user }: { user: User }) {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.confirmLeague')}</h3>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
                   <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">{t('leagues.attention')}</p>
-                  <p className="text-blue-700 dark:text-blue-300 text-sm">Vas a crear "{newLeagueName}" como una liga {isPublic ? 'Pública' : 'Privada'}.</p>
+                  <p className="text-blue-700 dark:text-blue-300 text-sm">{t('leagues.creatingLigaDesc', 'Vas a crear "{{name}}" como una liga {{type}}.', { name: newLeagueName, type: isPublic ? t('leagues.publicPrivacy', 'Pública') : t('leagues.privatePrivacy', 'Privada') })}</p>
                 </div>
                 <div className="flex justify-end gap-3">
                   <Button variant="outline" onClick={() => setIsConfirmingCreate(false)}>{t('leagues.back')}</Button>
-                  <Button className="bg-blue-600" onClick={confirmCreateLeague} disabled={isCreating}>{isCreating ? 'Creando...' : 'Confirmar y Crear'}</Button>
+                  <Button className="bg-blue-600" onClick={confirmCreateLeague} disabled={isCreating}>{isCreating ? t('leagues.creating', 'Creando...') : t('leagues.confirmAndCreate', 'Confirmar y Crear')}</Button>
                 </div>
               </>
             )}
@@ -373,11 +373,11 @@ export default function Leagues({ user }: { user: User }) {
       {leagueToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Eliminar Liga</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">¿Estás seguro de que querés eliminar "{leagueToDelete.name}"? Esta acción es irreversible.</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.deleteLeagueTitle', 'Eliminar Liga')}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.deleteLeagueConfirm', '¿Estás seguro de que querés eliminar "{{name}}"? Esta acción es irreversible.', { name: leagueToDelete.name })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setLeagueToDelete(null)}>{t('leagues.cancel')}</Button>
-              <Button variant="destructive" onClick={() => deleteLeague(leagueToDelete.id)}>Eliminar</Button>
+              <Button variant="destructive" onClick={() => deleteLeague(leagueToDelete.id)}>{t('leagues.delete', 'Eliminar')}</Button>
             </div>
           </div>
         </div>
@@ -386,11 +386,11 @@ export default function Leagues({ user }: { user: User }) {
       {leagueToLeave && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Salir de la Liga</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">¿Estás seguro de que querés salir de "{leagueToLeave.name}"?</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.leaveLeagueTitle', 'Salir de la Liga')}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.leaveLeagueConfirm', '¿Estás seguro de que querés salir de "{{name}}"?', { name: leagueToLeave.name })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setLeagueToLeave(null)}>{t('leagues.cancel')}</Button>
-              <Button variant="destructive" onClick={() => leaveLeague(leagueToLeave.id)}>Salir</Button>
+              <Button variant="destructive" onClick={() => leaveLeague(leagueToLeave.id)}>{t('leagues.leaveBtn', 'Salir')}</Button>
             </div>
           </div>
         </div>
@@ -399,11 +399,11 @@ export default function Leagues({ user }: { user: User }) {
       {userToRemoveFromLeague && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Eliminar Jugador</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">¿Borrar a {userToRemoveFromLeague.userName}?</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.removePlayerTitle', 'Eliminar Jugador')}</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.removePlayerConfirm', '¿Borrar a {{name}}?', { name: userToRemoveFromLeague.userName })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setUserToRemoveFromLeague(null)}>{t('leagues.cancel')}</Button>
-              <Button variant="destructive" onClick={confirmRemoveUser}>Eliminar</Button>
+              <Button variant="destructive" onClick={confirmRemoveUser}>{t('leagues.delete', 'Eliminar')}</Button>
             </div>
           </div>
         </div>
@@ -413,11 +413,11 @@ export default function Leagues({ user }: { user: User }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl text-center">
             <Trophy className="h-10 w-10 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">¡Invitación a Liga!</h3>
-            <p className="text-gray-600 mb-6">{pendingInvitation.inviter} te invita a unirte a "{pendingInvitation.league.name}".</p>
+            <h3 className="text-xl font-bold mb-2">{t('leagues.inviteTitle', '¡Invitación a Liga!')}</h3>
+            <p className="text-gray-600 mb-6">{t('leagues.inviteText', '{{inviter}} te invita a unirte a "{{league}}".', { inviter: pendingInvitation.inviter, league: pendingInvitation.league.name })}</p>
             <div className="flex gap-4">
-              <Button variant="outline" className="w-full" onClick={handleRejectInvitation}>Rechazar</Button>
-              <Button className="bg-blue-600 w-full" onClick={handleAcceptInvitation}>Aceptar y Unirse</Button>
+              <Button variant="outline" className="w-full" onClick={handleRejectInvitation}>{t('leagues.reject', 'Rechazar')}</Button>
+              <Button className="bg-blue-600 w-full" onClick={handleAcceptInvitation}>{t('leagues.acceptAndJoin', 'Aceptar y Unirse')}</Button>
             </div>
           </div>
         </div>
@@ -432,7 +432,7 @@ export default function Leagues({ user }: { user: User }) {
       )}
 
       <div className="mt-12">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Chat en vivo</h3>
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('leagues.liveChat', 'Chat en vivo')}</h3>
         <LiveChat />
       </div>
     </div>

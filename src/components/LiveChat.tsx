@@ -4,10 +4,12 @@ import { db, auth } from '../firebase';
 import { Button } from './ui/button';
 import { Send, AlertTriangle } from 'lucide-react';
 import { TeamFlag } from './Fixture';
+import { useTranslation } from 'react-i18next';
 
 const BAD_WORDS = ['insulto1', 'insulto2', 'racismo1', 'racismo2']; // Placeholder list
 
 export function LiveChat() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isBanned, setIsBanned] = useState(false);
@@ -124,7 +126,7 @@ export function LiveChat() {
       {/* Scoreboard */}
       <div className="bg-blue-900 text-white p-4 flex flex-col items-center justify-center relative">
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs font-bold animate-pulse">
-          <span className="w-2 h-2 bg-white rounded-full"></span> EN VIVO
+          <span className="w-2 h-2 bg-white rounded-full"></span> {t('liveChat.live')}
         </div>
         <div className="text-sm font-medium text-blue-200 mb-2">{liveMatch.minute}'</div>
         <div className="flex justify-center items-center w-full px-2">
@@ -156,8 +158,8 @@ export function LiveChat() {
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50 dark:bg-gray-900/50">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-            No hay mensajes recientes. ¡Sé el primero en comentar!
+          <div className="h-full flex items-center justify-center text-gray-500 text-sm p-4 text-center">
+            {t('liveChat.noMessages')}
           </div>
         ) : (
           messages.map(msg => (
@@ -179,7 +181,7 @@ export function LiveChat() {
       {showWarning && (
         <div className="bg-red-100 dark:bg-red-900/30 border-t border-red-200 dark:border-red-800 p-2 flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span>Tu mensaje contiene lenguaje inapropiado. Advertencia {warnings}/2.</span>
+          <span>{t('liveChat.warning', 'Tu mensaje contiene lenguaje inapropiado. Advertencia')} {warnings}/2.</span>
         </div>
       )}
 
@@ -189,7 +191,7 @@ export function LiveChat() {
           <input
             type="text"
             disabled
-            placeholder="Chat en vivo - Próximamente"
+            placeholder={t('liveChat.placeholder')}
             className="flex-1 text-sm p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 focus:ring-0 outline-none"
           />
           <Button 

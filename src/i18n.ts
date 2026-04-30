@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translations
 import translationEN from './locales/en/translation.json';
 import translationES from './locales/es/translation.json';
+import translationPT from './locales/pt/translation.json';
 
 const resources = {
   en: {
@@ -12,6 +13,9 @@ const resources = {
   },
   es: {
     translation: translationES
+  },
+  pt: {
+    translation: translationPT
   }
 };
 
@@ -25,6 +29,12 @@ try {
       resources,
       fallbackLng: 'es', // Default language is Spanish
       
+      detection: {
+        order: ['localStorage', 'navigator'],
+        lookupLocalStorage: 'language',
+        caches: ['localStorage'],
+      },
+
       interpolation: {
         escapeValue: false // React already safes from xss
       }

@@ -123,9 +123,9 @@ export default function Dashboard({ user }: { user: User }) {
   
   const rankBadges = [];
   if (percentile <= 10 && myPoints > 0) {
-    rankBadges.push({ text: "Top 10% Mundial 🏆", className: "bg-amber-500/20 text-amber-200 border border-amber-500/50" });
+    rankBadges.push({ text: t('dashboard.top10badge', "Top 10% Mundial 🏆"), className: "bg-amber-500/20 text-amber-200 border border-amber-500/50" });
   } else if (percentile <= 30 && myPoints > 0) {
-    rankBadges.push({ text: "Top 30% Mundial 🥈", className: "bg-slate-300/20 text-slate-100 border border-slate-300/50" });
+    rankBadges.push({ text: t('dashboard.top30badge', "Top 30% Mundial 🥈"), className: "bg-slate-300/20 text-slate-100 border border-slate-300/50" });
   }
 
   return (
@@ -145,7 +145,7 @@ export default function Dashboard({ user }: { user: User }) {
                   <Trophy className="h-12 w-12 text-white" />
                 </div>
               </div>
-              <p className="text-sm text-blue-200 mt-6 opacity-80">Los puntos se calculan automáticamente según tus aciertos.</p>
+              <p className="text-sm text-blue-200 mt-6 opacity-80">{t('dashboard.pointsCalcInfo', 'Los puntos se calculan automáticamente según tus aciertos.')}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -164,7 +164,7 @@ export default function Dashboard({ user }: { user: User }) {
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold bg-white/20 text-white backdrop-blur-sm`}>
-                  Nivel: {userLevel.name}
+                  {t('profile.rank', 'Nivel')}: {t(`gamification.levels.${userLevel.id}`, userLevel.name)}
                 </span>
                 {rankBadges.map((badge, index) => (
                   <span key={index} className={`px-4 py-1.5 rounded-full text-sm font-bold backdrop-blur-sm shadow-sm ${badge.className}`}>
@@ -181,21 +181,21 @@ export default function Dashboard({ user }: { user: User }) {
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
           <CardHeader className="bg-blue-50 dark:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 pb-4">
             <CardTitle className="text-lg font-bold flex items-center gap-2 text-blue-900 dark:text-blue-400">
-              <Medal className="w-5 h-5" /> Tus Medallas
+              <Medal className="w-5 h-5" /> {t('dashboard.yourMedals', 'Tus Medallas')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-8">
               <div className="flex-1">
                 <div className="flex justify-between text-sm mb-2 text-gray-600 dark:text-gray-200 font-medium">
-                  <span>Progreso de medallas</span>
+                  <span>{t('dashboard.medalProgress', 'Progreso de medallas')}</span>
                   <span>{userBadges.length} de {BADGES.length} ({Math.round((userBadges.length / BADGES.length) * 100)}%)</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-6">
                   <div className="bg-blue-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${(userBadges.length / BADGES.length) * 100}%` }}></div>
                 </div>
                 
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">Medallas Obtenidas</h3>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">{t('dashboard.earnedMedals', 'Medallas Obtenidas')}</h3>
                 <div className="flex flex-wrap gap-4">
                   {userBadges.length > 0 ? userBadges.map((badge: any) => badge && (
                     <div key={badge.id} className="relative group cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
@@ -205,26 +205,26 @@ export default function Dashboard({ user }: { user: User }) {
                       {/* Tooltip */}
                       {activeTooltip === badge.id && (
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl z-50 text-center">
-                          <div className="font-bold text-blue-300 mb-1">{badge.name}</div>
-                          <div className="text-gray-300 text-xs">{badge.description}</div>
+                          <div className="font-bold text-blue-300 mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name)}</div>
+                          <div className="text-gray-300 text-xs">{t(`gamification.badges.${badge.id}.description`, badge.description)}</div>
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                         </div>
                       )}
                     </div>
                   )) : (
-                    <p className="text-gray-500 dark:text-gray-200 text-sm italic">Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!</p>
+                    <p className="text-gray-500 dark:text-gray-200 text-sm italic">{t('dashboard.noMedalsYet', 'Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!')}</p>
                   )}
                 </div>
               </div>
               
               <div className="w-full md:w-80 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start gap-2 mb-4">
-                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Todas las Medallas</h3>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">{t('dashboard.allMedals', 'Todas las Medallas')}</h3>
                   <button 
                     onClick={() => setIsAllBadgesModalOpen(true)}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
                   >
-                    Ver todas las medallas
+                    {t('dashboard.viewAllMedals', 'Ver todas las medallas')}
                   </button>
                 </div>
                 <div 
@@ -239,8 +239,8 @@ export default function Dashboard({ user }: { user: User }) {
                           {isSecret ? <span className="text-gray-500 font-bold">?</span> : badge.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? 'Medalla misteriosa' : badge.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? 'Sabrás su contenido cuando la obtengas' : badge.description}</p>
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? t('dashboard.mysteryMedal', 'Medalla misteriosa') : t(`gamification.badges.${badge.id}.name`, badge.name)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') : t(`gamification.badges.${badge.id}.description`, badge.description)}</p>
                         </div>
                       </div>
                     );
@@ -254,7 +254,7 @@ export default function Dashboard({ user }: { user: User }) {
 
       <div className="space-y-4 leaderboard-container">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('dashboard.globalLeaderboard')}</h2>
-        <p className="text-sm text-gray-500">Competí contra todos los usuarios registrados en el prode. Acá vas a ver la posición de cada jugador a nivel mundial.</p>
+        <p className="text-sm text-gray-500">{t('dashboard.competeAgainstAll', 'Competí contra todos los usuarios registrados en el prode. Acá vas a ver la posición de cada jugador a nivel mundial.')}</p>
         <GlobalLeaderboard 
           currentUser={user} 
           onUserClick={setSelectedUser} 
@@ -277,7 +277,7 @@ export default function Dashboard({ user }: { user: User }) {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
             <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Medal className="w-6 h-6 text-blue-500" /> Todas las Medallas
+                <Medal className="w-6 h-6 text-blue-500" /> {t('dashboard.allMedals', 'Todas las Medallas')}
               </h3>
               <button onClick={() => setIsAllBadgesModalOpen(false)} className="text-gray-500 dark:text-gray-200 hover:text-gray-700 dark:hover:text-gray-200">
                 <X className="w-6 h-6" />
@@ -297,8 +297,8 @@ export default function Dashboard({ user }: { user: User }) {
                   </div>
                 );
                 
-                const displayName = isSecretAndNotEarned ? "Medalla misteriosa" : badge.name;
-                const displayDesc = isSecretAndNotEarned ? "Sabrás su contenido cuando la obtengas" : badge.description;
+                const displayName = isSecretAndNotEarned ? t('dashboard.mysteryMedal', 'Medalla misteriosa') : t(`gamification.badges.${badge.id}.name`, badge.name);
+                const displayDesc = isSecretAndNotEarned ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') : t(`gamification.badges.${badge.id}.description`, badge.description);
 
                 return (
                   <div key={badge.id} className={`flex items-start gap-4 p-5 min-h-[140px] rounded-xl border ${isEarned ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70'}`}>

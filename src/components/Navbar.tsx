@@ -9,6 +9,7 @@ import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
 
 import { NotificationCenter } from "./NotificationCenter";
+import { SettingsModal } from "./SettingsModal";
 
 export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -74,26 +76,26 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             
             <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 flex-1 px-1">
               <Link href="/" className={getLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
-                <Home className="h-4 w-4 shrink-0" /> <span>{t('navbar.dashboard')}</span>
+                <Home className="h-4 w-4 shrink-0" /> <span>{t('navbar.dashboard', 'Inicio')}</span>
               </Link>
               <Link href="/instructions" className={getLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>
-                <BookOpen className="h-4 w-4 shrink-0" /> <span>Reglas</span>
+                <BookOpen className="h-4 w-4 shrink-0" /> <span>{t('navbar.instructions', 'Reglas')}</span>
               </Link>
               <Link href="/predictions" className={getLinkStyle("/predictions", "bg-green-500 border-green-700", "bg-green-600")}>
-                <PenSquare className="h-4 w-4 shrink-0" /> <span>{t('navbar.predictions')}</span>
+                <PenSquare className="h-4 w-4 shrink-0" /> <span>{t('navbar.predictions', 'Prode')}</span>
               </Link>
               <Link href="/dashboard" className={getLinkStyle("/dashboard", "bg-orange-500 border-orange-700", "bg-orange-600")}>
-                <Trophy className="h-4 w-4 shrink-0" /> <span>Ranking</span>
+                <Trophy className="h-4 w-4 shrink-0" /> <span>{t('navbar.ranking', 'Ranking')}</span>
               </Link>
               <Link href="/leagues" className={getLinkStyle("/leagues", "bg-purple-500 border-purple-700", "bg-purple-600")}>
-                <Users className="h-4 w-4 shrink-0" /> <span>Torneos</span>
+                <Users className="h-4 w-4 shrink-0" /> <span>{t('navbar.leagues', 'Torneos')}</span>
               </Link>
               <Link href="/profile" className={getLinkStyle("/profile", "bg-indigo-500 border-indigo-700", "bg-indigo-600")}>
-                <UserIcon className="h-4 w-4 shrink-0" /> <span>Mi Perfil</span>
+                <UserIcon className="h-4 w-4 shrink-0" /> <span>{t('navbar.profile', 'Mi Perfil')}</span>
               </Link>
               {isAdmin && (
                 <Link href="/admin" className={getLinkStyle("/admin", "bg-gray-500 border-gray-700", "bg-gray-600")}>
-                  <Settings className="h-4 w-4 shrink-0" /> <span>{t('navbar.admin')}</span>
+                  <Settings className="h-4 w-4 shrink-0" /> <span>{t('navbar.admin', 'Admin')}</span>
                 </Link>
               )}
             </div>
@@ -109,7 +111,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                     title="Noticias"
                   >
                     <Newspaper className="h-4 w-4" />
-                    Noticias
+                    {t('navbar.news')}
                   </Button>
                 </Link>
                 <Button 
@@ -150,10 +152,13 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                         <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)}></div>
                         <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
                           <Link href="/profile" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <UserIcon className="w-4 h-4" /> Ir al perfil
+                            <UserIcon className="w-4 h-4" /> {t('navbar.profile', 'Ir al perfil')}
                           </Link>
+                          <button onClick={() => { setProfileMenuOpen(false); setSettingsModalOpen(true); }} className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                            <Settings className="w-4 h-4" /> {t('navbar.settings', 'Ajustes')}
+                          </button>
                           <button onClick={() => { setProfileMenuOpen(false); handleLogout(); }} className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
-                            <LogOut className="w-4 h-4" /> Cerrar sesión
+                            <LogOut className="w-4 h-4" /> {t('navbar.logout')}
                           </button>
                         </div>
                       </>
@@ -169,29 +174,34 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
       {/* Mobile nav (Bottom) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center items-center p-1 bg-blue-950 dark:bg-gray-900 border-t border-blue-800 dark:border-gray-800 transition-colors duration-200 pb-safe gap-0.5 h-16">
         <Link href="/" className={getMobileLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
-          <Home className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Inicio</span>
+          <Home className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.dashboard', 'Inicio')}</span>
         </Link>
         <Link href="/instructions" className={getMobileLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>
-          <BookOpen className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Reglas</span>
+          <BookOpen className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.instructions', 'Reglas')}</span>
         </Link>
         <Link href="/predictions" className={getMobileLinkStyle("/predictions", "bg-green-500 border-green-700", "bg-green-600")}>
-          <PenSquare className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Prode</span>
+          <PenSquare className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.predictions', 'Prode')}</span>
         </Link>
         <Link href="/dashboard" className={getMobileLinkStyle("/dashboard", "bg-orange-500 border-orange-700", "bg-orange-600")}>
-          <Trophy className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Ranking</span>
+          <Trophy className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.ranking', 'Ranking')}</span>
         </Link>
         <Link href="/leagues" className={getMobileLinkStyle("/leagues", "bg-purple-500 border-purple-700", "bg-purple-600")}>
-          <Users className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Torneos</span>
+          <Users className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.leagues', 'Torneos')}</span>
         </Link>
         <Link href="/profile" className={getMobileLinkStyle("/profile", "bg-indigo-500 border-indigo-700", "bg-indigo-600")}>
-          <UserIcon className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Perfil</span>
+          <UserIcon className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.profileShort', 'Perfil')}</span>
         </Link>
         {isAdmin && (
           <Link href="/admin" className={getMobileLinkStyle("/admin", "bg-gray-500 border-gray-700", "bg-gray-600")}>
-            <Settings className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">Admin</span>
+            <Settings className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.admin', 'Admin')}</span>
           </Link>
         )}
       </div>
+
+      <SettingsModal 
+        isOpen={settingsModalOpen} 
+        onClose={() => setSettingsModalOpen(false)} 
+      />
     </>
   );
 }

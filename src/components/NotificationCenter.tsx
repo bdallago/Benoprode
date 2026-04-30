@@ -5,6 +5,9 @@ import { db } from "../firebase";
 import { User } from "firebase/auth";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useTranslation } from "react-i18next";
+import { formatDistanceToNow } from "date-fns";
+import { es, enUS } from "date-fns/locale";
 
 interface Notification {
   id: string;
@@ -41,6 +44,7 @@ function getRelativeTime(dateString: string) {
 }
 
 export function NotificationCenter({ user }: { user: User }) {
+  const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -264,14 +268,14 @@ export function NotificationCenter({ user }: { user: User }) {
           <div className="fixed left-4 right-4 top-[72px] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[400px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in slide-in-from-top-2">
             <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
               <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                <Bell className="h-4 w-4" /> Notificaciones
+                <Bell className="h-4 w-4" /> {t('notifications.title', 'Notificaciones')}
               </h3>
               {unreadCount > 0 && (
                 <button 
                   onClick={markAllAsRead}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Marcar leídas
+                  {t('notifications.markAllAsRead', 'Marcar leídas')}
                 </button>
               )}
             </div>
@@ -279,7 +283,7 @@ export function NotificationCenter({ user }: { user: User }) {
             <div className={`overflow-y-auto ${maxTrayHeight}`}>
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-                  No tienes notificaciones
+                  {t('notifications.noNotifications')}
                 </div>
               ) : (
                 notifications.map(notif => (
@@ -305,14 +309,14 @@ export function NotificationCenter({ user }: { user: User }) {
                       )}
                       
                       <span className="text-[10px] font-medium text-gray-400 mt-1.5 block">
-                        {getRelativeTime(notif.createdAt)}
+                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: i18n.language === 'es' ? es : enUS })}
                       </span>
 
                       {/* Action Buttons for specific types */}
                       {!notif.read && notif.type === 'friend_request' && notif.fromUserId && (
                         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-gray-600 dark:text-blue-400" onClick={(e) => handleAcceptFriendRequest(notif, e)} disabled={processingId === notif.id}>
-                            Aceptar solicitud
+                            {t('notifications.acceptRequest')}
                           </Button>
                         </div>
                       )}
@@ -320,7 +324,7 @@ export function NotificationCenter({ user }: { user: User }) {
                       {!notif.read && notif.type === 'league_invite' && notif.leagueId && (
                         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-purple-600 border-purple-200 hover:bg-purple-50 dark:bg-gray-800 dark:border-gray-600 dark:text-purple-400" onClick={(e) => handleAcceptLeagueInvite(notif, e)} disabled={processingId === notif.id}>
-                            Unirse a la Liga
+                            {t('notifications.joinLeague')}
                           </Button>
                         </div>
                       )}
@@ -328,10 +332,10 @@ export function NotificationCenter({ user }: { user: User }) {
                       {!notif.read && notif.type === 'duel_invite' && notif.fromUserId && (
                         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="success" className="h-7 text-xs" onClick={(e) => handleRespondDuel(notif, true, e)} disabled={processingId === notif.id}>
-                            Aceptar duelo
+                            {t('notifications.acceptDuel')}
                           </Button>
                           <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={(e) => handleRespondDuel(notif, false, e)} disabled={processingId === notif.id}>
-                            Rechazar
+                            {t('notifications.reject')}
                           </Button>
                         </div>
                       )}

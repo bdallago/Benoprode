@@ -152,7 +152,7 @@ export default function Predictions({ user }: { user: User }) {
             className={`flex items-center justify-center gap-1 sm:gap-2 transition-all ${isSticky ? 'flex-1 md:flex-none text-xs px-2 h-9' : 'w-full sm:w-auto'}`}
           >
             <Share2 className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
-            <span className={isSticky ? "hidden md:inline" : ""}>Compartir</span>
+            <span className={isSticky ? "hidden md:inline" : ""}>{t('predictions.share')}</span>
           </Button>
           {!effectiveIsLocked && (
             <>
@@ -169,7 +169,7 @@ export default function Predictions({ user }: { user: User }) {
               >
                 <Save className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
                 <span className={isSticky ? "hidden sm:inline" : ""}>{saving ? t('predictions.saving') : t('predictions.saveDraft')}</span>
-                <span className={isSticky ? "sm:hidden" : "hidden"}>{saving ? '...' : 'Borrador'}</span>
+                <span className={isSticky ? "sm:hidden" : "hidden"}>{saving ? '...' : t('predictions.draftShort')}</span>
               </Button>
               <Button 
                 variant="success"
@@ -179,13 +179,13 @@ export default function Predictions({ user }: { user: User }) {
               >
                 <Lock className={`${isSticky ? 'w-3 h-3 md:w-4 md:h-4' : 'w-4 h-4'}`} /> 
                 <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.lockPredictions')}</span>
-                <span className={isSticky ? "sm:hidden" : "hidden"}>Fijar</span>
+                <span className={isSticky ? "sm:hidden" : "hidden"}>{t('predictions.lockShort')}</span>
               </Button>
             </>
           )}
           {effectiveIsLocked && (
             <div className={`flex items-center gap-2 text-green-700 bg-green-50 rounded-md border border-green-200 justify-center transition-all ${isSticky ? 'py-1 px-2 text-xs flex-1 md:flex-none h-9' : 'px-4 py-2 w-full sm:w-auto'}`}>
-              <Lock className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'}`} /> <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.predictionsLocked')}</span><span className={isSticky ? "sm:hidden" : "hidden"}>Fijadas</span>
+              <Lock className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'}`} /> <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.predictionsLocked')}</span><span className={isSticky ? "sm:hidden" : "hidden"}>{t('predictions.lockedShort')}</span>
             </div>
           )}
         </div>
@@ -204,13 +204,13 @@ export default function Predictions({ user }: { user: User }) {
           {/* Sign 1: Phase 1 & Specials */}
           <div className="flex-1 relative bg-white dark:bg-gray-800 border-2 border-slate-300 dark:border-slate-600 border-b-4 rounded-2xl px-5 py-6 flex items-center justify-between shadow-sm mt-4 transition-all">
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00a34c] text-white px-4 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wide border-2 border-white dark:border-gray-800 shadow-sm whitespace-nowrap">
-              Fase de Grupos & Preguntas
+              {t('predictions.sign1Title')}
             </div>
             
             {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? (
               <>
                 <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
-                  Predicciones <strong className="font-bold text-slate-800 dark:text-white">cerradas</strong> y <strong className="font-bold text-slate-800 dark:text-white">fijadas</strong>
+                  {t('predictions.closedAndLocked')}
                 </div>
                 <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center shrink-0">
                   <Lock className="w-6 h-6 text-red-500 dark:text-red-400 stroke-[2.5]" />
@@ -219,7 +219,7 @@ export default function Predictions({ user }: { user: User }) {
             ) : (
               <>
                 <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
-                  Predicciones <strong className="font-bold text-slate-800 dark:text-white">abiertas</strong> y <strong className="font-bold text-slate-800 dark:text-white">sin fijar</strong>
+                  {t('predictions.openAndUnlocked')}
                 </div>
                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center shrink-0">
                   <Unlock className="w-6 h-6 text-[#00a34c] dark:text-green-400 stroke-[2.5]" />
@@ -231,11 +231,11 @@ export default function Predictions({ user }: { user: User }) {
           {/* Sign 2: Individual Matches */}
           <div className="flex-1 relative bg-white dark:bg-gray-800 border-2 border-slate-300 dark:border-slate-600 border-b-4 rounded-2xl px-5 py-6 flex items-center justify-between shadow-sm mt-4 sm:mt-4 transition-all">
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00a34c] text-white px-4 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wide border-2 border-white dark:border-gray-800 shadow-sm whitespace-nowrap">
-              Partidos Individuales
+              {t('predictions.sign2Title')}
             </div>
             
             <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
-              Podés <strong className="font-bold text-slate-800 dark:text-white">modificar</strong> hasta <strong className="font-bold text-slate-800 dark:text-white">una hora antes</strong> del inicio de cada encuentro
+               {t('predictions.sign2DescPart1')} <strong className="font-bold text-slate-800 dark:text-white">{t('predictions.sign2DescPart2')}</strong> {t('predictions.sign2DescPart3')}
             </div>
             <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/40 rounded-2xl flex items-center justify-center shrink-0">
               <AlertTriangle className="w-6 h-6 text-orange-500 dark:text-orange-400 stroke-[2.5]" />
@@ -247,10 +247,10 @@ export default function Predictions({ user }: { user: User }) {
 
       <>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 mb-6">
-          <Button id="tab-groups" variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Fase de Grupos</Button>
-          <Button id="tab-matches" variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Partidos Individuales</Button>
-          <Button id="tab-knockout" variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="w-full sm:w-auto text-xs sm:text-sm px-2">Fase Eliminatoria</Button>
-          <Button id="tab-specials" className="tab-specials w-full sm:w-auto text-xs sm:text-sm px-2" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')}>Preguntas Especiales</Button>
+          <Button id="tab-groups" variant={activeTab === 'groups' ? 'default' : 'outline'} onClick={() => setActiveTab('groups')} className="w-full sm:w-auto text-xs sm:text-sm px-2">{t('predictions.tabGroups')}</Button>
+          <Button id="tab-matches" variant={activeTab === 'matches' ? 'default' : 'outline'} onClick={() => setActiveTab('matches')} className="w-full sm:w-auto text-xs sm:text-sm px-2">{t('predictions.tabMatches')}</Button>
+          <Button id="tab-knockout" variant={activeTab === 'knockout' ? 'default' : 'outline'} onClick={() => setActiveTab('knockout')} className="w-full sm:w-auto text-xs sm:text-sm px-2">{t('predictions.tabKnockout')}</Button>
+          <Button id="tab-specials" className="tab-specials w-full sm:w-auto text-xs sm:text-sm px-2" variant={activeTab === 'specials' ? 'default' : 'outline'} onClick={() => setActiveTab('specials')}>{t('predictions.tabSpecials')}</Button>
         </div>
 
         {activeTab === 'groups' && (
@@ -310,20 +310,20 @@ export default function Predictions({ user }: { user: User }) {
                   </div>
                 )}
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {hasMissing ? '¡Atención! Predicciones incompletas' : t('predictions.confirmLockTitle')}
+                  {hasMissing ? t('predictions.incompleteTitle') : t('predictions.confirmLockTitle')}
                 </h3>
               </div>
 
               {hasMissing ? (
                 <div className="mb-6 space-y-3 text-sm text-gray-700 dark:text-gray-300 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30">
                   <p className="font-semibold text-orange-800 dark:text-orange-300">
-                    Estás a punto de fijar tu prode, pero dejaste algunas secciones sin responder:
+                    {t('predictions.incompleteWarning')}
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-orange-700 dark:text-orange-400">
-                    {missingMatches > 0 && <li>Te faltan {missingMatches} partidos individuales.</li>}
-                    {missingSpecials > 0 && <li>Te faltan {missingSpecials} preguntas especiales.</li>}
+                    {missingMatches > 0 && <li>{t('predictions.missingMatches', { count: missingMatches })}</li>}
+                    {missingSpecials > 0 && <li>{t('predictions.missingSpecials', { count: missingSpecials })}</li>}
                   </ul>
-                  <p className="pt-2">Si fijás ahora, perderás la oportunidad de sumar esos puntos. ¿Estás seguro/a?</p>
+                  <p className="pt-2">{t('predictions.losePointsWarning')}</p>
                 </div>
               ) : (
                 <p className="text-gray-600 dark:text-gray-300 mb-6 text-base">
@@ -333,7 +333,7 @@ export default function Predictions({ user }: { user: User }) {
 
               <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end mt-2">
                 <Button variant="outline" onClick={() => setConfirmLock(false)} className="font-semibold px-5 w-full sm:w-auto">
-                  Revisar de nuevo
+                  {t('predictions.reviewAgain')}
                 </Button>
                 <Button 
                   onClick={() => {
@@ -343,7 +343,7 @@ export default function Predictions({ user }: { user: User }) {
                   variant={hasMissing ? "destructive" : "success"}
                   className="font-semibold px-5 flex justify-center items-center gap-2 shadow-sm w-full sm:w-auto"
                 >
-                  <Lock className="w-4 h-4" /> {hasMissing ? 'Fijar con espacios vacíos' : t('predictions.confirmLock')}
+                  <Lock className="w-4 h-4" /> {hasMissing ? t('predictions.lockWithEmpty') : t('predictions.confirmLock')}
                 </Button>
               </div>
             </div>

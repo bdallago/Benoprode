@@ -5,8 +5,10 @@ import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check } from 'lucide-react';
 import { Button } from './ui/button';
+import { useTranslation } from 'react-i18next';
 
 export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: User, onUserClick?: (u: any) => void }) {
+  const { t } = useTranslation();
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,21 +205,21 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
       <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-400 text-xl m-0">
-            <Trophy className="h-6 w-6" /> Ranking Mundial
+            <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar jugador..."
+                placeholder={t('dashboard.searchPlayer', 'Buscar jugador...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <Button variant="outline" size="sm" onClick={() => { setSearchQuery(currentUser.displayName || ''); }} className="w-full flex items-center gap-2">
-               <Target className="w-4 h-4" /> Buscarme
+               <Target className="w-4 h-4" /> {t('dashboard.findMe', 'Buscarme')}
             </Button>
           </div>
         </div>
@@ -225,14 +227,14 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
 
       <div className="overflow-auto max-h-[400px]">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Cargando clasificación...</div>
+          <div className="p-8 text-center text-gray-500">{t('dashboard.loadingRanking', 'Cargando clasificación...')}</div>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                <th className="py-3 px-4 font-semibold w-24 text-center">Pos</th>
-                <th className="py-3 px-4 font-semibold">Jugador</th>
-                <th className="py-3 px-4 font-semibold text-right w-32">Puntos</th>
+                <th className="py-3 px-4 font-semibold w-24 text-center">{t('dashboard.tablePos', 'Pos')}</th>
+                <th className="py-3 px-4 font-semibold">{t('dashboard.tablePlayer', 'Jugador')}</th>
+                <th className="py-3 px-4 font-semibold text-right w-32">{t('dashboard.tablePoints', 'Puntos')}</th>
               </tr>
             </thead>
             <tbody>
@@ -255,18 +257,18 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                         )}
                         <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
                           {p.displayName || 'Usuario Anónimo'}
-                          {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Tú</span>}
+                          {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{t('profile.you', 'Tú')}</span>}
                         </span>
                       </div>
                       
                       {!isMe && (
                         friends.has(p.uid) ? (
                           <div className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                            Amigos
+                            {t('profile.areFriends', 'Amigos')}
                           </div>
                         ) : sentRequests.has(p.uid) ? (
                           <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
-                            Solicitud pendiente
+                            {t('profile.requestSent', 'Solicitud pendiente')}
                           </div>
                         ) : (
                           <Button 
@@ -274,7 +276,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                             size="sm" 
                             className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
                             onClick={(e) => handleAddFriend(e, p.uid)}
-                            title="Añadir amigo"
+                            title={t('profile.addFriend', 'Añadir amigo')}
                           >
                             <UserPlus className="w-5 h-5" />
                           </Button>
@@ -288,7 +290,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                  );
               }) : (
                 <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-500">No se encontraron jugadores.</td>
+                  <td colSpan={3} className="py-8 text-center text-gray-500">{t('dashboard.noPlayersFound', 'No se encontraron jugadores.')}</td>
                 </tr>
               )}
             </tbody>
@@ -299,11 +301,11 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
       {!searchQuery && (
         <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <Button variant="outline" size="sm" onClick={() => fetchPage('prev')} disabled={page === 0 || loading} className="flex items-center gap-1">
-            <ChevronLeft className="w-4 h-4" /> Anterior
+            <ChevronLeft className="w-4 h-4" /> {t('dashboard.prevPage', 'Anterior')}
           </Button>
-          <span className="text-sm font-medium text-gray-500">Página {page + 1}</span>
+          <span className="text-sm font-medium text-gray-500">{t('dashboard.page', 'Página')} {page + 1}</span>
           <Button variant="outline" size="sm" onClick={() => fetchPage('next')} disabled={!hasMore || loading} className="flex items-center gap-1">
-            Siguiente <ChevronRight className="w-4 h-4" />
+            {t('dashboard.nextPage', 'Siguiente')} <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       )}

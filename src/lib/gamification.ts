@@ -1,11 +1,11 @@
 export const LEVELS = [
-  { name: 'Hincha Casual', minPoints: 0, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800' },
-  { name: 'Simpatizante', minPoints: 50, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-  { name: 'Socio', minPoints: 150, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
-  { name: 'Ojeador', minPoints: 300, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-  { name: 'Analista Táctico', minPoints: 500, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30' },
-  { name: 'Director Técnico', minPoints: 800, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
-  { name: 'Leyenda Mundial', minPoints: 1200, color: 'text-sky-500', bg: 'bg-sky-100 dark:bg-sky-900/30' },
+  { id: 'casual', name: 'Hincha Casual', minPoints: 0, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800' },
+  { id: 'supporter', name: 'Simpatizante', minPoints: 50, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+  { id: 'member', name: 'Socio', minPoints: 150, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
+  { id: 'scout', name: 'Ojeador', minPoints: 300, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+  { id: 'tactical', name: 'Analista Táctico', minPoints: 500, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30' },
+  { id: 'manager', name: 'Director Técnico', minPoints: 800, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+  { id: 'legend', name: 'Leyenda Mundial', minPoints: 1200, color: 'text-sky-500', bg: 'bg-sky-100 dark:bg-sky-900/30' },
 ];
 
 export const BADGES = [

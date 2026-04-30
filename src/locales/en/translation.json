@@ -8,11 +8,16 @@
   },
   "navbar": {
     "dashboard": "Home",
-    "predictions": "Predictions",
-    "leagues": "Leagues",
     "instructions": "Rules",
+    "predictions": "Predict",
+    "ranking": "Ranking",
+    "leagues": "Leagues",
+    "profile": "My Profile",
+    "profileShort": "Profile",
     "admin": "Admin",
-    "logout": "Sign out"
+    "settings": "Settings",
+    "news": "News",
+    "logout": "Log out"
   },
   "dashboard": {
     "welcome": "Hello, {{name}}!",
@@ -29,7 +34,39 @@
     "you": "You",
     "rank": "Rank",
     "user": "User",
-    "pts": "pts"
+    "pts": "pts",
+    "pointsCalcInfo": "Points are calculated automatically based on your correct predictions.",
+    "top10badge": "Top 10% Worldwide 🏆",
+    "top30badge": "Top 30% Worldwide 🥈",
+    "share": "Share",
+    "worldRank": "World Ranking",
+    "medalsTitle": "Badges",
+    "rankingTitle": "World Leaderboard",
+    "ranks": {
+      "guru": "World Guru",
+      "expert": "Expert",
+      "apprentice": "Apprentice"
+    },
+    "mysteryMedal": "Mystery medal",
+    "mysteryMedalDesc": "You will know its content when you get it",
+    "competeAgainstAll": "Compete against all registered users in the pool. Here you will see the position of each player worldwide.",
+    "worldRanking": "World Ranking",
+    "searchPlayer": "Search player...",
+    "findMe": "Find Me",
+    "loadingRanking": "Loading ranking...",
+    "tablePos": "Pos",
+    "tablePlayer": "Player",
+    "tablePoints": "Points",
+    "noPlayersFound": "No players found.",
+    "prevPage": "Previous",
+    "page": "Page",
+    "nextPage": "Next",
+    "yourMedals": "Your Medals",
+    "medalProgress": "Medal progress",
+    "earnedMedals": "Earned Medals",
+    "noMedalsYet": "You haven't earned any medals yet. Participate to win your first!",
+    "allMedals": "All Medals",
+    "viewAllMedals": "View all medals"
   },
   "leagues": {
     "title": "Leagues",
@@ -58,14 +95,8 @@
     "createPrompt2": "league as",
     "cancel": "Cancel",
     "confirmLeave": "Yes, leave",
-    "confirmLeaveDelete": "Yes, leave and delete"
-  },
-  "leagues": {
-    "title": "Leagues",
+    "confirmLeaveDelete": "Yes, leave and delete",
     "description": "Create or join leagues to compete with your friends or the whole community.",
-    "createLeague": "Create League",
-    "public": "Public",
-    "private": "Private",
     "anyoneCanJoin": "Anyone can join",
     "inviteOnly": "Invite only",
     "deleteLeague": "Delete league",
@@ -73,26 +104,19 @@
     "hideRanking": "Hide Ranking",
     "copied": "Copied!",
     "invite": "Invite",
-    "leave": "Leave",
     "joinLeague": "Join League",
     "requiresInvite": "Requires Invitation",
-    "noLeagues": "No leagues created yet. Create the first one!",
     "ranking": "Ranking",
     "loading": "Loading leagues...",
     "aPlayer": "A player",
     "inviteMessage": "Join my league \"{{name}}\" in El Prode de Beno! {{url}}",
     "createNewLeague": "Create New League",
-    "leagueName": "League Name",
     "leagueNamePlaceholder": "Ex: The Neighborhood Boys",
     "privacy": "League Privacy",
-    "privateDesc": "Only those with the invitation link will be able to join.",
-    "publicDesc": "Anyone will be able to see the league and join freely.",
-    "cancel": "Cancel",
     "continue": "Continue",
     "confirmLeague": "Confirm League",
     "attention": "Attention:",
     "confirmCreateDesc": "You are about to create the league <strong>\"{{name}}\"</strong> as <strong>{{privacy}}</strong>. Once created, <strong>you will not be able to modify its name or delete it</strong>. Only administrators have permission to delete leagues.",
-    "creating": "Creating...",
     "confirmAndCreate": "Confirm and Create",
     "back": "Back",
     "deleteLeagueTitle": "Delete league?",
@@ -110,7 +134,29 @@
     "you": "You",
     "pts": "pts",
     "noParticipants": "No participants in this ranking yet.",
-    "nameExistsError": "A tournament with this name already exists. Please choose another one."
+    "nameExistsError": "A tournament with this name already exists. Please choose another one.",
+    "search": "Search",
+    "noLeaguesFound": "No leagues found.",
+    "joinTitle": "Join League",
+    "membersList": "Members List",
+    "leaveLeague": "Leave League",
+    "leagueSettings": "League Settings",
+    "createdByBeno": "Created by Beno",
+    "benoligaDesc": "Compete against Beno and beat him on his home turf. The bracket creator challenges you!",
+    "joinChallenge": "Join the Challenge",
+    "abandonLeague": "Leave League",
+    "liveChat": "Live Chat"
+  },
+  "notifications": {
+    "acceptRequest": "Accept Request",
+    "joinLeague": "Join League",
+    "acceptDuel": "Accept Duel",
+    "reject": "Reject",
+    "pending": "Pending",
+    "noNotifications": "You have no notifications",
+    "titleAcceptRequest": "Accept Friend Request",
+    "noDuels": "No duels registered yet.",
+    "title": "Notifications"
   },
   "predictions": {
     "title": "My Predictions",
@@ -146,15 +192,63 @@
     "typeAnswer": "Type your answer...",
     "suggestions": "DO YOU HAVE IDEAS OR SUGGESTIONS FOR NEW SPECIAL QUESTIONS? FEEL FREE TO SEND THEM!",
     "knockoutStage": "Knockout Stage",
-    "tbd": "Bracket to be determined",
-    "knockoutDesc": "This section will be enabled once the group stage is finished.",
+    "tbd": "TBD",
+    "knockoutDesc": "Available after the group stage",
     "confirmLockTitle": "Lock predictions?",
-    "confirmLockDesc": "Once locked, you will not be able to modify them. Are you sure you want to continue?"
+    "confirmLockDesc": "Once locked, you will not be able to modify them. Are you sure you want to continue?",
+    "sign1Title": "Phase 1 & Specials",
+    "closedAndLocked": "Group Stage and Special predictions are permanently closed and locked.",
+    "openAndUnlocked": "You can still modify these categories until before the start of the tournament (June 10).",
+    "sign2Title": "Individual Matches",
+    "sign2DescPart1": "Remember to save and lock your predictions",
+    "sign2DescPart2": "before the start of each match",
+    "sign2DescPart3": "to earn points!",
+    "tabGroups": "Group Stage",
+    "tabMatches": "Individual Matches",
+    "tabKnockout": "Knockout Stage",
+    "tabSpecials": "Special Questions",
+    "vs": "vs",
+    "share": "Share",
+    "draftShort": "Draft",
+    "lockShort": "Lock",
+    "lockedShort": "Locked",
+    "incompleteTitle": "Attention! Incomplete predictions",
+    "incompleteWarning": "You are about to lock your bracket, but you left some sections unanswered:",
+    "missingMatches": "You are missing {{count}} individual matches.",
+    "missingSpecials": "You are missing {{count}} special questions.",
+    "losePointsWarning": "If you lock now, you will lose the chance to earn those points. Are you sure?",
+    "reviewAgain": "Review again",
+    "lockWithEmpty": "Lock with empty fields",
+    "knockoutTooltip": "Here you can predict who advances in each knockout stage once the group stage is over. Stay tuned!",
+    "stageRoundOf32": "Round of 32",
+    "stageRoundOf16": "Round of 16",
+    "stageQuarterFinals": "Quarter Finals",
+    "stageSemiFinals": "Semifinals",
+    "stageFinal": "Final",
+    "matchTitle": "Match",
+    "tbdTeam": "To be decided",
+    "userPredictionsTitle": "{{name}}'s Predictions",
+    "matchesStageDesc": "Did you have too much faith in a team beforehand? A last minute injury? No problem! You can make your prediction of the final result up to 1 hour before each match.",
+    "pointsSystem": "Points System",
+    "result": "Result",
+    "resultDesc": "Guessing who wins the match or if there is a tie.",
+    "exactResultTitle": "Exact Result",
+    "exactResultDesc": "Also guessing the exact amount of goals for each team.",
+    "homeWin": "Home Win",
+    "tie": "Tie",
+    "awayWin": "Away Win",
+    "viewComments": "View comments",
+    "today": "Today",
+    "point": "Point",
+    "hideComments": "Hide comments",
+    "beFirstComment": "Be the first to comment",
+    "writeComment": "Write a comment...",
+    "viewCommentsCount": "View comments"
   },
   "instructions": {
     "title": "Predictor Instructions",
     "subtitle": "Rules and scoring system of the tournament.",
-    "howToPlay": "How to play?",
+    "howToPlay": "How do I play?",
     "howToPlayDesc": "Welcome to Beno's Predictor. The goal of the game is to score as many points as possible by predicting the results of the group stage and the knockout stages. Additionally, you can score more points by answering special questions about the tournament.",
     "step1": "Go to the <strong>\"My Predictions\"</strong> tab to complete your predictor.",
     "step2": "In the <strong>Group Stage</strong>, you have to drag and drop the teams to order them from 1st to 4th place. The top two and the 8 best third-placed teams advance to the Round of 32. The <strong>Knockout Stage</strong> will be enabled once the final results of the group stage are defined in the tournament.",
@@ -186,7 +280,42 @@
     "tournamentsDesc": "In addition to participating in the <strong>Global Ranking</strong> against all users of the application, you can create or join <strong>Private Tournaments</strong>.",
     "tournamentsStep1": "Go to the \"Leagues\" tab in the Ranking to see available leagues.",
     "tournamentsStep2": "You can create a new tournament and invite your friends by sharing the link.",
-    "tournamentsStep3": "Inside each tournament you will see an exclusive leaderboard with the members of that group."
+    "tournamentsStep3": "Inside each tournament you will see an exclusive leaderboard with the members of that group.",
+    "manual": "Game Manual",
+    "manualDesc": "Learn how to play in 5 minutes. Expand the panels to read the rules.",
+    "points": "Scoring System",
+    "medals": "Medals & Achievements",
+    "friendsAndDuels": "Friends & Duels",
+    "leagues": "Tournaments & Private Leagues",
+    "groupStageLabel": "Group Stage",
+    "groupStageDesc1": "Order the teams from 1st to 4th place. The top 2 and the 8 best third-placed teams advance to the next round.",
+    "indivMatchesLabel": "Individual Matches",
+    "indivMatchesDesc": "Predict the exact result and/or the winner/tie of each match.",
+    "specialQuestionsLabel": "Special Questions",
+    "specialQuestionsDesc1": "Dare to answer prompts about the top scorer, biggest disappointment, and more.",
+    "knockoutLabel": "Knockout Stage",
+    "knockoutDesc1": "It will be enabled once the actual tournament defines the group stage results.",
+    "importantDraw": "Important!",
+    "importantDraftDesc": "You can save drafts as many times as you want. But when you click on \"Lock Predictions\", your bracket will be locked. Individual match predictions can be edited up to 1 hour before each match.",
+    "scoreExactPos": "Guess exact position",
+    "scorePerfectGroup": "Perfect Group (4 positions)",
+    "scoreWinner": "Guess winner or tie",
+    "scoreExactResult": "Guess exact result (goals)",
+    "scoreAdvance16": "Team advances to Round of 32",
+    "scoreAdvance8": "Team advances to Round of 16",
+    "scoreAdvance4": "Team advances to Quarterfinals",
+    "scoreAdvance2": "Team advances to Semifinals",
+    "scoreChampion": "Guess the Champion",
+    "scoreSpecial": "Guess the exact answer to each special prompt.",
+    "friendsDesc1": "Send friend requests to whoever you want. When both have \"Locked\" their bracket you will be able to see each other's answers and challenge each other to Duels.",
+    "friendsLi1": "Challenge a friend for a group position, or a match result.",
+    "friendsLi2": "Each Duel adds 1 win for the winner of it.",
+    "friendsLi3": "If you challenge them for a Full Group (all positions together), you get 3 wins!",
+    "friendsLi4": "Reward:",
+    "friendsLi5": "Every 3 duel wins accumulated, you get +1 point in the Global Ranking.",
+    "leagueDesc1": "Play with your work, club or group.",
+    "leagueDesc2": "In addition to the global ranking, you can go to the \"Leagues\" section and create private tournaments.",
+    "leagueDesc3": "Give it a name and picture, and invite your friends by sharing the exclusive link. Being a member of a league generates an exclusive leaderboard among the people who are part of it."
   },
   "fixture": {
     "title": "WORLD CUP FIXTURE",
@@ -367,6 +496,16 @@
     "title": "Welcome to",
     "appTitle": "World Cup Predictor",
     "subtitle": "Show your football knowledge, compete with friends and become the champion of predictions.",
+    "progressTitle": "Your Predictions Progress",
+    "groupStage": "Group Stage",
+    "individualMatches": "Matches",
+    "specialQuestions": "Special Questions",
+    "todayMatches": "Playing Today",
+    "group": "GROUP",
+    "inviteFriends": "Invite Friends",
+    "inviteFriendsDesc": "Invite your friends to play and unlock the 'Sociable' badge!",
+    "copyLink": "Copy Link",
+    "linkCopied": "Link copied to clipboard",
     "instructionsTitle": "Instructions",
     "instructionsDesc": "Before starting, we recommend reading the game rules. Here you will find how the scoring system works and what you need to win.",
     "readRules": "Read the rules",
@@ -398,6 +537,10 @@
     "generalError": "There was an error sending the report. Check your connection and try again."
   },
   "countdown": {
+    "worldcupTitle": "Time remaining until World Cup",
+    "predictionsTitle": "Time remaining to predict",
+    "worldcupDesc": "The world cup starts on June 11, 2026.",
+    "predictionsDesc": "June 7, 2026 is the last day to make predictions.",
     "days": "Days",
     "timeUp": "Time's Up!",
     "timeUpDesc": "The deadline has passed. All predictions have been automatically locked.",
@@ -406,8 +549,10 @@
   },
   "footer": {
     "developedBy": "developed by",
-    "privacy": "Privacy Policy",
-    "terms": "Terms & Conditions"
+    "contact": "Contact:"
+  },
+  "settings": {
+    "language": "Language"
   },
   "teams": {
     "México": "Mexico",
@@ -477,5 +622,284 @@
     "semiFinals": "Who advances in Quarter-finals? (Moves to Semi-finals)",
     "finals": "Who advances in Semi-finals? (Moves to Final)",
     "champion": "Who becomes champion?"
+  },
+  "profile": {
+    "sendFriendRequest": "Send Friend Request",
+    "requestSent": "Request Sent",
+    "areFriends": "Are Friends",
+    "viewPredictionsAndChallenge": "View Predictions & Challenge",
+    "viewPredictions": "View Predictions",
+    "editPredictions": "Edit Predictions",
+    "summary": "Summary",
+    "friends": "Friends",
+    "duels": "Duels",
+    "headToHead": "Head to Head",
+    "you": "YOU",
+    "globalRank": "GLOBAL RANK",
+    "goToLeaderboard": "Go to leaderboard",
+    "medals": "Medals",
+    "noMedals": "No badges to show yet.",
+    "searchFriends": "Search Friends",
+    "searchPlaceholder": "Search by Google name...",
+    "viewProfile": "View Profile",
+    "noUsersFound": "No users found.",
+    "incomingRequests": "Incoming Requests",
+    "friendsList": "Friends List",
+    "noFriends": "No friends in this list yet.",
+    "duelHistory": "Duel History",
+    "wonDuels": "Won Duels",
+    "lostDuels": "Lost Duels",
+    "extraPoints": "Extra Points (3 = 1 pt)",
+    "duelVs": "Duel vs",
+    "event": "Event",
+    "inProgress": "In progress",
+    "accepted": "Accepted",
+    "winner": "Winner",
+    "loser": "Loser",
+    "tie": "Tie",
+    "exactResult": "Exact Result",
+    "winnerOrTie": "Winner/Tie",
+    "badges": {
+      "sociableTitle": "Sociable",
+      "sociableDesc": "You invited friends or joined leagues",
+      "riskTakerTitle": "Risk Taker",
+      "riskTakerDesc": "You bet on unlikely results",
+      "perfectGroupTitle": "Perfect Group",
+      "perfectGroupDesc": "Guessed all positions in a group",
+      "duelMasterTitle": "Duel Master",
+      "duelMasterDesc": "Won several duels against friends",
+      "firstToPredictTitle": "Early Bird",
+      "firstToPredictDesc": "One of the first to lock predictions",
+      "championTitle": "Champion",
+      "championDesc": "Winner of a league or tournament"
+    },
+    "groupComplete": "Complete Group",
+    "position": "Position"
+  },
+  "news": {
+    "title": "Latest News",
+    "desc": "Relevant info for your predictions.",
+    "modifyPredictions": "Modify my predictions",
+    "readMore": "Read full article",
+    "on": "on",
+    "noNews": "No relevant news at the moment.",
+    "notTranslate": "News are shown in their original language."
+  },
+  "landing": {
+    "subtitle": "Show how much you know about football. Play the 2026 World Cup predictor, create leagues with friends, and compete to be the best.",
+    "loginWithGoogle": "Sign in with Google",
+    "howItWorks": "How does it work?",
+    "howItWorksDesc": "Everything you need to experience the World Cup in a different way.",
+    "feature1Title": "1. Make your predictions",
+    "feature1Desc": "Predict group stage standings, match results, and who will reach the final.",
+    "feature2Title": "2. Create your League",
+    "feature2Desc": "Set up a private league with friends, family, or coworkers and share the link for them to join.",
+    "feature3Title": "3. Earn points",
+    "feature3Desc": "As real results come in, you'll earn points. The one with the most points at the end of the World Cup wins!",
+    "playNow": "Start playing now!",
+    "readyToPlay": "Are you ready to prove you know more than your friends?"
+  },
+  "gamification": {
+    "levels": {
+      "casual": "Casual Fan",
+      "supporter": "Supporter",
+      "member": "Member",
+      "scout": "Scout",
+      "tactical": "Tactical Analyst",
+      "manager": "Manager",
+      "legend": "World Legend"
+    },
+    "badges": {
+      "visionario": {
+        "name": "Visionary",
+        "description": "Guessed exact final positions of 1 group"
+      },
+      "oraculo": {
+        "name": "Oracle",
+        "description": "Guessed exact final positions of 3 groups"
+      },
+      "viajero_tiempo": {
+        "name": "Time Traveler",
+        "description": "Guessed exact final positions of 6 groups"
+      },
+      "ojo_halcon": {
+        "name": "Hawk Eye",
+        "description": "Guessed exact result of 1 match"
+      },
+      "francotirador": {
+        "name": "Sniper",
+        "description": "Guessed exact result of 5 matches"
+      },
+      "cirujano": {
+        "name": "Surgeon",
+        "description": "Guessed exact result of 10 matches"
+      },
+      "nostradamus": {
+        "name": "Nostradamus",
+        "description": "Guessed exact result of 20 matches"
+      },
+      "primer_paso": {
+        "name": "First Step",
+        "description": "Saved or locked your predictions for the first time"
+      },
+      "dia_perfecto": {
+        "name": "Perfect Day",
+        "description": "Guessed all results of an entire day"
+      },
+      "dueno_fecha": {
+        "name": "Owner of the Matchday",
+        "description": "Guessed all results of an entire matchday"
+      },
+      "en_racha": {
+        "name": "On a Roll",
+        "description": "Guessed the result in 3 consecutive matches"
+      },
+      "on_fire": {
+        "name": "On Fire",
+        "description": "Guessed the result in 5 consecutive matches"
+      },
+      "imparable": {
+        "name": "Unstoppable",
+        "description": "Guessed the result in 10 consecutive matches"
+      },
+      "sociable": {
+        "name": "Sociable",
+        "description": "Invited 1 friend to play"
+      },
+      "influencer": {
+        "name": "Influencer",
+        "description": "Invited 5 friends to play"
+      },
+      "embajador": {
+        "name": "Ambassador",
+        "description": "Invited 10 friends to play"
+      },
+      "constante": {
+        "name": "Constant",
+        "description": "Scored points on 3 different days"
+      },
+      "fiel": {
+        "name": "Faithful",
+        "description": "Scored points on 5 different days"
+      },
+      "incondicional": {
+        "name": "Unconditional",
+        "description": "Scored points on 10 different days"
+      },
+      "palo_afuera": {
+        "name": "Off the Post",
+        "description": "Guessed all results of the day except one"
+      },
+      "suma_sigue": {
+        "name": "Add and Continue",
+        "description": "Guessed the result in 10 matches"
+      },
+      "hormiga": {
+        "name": "Working Ant",
+        "description": "Guessed the result in 20 matches"
+      },
+      "calculadora": {
+        "name": "Calculator",
+        "description": "Guessed the result in 30 matches"
+      },
+      "primera_sangre": {
+        "name": "First Blood",
+        "description": "Won your first duel against another player"
+      },
+      "duelista": {
+        "name": "Duelist",
+        "description": "Won 3 duels"
+      },
+      "gladiador": {
+        "name": "Gladiator",
+        "description": "Won 5 duels"
+      },
+      "invencible": {
+        "name": "Invincible",
+        "description": "Won 10 duels"
+      },
+      "sobre_hora": {
+        "name": "At the Last Minute",
+        "description": "Locked your prediction 10 minutes before closing"
+      },
+      "piedra": {
+        "name": "Bad Luck",
+        "description": "Missed a result where the winner was clear (>70%)"
+      },
+      "campeon_barrio": {
+        "name": "Neighborhood Champion",
+        "description": "Reached first place in a tournament with 4+ players"
+      },
+      "zona_copas": {
+        "name": "Cup Zone",
+        "description": "Placed in the top 30% of players"
+      },
+      "en_cima": {
+        "name": "At the Top",
+        "description": "Placed in the top 10% of players"
+      },
+      "siempre_arriba": {
+        "name": "Always Up",
+        "description": "Top 30% at the end of the 3 matchdays"
+      },
+      "creme_creme": {
+        "name": "Creme de la Creme",
+        "description": "Top 10% at the end of the 3 matchdays"
+      },
+      "ojo_clinico": {
+        "name": "Clinical Eye",
+        "description": "Guessed an unclear result (40-60%)"
+      },
+      "esta_locura": {
+        "name": "This Madness",
+        "description": "Guessed Argentina's 3 results in Group J"
+      },
+      "confiado": {
+        "name": "Confident",
+        "description": "Locked your predictions before June 1st"
+      },
+      "mufa": {
+        "name": "Jinx",
+        "description": "Missed all results of an entire group"
+      },
+      "rival_beno": {
+        "name": "Beno's Rival",
+        "description": "Joined the Benoliga"
+      },
+      "competitivo": {
+        "name": "Competitive is my middle name",
+        "description": "Joined a Tournament or League"
+      },
+      "estrategia": {
+        "name": "Playing bad was part of the strategy",
+        "description": "Scored more points in matchday 3 than 1 or 2"
+      },
+      "cazador_utopias": {
+        "name": "Hunter of Impossible Utopias",
+        "description": "Guessed an unlikely winner (<30%)"
+      },
+      "hora_juez": {
+        "name": "Time's up ref!",
+        "description": "Scored points for a goal after minute 80"
+      },
+      "muchachos": {
+        "name": "Muchaaachos",
+        "description": "Your private tournament reached 10 members"
+      },
+      "zzz": {
+        "name": "Zzz",
+        "description": "Guessed a 0-0 result"
+      },
+      "hare_10_veces": {
+        "name": "I will do it 10x if necessary",
+        "description": "Finished in second place after the group stage"
+      }
+    }
+  },
+  "liveChat": {
+    "title": "Live Chat",
+    "live": "LIVE",
+    "noMessages": "No recent messages. Be the first to comment!",
+    "placeholder": "Live Chat - Coming Soon"
   }
 }

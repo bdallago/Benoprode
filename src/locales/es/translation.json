@@ -8,10 +8,15 @@
   },
   "navbar": {
     "dashboard": "Inicio",
-    "predictions": "Predicciones",
-    "leagues": "Torneos",
     "instructions": "Reglas",
+    "predictions": "Prode",
+    "ranking": "Ranking",
+    "leagues": "Torneos",
+    "profile": "Mi Perfil",
+    "profileShort": "Perfil",
     "admin": "Admin",
+    "settings": "Ajustes",
+    "news": "Noticias",
     "logout": "Cerrar sesión"
   },
   "dashboard": {
@@ -29,7 +34,39 @@
     "you": "Tú",
     "rank": "Pos",
     "user": "Usuario",
-    "pts": "pts"
+    "pts": "pts",
+    "pointsCalcInfo": "Los puntos se calculan automáticamente según tus aciertos.",
+    "top10badge": "Top 10% Mundial 🏆",
+    "top30badge": "Top 30% Mundial 🥈",
+    "share": "Compartir",
+    "worldRank": "Ranking Mundial",
+    "medalsTitle": "Medallas",
+    "rankingTitle": "Clasificación Mundial",
+    "ranks": {
+      "guru": "Gurú Mundial",
+      "expert": "Experto",
+      "apprentice": "Aprendiz"
+    },
+    "mysteryMedal": "Medalla misteriosa",
+    "mysteryMedalDesc": "Sabrás su contenido cuando la obtengas",
+    "competeAgainstAll": "Competí contra todos los usuarios registrados en el prode. Acá vas a ver la posición de cada jugador a nivel mundial.",
+    "worldRanking": "Ranking Mundial",
+    "searchPlayer": "Buscar jugador...",
+    "findMe": "Buscarme",
+    "loadingRanking": "Cargando clasificación...",
+    "tablePos": "Pos",
+    "tablePlayer": "Jugador",
+    "tablePoints": "Puntos",
+    "noPlayersFound": "No se encontraron jugadores.",
+    "prevPage": "Anterior",
+    "page": "Página",
+    "nextPage": "Siguiente",
+    "yourMedals": "Tus Medallas",
+    "medalProgress": "Progreso de medallas",
+    "earnedMedals": "Medallas Obtenidas",
+    "noMedalsYet": "Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!",
+    "allMedals": "Todas las Medallas",
+    "viewAllMedals": "Ver todas las medallas"
   },
   "leagues": {
     "title": "Torneos",
@@ -58,14 +95,8 @@
     "createPrompt2": "de forma",
     "cancel": "Cancelar",
     "confirmLeave": "Sí, salir",
-    "confirmLeaveDelete": "Sí, salir y eliminar"
-  },
-  "leagues": {
-    "title": "Torneos",
+    "confirmLeaveDelete": "Sí, salir y eliminar",
     "description": "Creá o unite a torneos para competir con tus amigos o con toda la comunidad.",
-    "createLeague": "Crear Torneo",
-    "public": "Público",
-    "private": "Privado",
     "anyoneCanJoin": "Cualquiera puede unirse",
     "inviteOnly": "Solo con invitación",
     "deleteLeague": "Eliminar torneo",
@@ -73,26 +104,19 @@
     "hideRanking": "Ocultar Ranking",
     "copied": "¡Copiado!",
     "invite": "Invitar",
-    "leave": "Salir",
     "joinLeague": "Unirse al Torneo",
     "requiresInvite": "Requiere Invitación",
-    "noLeagues": "No hay torneos creados aún. ¡Creá el primero!",
     "ranking": "Ranking",
     "loading": "Cargando torneos...",
     "aPlayer": "Un jugador",
     "inviteMessage": "¡Únete a mi torneo \"{{name}}\" en El Prode de Beno! {{url}}",
     "createNewLeague": "Crear Nuevo Torneo",
-    "leagueName": "Nombre del Torneo",
     "leagueNamePlaceholder": "Ej: Los Pibes del Barrio",
     "privacy": "Privacidad del Torneo",
-    "privateDesc": "Solo van a poder unirse quienes tengan el enlace de invitación.",
-    "publicDesc": "Cualquiera va a poder ver el torneo y unirse libremente.",
-    "cancel": "Cancelar",
     "continue": "Continuar",
     "confirmLeague": "Confirmar Torneo",
     "attention": "Atención:",
     "confirmCreateDesc": "Estás a punto de crear el torneo <strong>\"{{name}}\"</strong> de forma <strong>{{privacy}}</strong>. Una vez creado, <strong>no vas a poder modificar su nombre ni eliminarlo</strong>. Solo los administradores tienen permiso para borrar torneos.",
-    "creating": "Creando...",
     "confirmAndCreate": "Confirmar y Crear",
     "back": "Atrás",
     "deleteLeagueTitle": "¿Eliminar torneo?",
@@ -110,7 +134,29 @@
     "you": "Tú",
     "pts": "pts",
     "noParticipants": "Aún no hay participantes en este ranking.",
-    "nameExistsError": "Ya existe un torneo con este nombre. Por favor, elige otro."
+    "nameExistsError": "Ya existe un torneo con este nombre. Por favor, elige otro.",
+    "search": "Buscar",
+    "noLeaguesFound": "No se encontraron ligas.",
+    "joinTitle": "Unirse a Liga",
+    "membersList": "Lista de miembros",
+    "leaveLeague": "Abandonar Liga",
+    "leagueSettings": "Ajustes de la Liga",
+    "createdByBeno": "Creado por Beno",
+    "benoligaDesc": "Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!",
+    "joinChallenge": "Unirse al Desafío",
+    "abandonLeague": "Abandonar Liga",
+    "liveChat": "Chat en vivo"
+  },
+  "notifications": {
+    "acceptRequest": "Aceptar Solicitud",
+    "joinLeague": "Unirse a la Liga",
+    "acceptDuel": "Aceptar Duelo",
+    "reject": "Rechazar",
+    "pending": "Pendiente",
+    "noNotifications": "No tienes notificaciones",
+    "titleAcceptRequest": "Aceptar Solicitud de Amistad",
+    "noDuels": "No hay duelos registrados.",
+    "title": "Notificaciones"
   },
   "predictions": {
     "title": "Mis Predicciones",
@@ -145,16 +191,64 @@
     "specialQuestionsDesc": "Por favor, escribí el nombre completo del jugador o selección elegida para evitar confusiones en la corrección.",
     "typeAnswer": "Escribí tu respuesta...",
     "suggestions": "¿TENÉS IDEAS O SUGERENCIAS DE NUEVAS PREGUNTAS ESPECIALES? ¡NO DUDES EN MANDARLAS!",
-    "knockoutStage": "Fase Eliminatoria",
-    "tbd": "Cuadro por definir",
-    "knockoutDesc": "Esta sección se habilitará una vez finalizada la fase de grupos.",
+    "knockoutStage": "Eliminatorias",
+    "tbd": "por definir",
+    "knockoutDesc": "Disponible luego de la fase de grupos",
     "confirmLockTitle": "¿Fijar predicciones?",
-    "confirmLockDesc": "Una vez fijadas, no vas a poder modificarlas. ¿Estás seguro de que querés continuar?"
+    "confirmLockDesc": "Una vez fijadas, no vas a poder modificarlas. ¿Estás seguro de que querés continuar?",
+    "sign1Title": "Fase 1 y Especiales",
+    "closedAndLocked": "Las predicciones de la Fase de Grupos y Predicciones Especiales se encuentran cerradas y fijadas de manera permanente.",
+    "openAndUnlocked": "Aún podés modificar estas categorías hasta antes del inicio del torneo (10 de Junio).",
+    "sign2Title": "Partidos Individuales",
+    "sign2DescPart1": "¡Recordá guardar y fijar tus predicciones",
+    "sign2DescPart2": "antes del cierre de cada partido",
+    "sign2DescPart3": "para sumar puntos!",
+    "tabGroups": "Fase de Grupos",
+    "tabMatches": "Partidos Individuales",
+    "tabKnockout": "Fase Eliminatoria",
+    "tabSpecials": "Preguntas Especiales",
+    "vs": "vs",
+    "share": "Compartir",
+    "draftShort": "Borrador",
+    "lockShort": "Fijar",
+    "lockedShort": "Fijadas",
+    "incompleteTitle": "¡Atención! Predicciones incompletas",
+    "incompleteWarning": "Estás a punto de fijar tu prode, pero dejaste algunas secciones sin responder:",
+    "missingMatches": "Te faltan {{count}} partidos individuales.",
+    "missingSpecials": "Te faltan {{count}} preguntas especiales.",
+    "losePointsWarning": "Si fijás ahora, perderás la oportunidad de sumar esos puntos. ¿Estás seguro/a?",
+    "reviewAgain": "Revisar de nuevo",
+    "lockWithEmpty": "Fijar con espacios vacíos",
+    "knockoutTooltip": "Acá vas a poder predecir quién avanza en cada fase eliminatoria una vez que termine la fase de grupos. ¡Estate atento!",
+    "stageRoundOf32": "16avos",
+    "stageRoundOf16": "Octavos",
+    "stageQuarterFinals": "Cuartos",
+    "stageSemiFinals": "Semifinal",
+    "stageFinal": "Final",
+    "matchTitle": "Partido",
+    "tbdTeam": "Por definir",
+    "userPredictionsTitle": "Predicciones de {{name}}",
+    "matchesStageDesc": "¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada! Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido.",
+    "pointsSystem": "Sistema de Puntos",
+    "result": "Resultado",
+    "resultDesc": "Acertando quién gana el partido o si hay empate.",
+    "exactResultTitle": "Resultado Exacto",
+    "exactResultDesc": "Acertando además la cantidad exacta de goles de cada equipo.",
+    "homeWin": "Gana Local",
+    "tie": "Empate",
+    "awayWin": "Gana Visita",
+    "viewComments": "Ver comentarios",
+    "today": "Hoy",
+    "point": "Punto",
+    "hideComments": "Ocultar comentarios",
+    "beFirstComment": "Sé el primero en comentar",
+    "writeComment": "Escribe un comentario...",
+    "viewCommentsCount": "Ver comentarios"
   },
   "instructions": {
     "title": "Instrucciones del Prode",
     "subtitle": "Reglamento y sistema de puntuación del torneo.",
-    "howToPlay": "¿Cómo jugar?",
+    "howToPlay": "¿Cómo arranco a jugar?",
     "howToPlayDesc": "Bienvenido a El Prode de Beno. El objetivo del juego es sumar la mayor cantidad de puntos posibles prediciendo los resultados de la fase de grupos y las fases eliminatorias. Ademas, podes sumar mas puntos respondiendo a preguntas especiales sobre el torneo.",
     "step1": "Andá a la pestaña <strong>\"Mis Predicciones\"</strong> para completar tu prode.",
     "step2": "En la <strong>Fase de Grupos</strong>, tenés que arrastrar y soltar los equipos para ordenarlos del 1º al 4º puesto. Los dos primeros y los 8 mejores terceros avanzan a 16avos. La <strong>Fase Eliminatoria</strong> va a estar habilitada una vez que en el torneo se definan los resultados finales de la fase de grupos",
@@ -186,7 +280,42 @@
     "tournamentsDesc": "Además de participar en el <strong>Ranking Global</strong> contra todos los usuarios de la aplicación, podés crear o unirte a <strong>Torneos Privados</strong>.",
     "tournamentsStep1": "Andá a la pestaña \"Torneos\" en el Ranking para ver las ligas disponibles.",
     "tournamentsStep2": "Podés crear un nuevo torneo e invitar a tus amigos compartiendo el enlace.",
-    "tournamentsStep3": "Adentro de cada torneo vas a ver una tabla de posiciones exclusiva con los miembros de ese grupo."
+    "tournamentsStep3": "Adentro de cada torneo vas a ver una tabla de posiciones exclusiva con los miembros de ese grupo.",
+    "manual": "Manual de Juego",
+    "manualDesc": "Aprendé a jugar al Prode de Beno en 5 minutos. Desplegá los paneles para leer las reglas.",
+    "points": "Sistema de Puntuación",
+    "medals": "Medallas y Logros",
+    "friendsAndDuels": "Amigos y Duelos",
+    "leagues": "Torneos y Ligas Privadas",
+    "groupStageLabel": "Fase de Grupos",
+    "groupStageDesc1": "Ordená los equipos del 1º al 4º puesto. Los 2 primeros y los 8 mejores terceros avanzan a la siguiente ronda.",
+    "indivMatchesLabel": "Partidos Individuales",
+    "indivMatchesDesc": "Predecí el resultado exacto y/o el ganador/empate de cada encuentro.",
+    "specialQuestionsLabel": "Preguntas Especiales",
+    "specialQuestionsDesc1": "Animate a responder consignas sobre el goleador, selección decepción y más.",
+    "knockoutLabel": "Fase Eliminatoria",
+    "knockoutDesc1": "Se habilitará una vez que en el torneo real se definan los resultados de fase de grupos.",
+    "importantDraw": "¡Importante!",
+    "importantDraftDesc": "Podés guardar borradores todas las veces que quieras. Pero cuando hagas clic en \"Fijar Predicciones\", tu prode quedará bloqueado. Las predicciones de partidos individuales pueden editarse hasta 1 hora antes de cada partido.",
+    "scoreExactPos": "Acertar posición exacta",
+    "scorePerfectGroup": "Grupo Perfecto (4 posiciones)",
+    "scoreWinner": "Acertar ganador o empate",
+    "scoreExactResult": "Acertar resultado exacto (goles)",
+    "scoreAdvance16": "Equipo avanza a 16avos",
+    "scoreAdvance8": "Equipo avanza a Octavos",
+    "scoreAdvance4": "Equipo avanza a Cuartos",
+    "scoreAdvance2": "Equipo avanza a Semis",
+    "scoreChampion": "Acertar el Campeón",
+    "scoreSpecial": "Acertar la respuesta exacta a cada consigna especial planteada.",
+    "friendsDesc1": "Enviale solicitudes de amistad a quien quieras. Cuando ambos hayan \"Fijado\" el prode podrán ver las respuestas del otro y retarse a Duelos para saldar diferencias.",
+    "friendsLi1": "Retá a un amigo por una posición de grupo, o el transcurso de un partido.",
+    "friendsLi2": "Cada Duelo suma 1 victoria para el ganador del mismo.",
+    "friendsLi3": "Si los retás por un Grupo Completo (todas las posiciones juntas), ¡te llevás 3 victorias!",
+    "friendsLi4": "Recompensa:",
+    "friendsLi5": "Cada 3 victorias de duelo acumuladas, obtenés +1 punto en el Ranking Global.",
+    "leagueDesc1": "Jugá entre el trabajo, el club o tu grupo.",
+    "leagueDesc2": "Además del ranking global, podés ir a la sección \"Ligas\" y crear torneos privados.",
+    "leagueDesc3": "Ponele nombre y foto, e invitá a tus amigos pasándoles el enlace exclusivo. Ser miembro de una liga genera una tabla de posiciones exclusiva entre las personas que forman parte de la misma."
   },
   "fixture": {
     "title": "FIXTURE MUNDIAL",
@@ -367,6 +496,16 @@
     "title": "Bienvenido a",
     "appTitle": "El Prode de Beno",
     "subtitle": "Demostrá tus conocimientos futbolísticos, competí con amigos y convertite en el campeón de los pronósticos.",
+    "progressTitle": "Progreso de tus predicciones",
+    "groupStage": "Fase de Grupos",
+    "individualMatches": "Partidas Individuales",
+    "specialQuestions": "Preg. Especiales",
+    "todayMatches": "Hoy Juegan",
+    "group": "GRUPO",
+    "inviteFriends": "Invitar Amigos",
+    "inviteFriendsDesc": "¡Invitá a tus amigos a jugar al Prode de Beno y desbloquea la medalla de 'Sociable'!",
+    "copyLink": "Copiar Link",
+    "linkCopied": "Link copiado al portapapeles",
     "instructionsTitle": "Instrucciones",
     "instructionsDesc": "Antes de empezar, te recomendamos leer las reglas del juego. Acá vas a encontrar cómo funciona el sistema de puntuación y qué necesitás para ganar.",
     "readRules": "Leer las reglas",
@@ -398,6 +537,10 @@
     "generalError": "Hubo un error al enviar el reporte. Verificá tu conexión y volvé a intentar."
   },
   "countdown": {
+    "worldcupTitle": "Tiempo restante para el Mundial",
+    "predictionsTitle": "Tiempo restante para fijar predicciones",
+    "worldcupDesc": "El 11 de Junio de 2026 comienza la copa del mundo.",
+    "predictionsDesc": "El 7 de Junio de 2026 es el último día para fijar elecciones.",
     "days": "Días",
     "timeUp": "¡Tiempo Agotado!",
     "timeUpDesc": "La fecha límite ha pasado. Todas las predicciones han sido fijadas automáticamente.",
@@ -406,8 +549,10 @@
   },
   "footer": {
     "developedBy": "desarrollado por",
-    "privacy": "Política de Privacidad",
-    "terms": "Términos y Condiciones"
+    "contact": "Contacto:"
+  },
+  "settings": {
+    "language": "Idioma"
   },
   "teams": {
     "México": "México",
@@ -477,5 +622,284 @@
     "semiFinals": "¿Quién avanza en 4tos? (Pasan a Semis)",
     "finals": "¿Quién avanza en semis? (Pasan a la Final)",
     "champion": "¿Quién sale campeón?"
+  },
+  "profile": {
+    "sendFriendRequest": "Enviar Solicitud de Amistad",
+    "requestSent": "Solicitud Enviada",
+    "areFriends": "Son Amigos",
+    "viewPredictionsAndChallenge": "Ver sus predicciones y Retar",
+    "viewPredictions": "Ver predicciones",
+    "editPredictions": "Editar predicciones",
+    "summary": "Resumen",
+    "friends": "Amigos",
+    "duels": "Duelos",
+    "headToHead": "Cara a Cara",
+    "you": "TÚ",
+    "globalRank": "POSICIÓN GLOBAL",
+    "goToLeaderboard": "Ir a la tabla general",
+    "medals": "Medallero",
+    "noMedals": "Aún no hay medallas para mostrar.",
+    "searchFriends": "Buscar Amigos",
+    "searchPlaceholder": "Buscar por nombre de Google...",
+    "viewProfile": "Ver Perfil",
+    "noUsersFound": "No se encontraron usuarios.",
+    "incomingRequests": "Solicitudes Entrantes",
+    "friendsList": "Lista de Amigos",
+    "noFriends": "Aún no hay amigos en esta lista.",
+    "duelHistory": "Historial de Duelos",
+    "wonDuels": "Duelos Ganados",
+    "lostDuels": "Duelos Perdidos",
+    "extraPoints": "Puntos Extra (3 = 1 pt)",
+    "duelVs": "Duelo contra",
+    "event": "Evento",
+    "inProgress": "En progreso",
+    "accepted": "Aceptado",
+    "winner": "Ganador",
+    "loser": "Perdedor",
+    "tie": "Empate",
+    "exactResult": "Resultado Exacto",
+    "winnerOrTie": "Ganador/Empate",
+    "badges": {
+      "sociableTitle": "Sociable",
+      "sociableDesc": "Has invitado amigos o te has unido a ligas",
+      "riskTakerTitle": "Arriesgado",
+      "riskTakerDesc": "Apuestas por resultados poco probables",
+      "perfectGroupTitle": "Grupo Perfecto",
+      "perfectGroupDesc": "Has acertado todas las posiciones de un grupo",
+      "duelMasterTitle": "Maestro Duelo",
+      "duelMasterDesc": "Has ganado varios duelos contra amigos",
+      "firstToPredictTitle": "Tempranero",
+      "firstToPredictDesc": "De los primeros en fijar su prode",
+      "championTitle": "Campeón",
+      "championDesc": "Ganador de una liga o torneo"
+    },
+    "groupComplete": "Grupo Completo",
+    "position": "Posición"
+  },
+  "news": {
+    "title": "Últimas Noticias",
+    "desc": "Información relevante para tus predicciones.",
+    "modifyPredictions": "Modificar mis predicciones",
+    "readMore": "Leer artículo completo",
+    "on": "en",
+    "noNews": "No hay noticias relevantes en este momento.",
+    "notTranslate": "Las noticias se muestran en su idioma original."
+  },
+  "landing": {
+    "subtitle": "Demostrá cuánto sabés de fútbol. Jugá al prode del Mundial 2026, creá ligas con amigos y competí por ser el mejor pronosticador.",
+    "loginWithGoogle": "Ingresar con Google",
+    "howItWorks": "¿Cómo funciona?",
+    "howItWorksDesc": "Todo lo que necesitás para vivir el Mundial de otra manera.",
+    "feature1Title": "1. Hacé tus predicciones",
+    "feature1Desc": "Pronosticá las posiciones de la fase de grupos, los resultados de los partidos y quiénes llegarán a la final.",
+    "feature2Title": "2. Creá tu Liga",
+    "feature2Desc": "Armá una liga privada con tus amigos, familia o compañeros de trabajo y compartiles el link para que se unan.",
+    "feature3Title": "3. Sumá puntos",
+    "feature3Desc": "A medida que se den los resultados reales, sumarás puntos. ¡El que más puntos tenga al final del Mundial, gana!",
+    "playNow": "¡Empezá a jugar ahora!",
+    "readyToPlay": "¿Estás listo para demostrar que sabés más que tus amigos?"
+  },
+  "gamification": {
+    "levels": {
+      "casual": "Hincha Casual",
+      "supporter": "Simpatizante",
+      "member": "Socio",
+      "scout": "Ojeador",
+      "tactical": "Analista Táctico",
+      "manager": "Director Técnico",
+      "legend": "Leyenda Mundial"
+    },
+    "badges": {
+      "visionario": {
+        "name": "Visionario",
+        "description": "Acertaste las posiciones finales exactas de 1 grupo"
+      },
+      "oraculo": {
+        "name": "Oráculo",
+        "description": "Acertaste las posiciones finales exactas de 3 grupos"
+      },
+      "viajero_tiempo": {
+        "name": "Viajero del Tiempo",
+        "description": "Acertaste las posiciones finales exactas de 6 grupos"
+      },
+      "ojo_halcon": {
+        "name": "Ojo de Halcón",
+        "description": "Acertaste el resultado exacto de 1 partido"
+      },
+      "francotirador": {
+        "name": "Francotirador",
+        "description": "Acertaste el resultado exacto de 5 partidos"
+      },
+      "cirujano": {
+        "name": "Cirujano",
+        "description": "Acertaste el resultado exacto de 10 partidos"
+      },
+      "nostradamus": {
+        "name": "Nostradamus",
+        "description": "Acertaste el resultado exacto de 20 partidos"
+      },
+      "primer_paso": {
+        "name": "Primer Paso",
+        "description": "Guardaste o fijaste tus predicciones por primera vez"
+      },
+      "dia_perfecto": {
+        "name": "Día Perfecto",
+        "description": "Acertaste todos los resultados de un día entero"
+      },
+      "dueno_fecha": {
+        "name": "Dueño de la Fecha",
+        "description": "Acertaste todos los resultados de una fecha entera"
+      },
+      "en_racha": {
+        "name": "En Racha",
+        "description": "Acertaste el resultado en 3 partidos consecutivos"
+      },
+      "on_fire": {
+        "name": "On Fire",
+        "description": "Acertaste el resultado en 5 partidos consecutivos"
+      },
+      "imparable": {
+        "name": "Imparable",
+        "description": "Acertaste el resultado en 10 partidos consecutivos"
+      },
+      "sociable": {
+        "name": "Sociable",
+        "description": "Invitaste a 1 amigo a jugar"
+      },
+      "influencer": {
+        "name": "Influencer",
+        "description": "Invitaste a 5 amigos a jugar"
+      },
+      "embajador": {
+        "name": "Embajador",
+        "description": "Invitaste a 10 amigos a jugar"
+      },
+      "constante": {
+        "name": "Constante",
+        "description": "Sumaste puntos en 3 días distintos"
+      },
+      "fiel": {
+        "name": "Fiel",
+        "description": "Sumaste puntos en 5 días distintos"
+      },
+      "incondicional": {
+        "name": "Incondicional",
+        "description": "Sumaste puntos en 10 días distintos"
+      },
+      "palo_afuera": {
+        "name": "Palo y afuera",
+        "description": "Acertaste todos los resultados del día excepto uno"
+      },
+      "suma_sigue": {
+        "name": "Suma y Sigue",
+        "description": "Acertaste el resultado en 10 partidos"
+      },
+      "hormiga": {
+        "name": "Hormiga Trabajadora",
+        "description": "Acertaste el resultado en 20 partidos"
+      },
+      "calculadora": {
+        "name": "Calculadora",
+        "description": "Acertaste el resultado en 30 partidos"
+      },
+      "primera_sangre": {
+        "name": "Primera Sangre",
+        "description": "Ganaste tu primer duelo contra otro jugador"
+      },
+      "duelista": {
+        "name": "Duelista",
+        "description": "Ganaste 3 duelos"
+      },
+      "gladiador": {
+        "name": "Gladiador",
+        "description": "Ganaste 5 duelos"
+      },
+      "invencible": {
+        "name": "Invencible",
+        "description": "Ganaste 10 duelos"
+      },
+      "sobre_hora": {
+        "name": "Sobre la Hora",
+        "description": "Fijaste tu predicción 10 minutos antes del cierre"
+      },
+      "piedra": {
+        "name": "Piedra",
+        "description": "Erraste un resultado donde el ganador era claro (>70%)"
+      },
+      "campeon_barrio": {
+        "name": "Campeón de Barrio",
+        "description": "Alcanzaste el primer puesto de un torneo con 4+ jugadores"
+      },
+      "zona_copas": {
+        "name": "Zona de copas",
+        "description": "Te ubicaste en el mejor 30% de los jugadores"
+      },
+      "en_cima": {
+        "name": "En la Cima",
+        "description": "Te ubicaste en el mejor 10% de los jugadores"
+      },
+      "siempre_arriba": {
+        "name": "Siempre Arriba",
+        "description": "Top 30% al finalizar las 3 fechas"
+      },
+      "creme_creme": {
+        "name": "Creme de la Creme",
+        "description": "Top 10% al finalizar las 3 fechas"
+      },
+      "ojo_clinico": {
+        "name": "Ojo Clínico",
+        "description": "Acertaste un resultado poco claro (40-60%)"
+      },
+      "esta_locura": {
+        "name": "Esta Locura",
+        "description": "Acertaste los 3 resultados de Argentina en el Grupo J"
+      },
+      "confiado": {
+        "name": "Confiado",
+        "description": "Fijaste tus predicciones antes del 1° de Junio"
+      },
+      "mufa": {
+        "name": "Mufa",
+        "description": "Erraste todos los resultados de un grupo entero"
+      },
+      "rival_beno": {
+        "name": "Rival de Beno",
+        "description": "Te uniste a la Benoliga"
+      },
+      "competitivo": {
+        "name": "Mi segundo nombre es competitivo",
+        "description": "Te uniste a un Torneo o Liga"
+      },
+      "estrategia": {
+        "name": "Jugar mal fue parte de la estrategia",
+        "description": "Sumaste más puntos en la fecha 3 que en la 1 o 2"
+      },
+      "cazador_utopias": {
+        "name": "Cazador de Utopías imposibles",
+        "description": "Acertaste un ganador poco favorito (<30%)"
+      },
+      "hora_juez": {
+        "name": "La hora juez!",
+        "description": "Sumaste puntos por un gol después del minuto 80"
+      },
+      "muchachos": {
+        "name": "Muchaaachos",
+        "description": "Tu torneo privado llegó a 10 integrantes"
+      },
+      "zzz": {
+        "name": "Zzz",
+        "description": "Acertaste un resultado 0-0"
+      },
+      "hare_10_veces": {
+        "name": "Haré 10 veces más si es necesario. Ellos no están preparados",
+        "description": "Finalizaste en segundo puesto luego de la fase de grupos"
+      }
+    }
+  },
+  "liveChat": {
+    "title": "Chat en vivo",
+    "live": "EN VIVO",
+    "noMessages": "No hay mensajes recientes. ¡Sé el primero en comentar!",
+    "placeholder": "Chat en vivo - Próximamente"
   }
 }

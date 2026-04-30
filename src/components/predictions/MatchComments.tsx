@@ -3,12 +3,14 @@ import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 
 import { db, auth } from '../../firebase';
 import { Button } from '../ui/button';
 import { MessageCircle, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface MatchCommentsProps {
   matchId: string;
 }
 
 export function MatchComments({ matchId }: MatchCommentsProps) {
+  const { t } = useTranslation();
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -60,14 +62,14 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400 font-medium transition-colors w-full justify-center"
       >
         <MessageCircle className="w-4 h-4" />
-        {isExpanded ? 'Ocultar comentarios' : `Ver comentarios ${comments.length > 0 ? `(${comments.length})` : ''}`}
+        {isExpanded ? t('predictions.hideComments', 'Ocultar comentarios') : `${t('predictions.viewCommentsCount', 'Ver comentarios')} ${comments.length > 0 ? `(${comments.length})` : ''}`}
       </button>
 
       {isExpanded && (
         <div className="mt-3 space-y-3">
           <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
             {comments.length === 0 ? (
-              <p className="text-xs text-center text-gray-500 dark:text-gray-200 py-2">Sé el primero en comentar</p>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-200 py-2">{t('predictions.beFirstComment', 'Sé el primero en comentar')}</p>
             ) : (
               comments.map(comment => (
                 <div key={comment.id} className="bg-gray-50 dark:bg-gray-800/50 p-2 rounded-md text-sm">
@@ -83,7 +85,7 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Escribe un comentario..."
+              placeholder={t('predictions.writeComment', 'Escribe un comentario...')}
               className="flex-1 text-sm p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               maxLength={150}
             />

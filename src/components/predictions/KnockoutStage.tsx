@@ -17,7 +17,7 @@ export function KnockoutStage() {
             <Info className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" />
           </TooltipTrigger>
           <TooltipContent>
-            <p className="max-w-xs">Acá vas a poder predecir quién avanza en cada fase eliminatoria una vez que termine la fase de grupos. ¡Estate atento!</p>
+            <p className="max-w-xs">{t('predictions.knockoutTooltip')}</p>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -48,25 +48,25 @@ export function KnockoutStage() {
           ele.scrollLeft = scrollLeft - walk;
         }}
       >
-        {['16avos', 'Octavos', 'Cuartos', 'Semifinal', 'Final'].map((stage, idx) => {
+        {['stageRoundOf32', 'stageRoundOf16', 'stageQuarterFinals', 'stageSemiFinals', 'stageFinal'].map((stage, idx) => {
           const numMatches = Math.pow(2, 4 - idx);
           return (
             <div key={stage} className="flex flex-col justify-around min-w-[200px] relative">
-              <h3 className="text-center font-bold text-gray-700 dark:text-gray-300 mb-4 absolute -top-10 w-full">{stage}</h3>
+              <h3 className="text-center font-bold text-gray-700 dark:text-gray-300 mb-4 absolute -top-10 w-full">{t(`predictions.${stage}`)}</h3>
               {Array.from({ length: numMatches }).map((_, i) => (
                 <div key={i} className="relative py-2 flex flex-col justify-center flex-1">
                   <Card className={`bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm relative z-10 ${idx === 4 ? 'border-purple-500 border-2 shadow-purple-200 dark:shadow-purple-900/20' : ''}`}>
                     <CardHeader className={`p-2 pb-1 border-b dark:border-gray-700 ${idx === 4 ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
                       <span className={`text-xs font-bold ${idx === 4 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-500 dark:text-gray-200'}`}>
-                        {idx === 4 ? 'FINAL' : `Partido ${Math.pow(2, 5) - Math.pow(2, 5 - idx) + i + 1}`}
+                        {idx === 4 ? t('predictions.stageFinal') : `${t('predictions.matchTitle')} ${Math.pow(2, 5) - Math.pow(2, 5 - idx) + i + 1}`}
                       </span>
                     </CardHeader>
                     <CardContent className="p-2 flex flex-col gap-1">
                       <div className="flex justify-between items-center border-b dark:border-gray-700 pb-1">
-                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Por definir</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{t('predictions.tbdTeam')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Por definir</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{t('predictions.tbdTeam')}</span>
                       </div>
                     </CardContent>
                   </Card>

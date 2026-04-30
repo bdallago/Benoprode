@@ -8,6 +8,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 import { MatchComments } from "./MatchComments";
 import { onSnapshot, doc } from "firebase/firestore";
+import { useTranslation } from "react-i18next";
 
 interface MatchesStageProps {
   matchPredictions: Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>;
@@ -18,6 +19,9 @@ interface MatchesStageProps {
 }
 
 export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, handleMatchChange, savePredictions }: MatchesStageProps) {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'es-AR';
+  
   const [matchStats, setMatchStats] = useState<Record<string, { A: number, B: number, DRAW: number, total: number }>>({});
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>(() => {
     try {
@@ -35,15 +39,15 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
     const today = new Date();
     Object.entries(matchesData.reduce((acc, match) => {
         const date = new Date(match.date);
-        const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const dayString = date.toLocaleDateString(currentLang, { weekday: 'long', day: 'numeric', month: 'long' });
         const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
         if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
         acc[capitalizedDay].push(match);
         return acc;
     }, {} as Record<string, typeof matchesData>)).forEach(([day, dayMatches]) => {
         const matchDate = new Date(dayMatches[0].date);
-        const matchDateString = matchDate.toLocaleDateString('es-AR');
-        const todayLocaleString = today.toLocaleDateString('es-AR');
+        const matchDateString = matchDate.toLocaleDateString(currentLang);
+        const todayLocaleString = today.toLocaleDateString(currentLang);
         
         if (matchDateString === todayLocaleString) {
             pastDaysState[day] = false;
@@ -68,7 +72,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
 
   // Determine today date string
   const today = new Date();
-  const todayString = today.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayString = today.toLocaleDateString(currentLang, { weekday: 'long', day: 'numeric', month: 'long' });
   const todayCapitalized = todayString.charAt(0).toUpperCase() + todayString.slice(1);
 
 
@@ -90,7 +94,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
   return (
     <div className="space-y-6 pt-2">
       <div className="flex items-center justify-between border-b dark:border-gray-700 pb-2">
-        <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 transition-colors duration-200">Partidos Individuales</h2>
+        <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400 transition-colors duration-200">{t('predictions.sign2Title', 'Partidos Individuales')}</h2>
         <Button 
           variant="outline" 
           size="sm"
@@ -100,32 +104,32 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
              }
           }}
           className="text-xs flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-          title="Ir a Partidos de Hoy"
+          title={t('predictions.goToToday', 'Ir a Partidos de Hoy')}
         >
-          <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">Hoy</span>
+          <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">{t('predictions.today', 'Hoy')}</span>
         </Button>
       </div>
       <p className="text-sm text-gray-600 dark:text-gray-200 mb-6 text-justify transition-colors duration-200">
-        ¿Le tuviste demasiada fe a un equipo en la previa? ¿Una lesión de última hora? ¡No pasa nada! Podés hacer tu predicción del resultado final hasta 1 hora antes de cada partido.
+        {t('predictions.matchesStageDesc')}
       </p>
 
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-100 dark:border-green-900/40 p-4 rounded-xl mb-6 shadow-sm">
         <h4 className="font-bold text-sm text-green-800 dark:text-green-400 mb-3 flex items-center gap-2">
-          <Trophy className="w-4 h-4" /> Sistema de Puntos
+          <Trophy className="w-4 h-4" /> {t('predictions.pointsSystem')}
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-white/80 dark:bg-gray-900/80 border border-green-100 dark:border-green-900/40 p-3 rounded-lg flex items-start gap-3 shadow-sm transition-colors hover:bg-white dark:hover:bg-gray-900">
-             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 Punto</div>
+             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 {t('predictions.point')}</div>
              <div className="text-sm">
-               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5">Resultado</span>
-               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">Acertando quién gana el partido o si hay empate.</p>
+               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5">{t('predictions.result')}</span>
+               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">{t('predictions.resultDesc')}</p>
              </div>
           </div>
           <div className="bg-white/80 dark:bg-gray-900/80 border border-green-100 dark:border-green-900/40 p-3 rounded-lg flex items-start gap-3 shadow-sm transition-colors hover:bg-white dark:hover:bg-gray-900 relative overflow-hidden">
-             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 Punto</div>
+             <div className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 font-black px-2.5 py-1 rounded-md text-xs mt-0.5 whitespace-nowrap shadow-sm">+1 {t('predictions.point')}</div>
              <div className="text-sm relative z-10">
-               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5 flex items-center gap-1">Resultado Exacto</span>
-               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">Acertando <strong className="font-semibold text-gray-700 dark:text-gray-300">además</strong> la cantidad exacta de goles de cada equipo.</p>
+               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-0.5 flex items-center gap-1">{t('predictions.exactResultTitle')}</span>
+               <p className="text-gray-600 dark:text-gray-400 text-xs leading-snug">{t('predictions.exactResultDesc')}</p>
              </div>
           </div>
         </div>
@@ -134,7 +138,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
       <div className="space-y-8">
         {Object.entries(matchesData.reduce((acc, match) => {
           const date = new Date(match.date);
-          const dayString = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+          const dayString = date.toLocaleDateString(currentLang, { weekday: 'long', day: 'numeric', month: 'long' });
           const capitalizedDay = dayString.charAt(0).toUpperCase() + dayString.slice(1);
           if (!acc[capitalizedDay]) acc[capitalizedDay] = [];
           acc[capitalizedDay].push(match);
@@ -147,7 +151,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                    {collapsedDays[day] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                  </div>
                  <h3 className={`text-xl font-bold ${day === todayCapitalized ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                    {day} {day === todayCapitalized && <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">Hoy</span>}
+                    {day} {day === todayCapitalized && <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">{t('predictions.today', 'Hoy')}</span>}
                  </h3>
               </div>
             </div>
@@ -164,7 +168,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                   <Card key={match.id} className={`overflow-hidden ${isMatchLocked ? 'opacity-75 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                     <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-200 font-medium">
-                        {matchDate.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        {matchDate.toLocaleString(currentLang, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {isMatchLocked && <Lock className="w-3 h-3 text-gray-400" />}
                     </CardHeader>
@@ -249,7 +253,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             onClick={() => handleMatchChange(match.id, 'outcome', 'A')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
-                            Gana Local
+                            {t('predictions.homeWin', 'Gana Local')}
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
                             <span className="text-xs text-gray-500 mt-1 font-medium">
@@ -264,7 +268,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             onClick={() => handleMatchChange(match.id, 'outcome', 'DRAW')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
-                            Empate
+                            {t('predictions.tie', 'Empate')}
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
                             <span className="text-xs text-gray-500 mt-1 font-medium">
@@ -279,7 +283,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                             onClick={() => handleMatchChange(match.id, 'outcome', 'B')}
                             disabled={locked || (typeof pred.teamA === 'number' && typeof pred.teamB === 'number')}
                           >
-                            Gana Visita
+                            {t('predictions.awayWin', 'Gana Visita')}
                           </Button>
                           {matchStats[match.id] && matchStats[match.id].total > 0 && (
                             <span className="text-xs text-gray-500 mt-1 font-medium">
