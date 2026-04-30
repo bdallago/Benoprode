@@ -164,7 +164,7 @@ export default function Dashboard({ user }: { user: User }) {
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold bg-white/20 text-white backdrop-blur-sm`}>
-                  {t('profile.rank', 'Nivel')}: {t(`gamification.levels.${userLevel.id}`, userLevel.name)}
+                  {t('profile.rank', 'Nivel') as string}: {t(`gamification.levels.${userLevel.id}`, userLevel.name) as string}
                 </span>
                 {rankBadges.map((badge, index) => (
                   <span key={index} className={`px-4 py-1.5 rounded-full text-sm font-bold backdrop-blur-sm shadow-sm ${badge.className}`}>
@@ -205,8 +205,8 @@ export default function Dashboard({ user }: { user: User }) {
                       {/* Tooltip */}
                       {activeTooltip === badge.id && (
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl z-50 text-center">
-                          <div className="font-bold text-blue-300 mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name)}</div>
-                          <div className="text-gray-300 text-xs">{t(`gamification.badges.${badge.id}.description`, badge.description)}</div>
+                          <div className="font-bold text-blue-300 mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name) as string}</div>
+                          <div className="text-gray-300 text-xs">{t(`gamification.badges.${badge.id}.description`, badge.description) as string}</div>
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                         </div>
                       )}
@@ -239,8 +239,8 @@ export default function Dashboard({ user }: { user: User }) {
                           {isSecret ? <span className="text-gray-500 font-bold">?</span> : badge.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? t('dashboard.mysteryMedal', 'Medalla misteriosa') : t(`gamification.badges.${badge.id}.name`, badge.name)}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') : t(`gamification.badges.${badge.id}.description`, badge.description)}</p>
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? t('dashboard.mysteryMedal', 'Medalla misteriosa') as string : t(`gamification.badges.${badge.id}.name`, badge.name) as string}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') as string : t(`gamification.badges.${badge.id}.description`, badge.description) as string}</p>
                         </div>
                       </div>
                     );
@@ -297,8 +297,8 @@ export default function Dashboard({ user }: { user: User }) {
                   </div>
                 );
                 
-                const displayName = isSecretAndNotEarned ? t('dashboard.mysteryMedal', 'Medalla misteriosa') : t(`gamification.badges.${badge.id}.name`, badge.name);
-                const displayDesc = isSecretAndNotEarned ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') : t(`gamification.badges.${badge.id}.description`, badge.description);
+                const displayName = isSecretAndNotEarned ? t('dashboard.mysteryMedal', 'Medalla misteriosa') as string : t(`gamification.badges.${badge.id}.name`, badge.name) as string;
+                const displayDesc = isSecretAndNotEarned ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') as string : t(`gamification.badges.${badge.id}.description`, badge.description) as string;
 
                 return (
                   <div key={badge.id} className={`flex items-start gap-4 p-5 min-h-[140px] rounded-xl border ${isEarned ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70'}`}>

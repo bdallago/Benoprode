@@ -372,7 +372,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{profileData.displayName}</h1>
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${level.bg} ${level.color}`}>
-                  {t(`gamification.levels.${level.id}`, level.name)}
+                  {t(`gamification.levels.${level.id}`, level.name) as string}
                 </span>
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-200">
                   {profileData.totalPoints || 0} pts
@@ -494,13 +494,13 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 {badges.map((badge: any) => (
                   <div key={badge.id} className="relative group bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
                     <span className="text-4xl hover:scale-110 transition-transform">{badge.icon}</span>
-                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{t(`gamification.badges.${badge.id}.name`, badge.name)}</span>
+                    <span className="font-bold text-sm text-gray-800 dark:text-gray-200">{t(`gamification.badges.${badge.id}.name`, badge.name) as string}</span>
                     
                     {/* Tooltip that shows on click/mobile */}
                     {activeTooltip === badge.id && (
                       <div className="absolute -bottom-16 sm:-bottom-14 left-1/2 -translate-x-1/2 w-48 bg-gray-900 text-white text-xs p-2 rounded shadow-xl z-20 pointer-events-none">
-                        <div className="font-bold mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name)}</div>
-                        {t(`gamification.badges.${badge.id}.description`, badge.description)}
+                        <div className="font-bold mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name) as string}</div>
+                        {t(`gamification.badges.${badge.id}.description`, badge.description) as string}
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
                       </div>
                     )}
