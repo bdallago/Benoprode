@@ -95,7 +95,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
     try {
       if (showFriendsOnly) {
         if (friends.size === 0) {
-          const fetchedPlayers = [];
+          const fetchedPlayers: any[] = [];
           if (currentUser?.uid) {
             const meQ = await getDoc(doc(db, "users", currentUser.uid));
             if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
@@ -107,7 +107,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
         }
         
         const friendsArr = Array.from(friends);
-        const fetchedPlayers = [];
+        const fetchedPlayers: any[] = [];
         
         // chunk fetch
         for (let i = 0; i < friendsArr.length; i += 10) {
