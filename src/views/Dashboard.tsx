@@ -174,7 +174,7 @@ export default function Dashboard({ user }: { user: User }) {
       { text: t('dashboard.facts.noMatches', "El 88% de la comunidad predice que no jugará nadie hoy. ¡Se viene pronto!"), link: "/predictions" }
     ];
 
-    const facts = [];
+    const facts: {text: string, link: string}[] = [];
 
     upcomingMatches.forEach(match => {
       const matchStat = communityStats[match.id];
