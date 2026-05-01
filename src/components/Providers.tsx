@@ -207,11 +207,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
 
   useEffect(() => {
+    if (!user) return;
     const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
       setGlobalLeagues(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsubscribeLeagues();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
