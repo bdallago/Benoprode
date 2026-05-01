@@ -17,13 +17,14 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  globalLeagues: any[];
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false });
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAdmin: false, globalLeagues: [] });
 
 export const useAuth = () => useContext(AuthContext);
 
-function GlobalBadgeListener({ user }: { user: User }) {
+function GlobalBadgeListener({ user, globalLeagues }: { user: User, globalLeagues: any[] }) {
   const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
   const [currentBadge, setCurrentBadge] = useState<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -44,11 +45,10 @@ function GlobalBadgeListener({ user }: { user: User }) {
     let hasSavedPredictions = false;
     let lockedEarly = false;
     let userData: any = null;
-    let leaguesData: any[] = [];
 
     const checkBadges = () => {
       // We need userStats here. Let's create a dummy one based on what we have
-      const userLeagues = leaguesData.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
+      const userLeagues = globalLeagues.filter((l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid);
       const inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
       const inPrivateLeague = userLeagues.length > 0;
 
@@ -100,11 +100,6 @@ function GlobalBadgeListener({ user }: { user: User }) {
       }
     });
 
-    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
-      leaguesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      checkBadges();
-    });
-
     const unsubscribePredictions = onSnapshot(doc(db, "predictions", user.uid), (docSnap) => {
       if (docSnap.exists() && userData) {
         const data = docSnap.data();
@@ -138,10 +133,9 @@ function GlobalBadgeListener({ user }: { user: User }) {
 
     return () => {
       unsubscribeUser();
-      unsubscribeLeagues();
       unsubscribePredictions();
     };
-  }, [user]);
+  }, [user, globalLeagues]);
 
   // Effect 1: Process the queue
   useEffect(() => {
@@ -205,11 +199,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [globalLeagues, setGlobalLeagues] = useState<any[]>([]);
   
   const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useTheme();
+
+  useEffect(() => {
+    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
+      setGlobalLeagues(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribeLeagues();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -339,10 +341,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-      <AuthContext.Provider value={{ user, loading, isAdmin }}>
+      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues }}>
         <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
-          {user && <GlobalBadgeListener user={user} />}
+          {user && <GlobalBadgeListener user={user} globalLeagues={globalLeagues} />}
           <main className="container mx-auto px-4 py-8 flex-grow">
             {children}
           </main>

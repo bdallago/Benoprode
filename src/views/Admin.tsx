@@ -406,6 +406,11 @@ export default function Admin() {
       }, { merge: true });
       
       setMessage({ type: 'success', text: t('admin.messages.saveSuccess') });
+      
+      // Simular comportamiento de Cloud Function (onWrite) para calcular puntos
+      // en tiempo real apenas llega un resultado nuevo de manera manual o automática
+      calculatePoints(); 
+
     } catch (error) {
       console.error("Error saving results:", error);
       setMessage({ type: 'error', text: t('admin.messages.saveError') });

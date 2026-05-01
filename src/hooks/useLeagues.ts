@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc,
 import { db } from "../firebase";
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "../components/Providers";
 
 export interface Player {
   uid: string;
@@ -24,6 +25,7 @@ export interface League {
 export function useLeagues(userId: string) {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
+  const { globalLeagues } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,60 +88,54 @@ export function useLeagues(userId: string) {
   }, [JSON.stringify(selectedLeague?.members)]); 
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !globalLeagues) return;
 
-    const unsubscribeLeagues = onSnapshot(collection(db, "leagues"), (snapshot) => {
-      const leaguesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as League));
-      setLeagues(leaguesData);
-      
-      // Update selected league if it exists to keep members list in sync
-      if (selectedLeague) {
-        const updated = leaguesData.find(l => l.id === selectedLeague.id);
-        if (updated && JSON.stringify(updated.members) !== JSON.stringify(selectedLeague.members)) {
-          setSelectedLeague(updated);
-        }
+    const leaguesData = globalLeagues as League[];
+    setLeagues(leaguesData);
+    
+    // Update selected league if it exists to keep members list in sync
+    if (selectedLeague) {
+      const updated = leaguesData.find(l => l.id === selectedLeague.id);
+      if (updated && JSON.stringify(updated.members) !== JSON.stringify(selectedLeague.members)) {
+        setSelectedLeague(updated);
       }
-      
-      // Handle auto-join via URL or Hash
-      let leagueId = searchParams?.get('league');
-      let inviter = searchParams?.get('inviter') || t('leagues.aPlayer');
-      
-      if (!leagueId && typeof window !== 'undefined' && window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
-        leagueId = hashParams.get('league');
-        if (hashParams.has('inviter')) {
-          inviter = hashParams.get('inviter') || t('leagues.aPlayer');
-        }
+    }
+    
+    // Handle auto-join via URL or Hash
+    let leagueId = searchParams?.get('league');
+    let inviter = searchParams?.get('inviter') || t('leagues.aPlayer');
+    
+    if (!leagueId && typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+      leagueId = hashParams.get('league');
+      if (hashParams.has('inviter')) {
+        inviter = hashParams.get('inviter') || t('leagues.aPlayer');
       }
+    }
 
-      if (inviter && inviter !== t('leagues.aPlayer') && typeof window !== 'undefined') {
-        localStorage.setItem('referralId', inviter);
-      }
+    if (inviter && inviter !== t('leagues.aPlayer') && typeof window !== 'undefined') {
+      localStorage.setItem('referralId', inviter);
+    }
 
-      if (leagueId) {
-        const league = leaguesData.find((l: any) => l.id === leagueId);
-        if (league) {
-          if (!league.members.includes(userId)) {
-            setPendingInvitation({ league, inviter });
-            setLoading(false);
-          } else {
-            if (typeof window !== 'undefined') {
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }
-            setSelectedLeague(league);
-          }
+    if (leagueId) {
+      const league = leaguesData.find((l: any) => l.id === leagueId);
+      if (league) {
+        if (!league.members.includes(userId)) {
+          setPendingInvitation({ league, inviter });
+          setLoading(false);
         } else {
-           setLoading(false);
+          if (typeof window !== 'undefined') {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          setSelectedLeague(league);
         }
       } else {
-        setLoading(false);
+         setLoading(false);
       }
-    });
-
-    return () => {
-      unsubscribeLeagues();
-    };
-  }, [userId, searchParams, t, !!selectedLeague]);
+    } else {
+      setLoading(false);
+    }
+  }, [userId, searchParams, t, !!selectedLeague, globalLeagues]);
 
   const createLeague = async (name: string, isPublic: boolean) => {
     const newLeague = {

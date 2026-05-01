@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, limit, getDocs, startAfter, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, startAfter, where, addDoc, serverTimestamp, documentId, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check } from 'lucide-react';
+import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   
   // States to track sent requests in this session to prevent double-clicks
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
@@ -92,6 +93,43 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   const fetchPage = useCallback(async (dir: 'next' | 'prev' | 'first' | 'restore') => {
     setLoading(true);
     try {
+      if (showFriendsOnly) {
+        if (friends.size === 0) {
+          const fetchedPlayers = [];
+          if (currentUser?.uid) {
+            const meQ = await getDoc(doc(db, "users", currentUser.uid));
+            if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
+          }
+          setPlayers(fetchedPlayers);
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+        
+        const friendsArr = Array.from(friends);
+        const fetchedPlayers = [];
+        
+        // chunk fetch
+        for (let i = 0; i < friendsArr.length; i += 10) {
+          const chunk = friendsArr.slice(i, i + 10);
+          const chunkQ = query(collection(db, "users"), where(documentId(), "in", chunk));
+          const snap = await getDocs(chunkQ);
+          snap.docs.forEach(doc => fetchedPlayers.push({ ...doc.data(), uid: doc.id }));
+        }
+
+        // fetch current user
+        if (currentUser?.uid) {
+          const meQ = await getDoc(doc(db, "users", currentUser.uid));
+          if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
+        }
+
+        fetchedPlayers.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+        setPlayers(fetchedPlayers);
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
       let q;
       
       if (searchQuery.trim().length > 2) {
@@ -184,7 +222,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, cursors, page]);
+  }, [searchQuery, cursors, page, showFriendsOnly, friends, currentUser]);
 
   const [initialMount, setInitialMount] = useState(true);
 
@@ -198,7 +236,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, initialMount]);
+  }, [searchQuery, initialMount, showFriendsOnly]);
 
   return (
     <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
@@ -208,6 +246,14 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
             <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <Button 
+              variant={showFriendsOnly ? "default" : "outline"}
+              size="sm" 
+              onClick={() => { setShowFriendsOnly(!showFriendsOnly); setPage(0); setCursors([]); }} 
+              className={`w-full sm:w-auto flex items-center gap-2 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : ''}`}
+            >
+               <Users className="w-4 h-4" /> 📌 {t('dashboard.showFriendsOnly', 'Solo mis amigos')}
+            </Button>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -298,7 +344,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
         )}
       </div>
       
-      {!searchQuery && (
+      {!searchQuery && !showFriendsOnly && (
         <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <Button variant="outline" size="sm" onClick={() => fetchPage('prev')} disabled={page === 0 || loading} className="flex items-center gap-1">
             <ChevronLeft className="w-4 h-4" /> {t('dashboard.prevPage', 'Anterior')}

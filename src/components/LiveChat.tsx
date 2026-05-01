@@ -6,7 +6,7 @@ import { Send, AlertTriangle } from 'lucide-react';
 import { TeamFlag } from './Fixture';
 import { useTranslation } from 'react-i18next';
 
-const BAD_WORDS = ['insulto1', 'insulto2', 'racismo1', 'racismo2']; // Placeholder list
+import { checkBadWords } from '../lib/badwords';
 
 export function LiveChat() {
   const { t } = useTranslation();
@@ -69,8 +69,7 @@ export function LiveChat() {
   }, []);
 
   const containsBadWords = (text: string) => {
-    const lowerText = text.toLowerCase();
-    return BAD_WORDS.some(word => lowerText.includes(word));
+    return checkBadWords(text);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { User } from "firebase/auth";
 import { collection, query, orderBy, onSnapshot, doc, getDoc, limit, getCountFromServer, where } from "firebase/firestore";
 import { db } from "../firebase";
@@ -9,7 +9,11 @@ import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { useTranslation } from 'react-i18next';
 import { getUserLevel, getUserBadges, BADGES } from "../lib/gamification";
 import { motion, AnimatePresence } from "framer-motion";
-import { GlobalLeaderboard } from "../components/GlobalLeaderboard";
+import { UpcomingMatches } from "../components/UpcomingMatches";
+import matchesData from '../lib/matches.json';
+import Link from 'next/link';
+import { Button } from '../components/ui/button';
+import { GlobalLeaderboard } from '../components/GlobalLeaderboard';
 
 interface Player {
   uid: string;
@@ -118,6 +122,23 @@ export default function Dashboard({ user }: { user: User }) {
   const userBadgeIds = myData?.earnedBadges || userStats?.earnedBadges || [];
   const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
+  const TIPS = [
+    "¿Sabías que acertar al resultado exacto te da más puntos que solo acertar al ganador?",
+    "Tip: En tu Perfil podés chequear cuáles y cuántas medallas te faltan coleccionar.",
+    "¿Sabías que podés crear Duelos 1v1 con tus amigos en sus perfiles para competir por puntos extra?",
+    "Tip: Usá los Comentarios en vivo en la pestaña de Predicciones para dejar tu opinión o debatir durante los partidos.",
+    "Tip: ¡Compartí tu enlace de referido y recibí medallas cuando tus amigos se sumen al Prode!"
+  ];
+
+  const [currentTip, setCurrentTip] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTip(prev => (prev + 1) % TIPS.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Top 10% / Top 30% Logic
   const percentile = totalPlayers > 1 ? (myRank / totalPlayers) * 100 : 100;
   
@@ -128,9 +149,118 @@ export default function Dashboard({ user }: { user: User }) {
     rankBadges.push({ text: t('dashboard.top30badge', "Top 30% Mundial 🥈"), className: "bg-slate-300/20 text-slate-100 border border-slate-300/50" });
   }
 
+  const [communityStats, setCommunityStats] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    // Fetch global community stats dynamically and in real time
+    const unsubscribe = onSnapshot(doc(db, "statistics", "matches"), (statsSnap) => {
+      if (statsSnap.exists()) {
+        setCommunityStats(statsSnap.data());
+      }
+    }, (err) => {
+      console.error("Error fetching community stats", err);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const COMMUNITY_FACTS = useMemo(() => {
+    const now = new Date();
+    const upcomingMatches = matchesData
+      .filter(m => new Date(m.date) > now)
+      .slice(0, 3);
+    
+    if (upcomingMatches.length === 0) return [
+      { text: t('dashboard.facts.noMatches', "El 88% de la comunidad predice que no jugará nadie hoy. ¡Se viene pronto!"), link: "/predictions" }
+    ];
+
+    const facts = [];
+
+    upcomingMatches.forEach(match => {
+      const matchStat = communityStats[match.id];
+      if (!matchStat || matchStat.total === 0) {
+        facts.push({
+          text: `La comunidad está súper dividida con ${match.teamA} vs ${match.teamB}. ¡Hacé tu predicción y marcá la diferencia!`,
+          link: "/predictions"
+        });
+        return;
+      }
+
+      const total = matchStat.total;
+      const pctA = Math.round((matchStat.A || 0) / total * 100);
+      const pctDRAW = Math.round((matchStat.DRAW || 0) / total * 100);
+      const pctB = Math.round((matchStat.B || 0) / total * 100);
+
+      if (pctA >= 50) {
+        facts.push({
+           text: `El ${pctA}% de la comunidad confía en que gana ${match.teamA} contra ${match.teamB}, ¿vas a ir en contra?`,
+           link: "/predictions"
+        });
+      } else if (pctB >= 50) {
+        facts.push({
+           text: `El ${pctB}% de la comunidad confía en la victoria de ${match.teamB} frente a ${match.teamA}. ¿Te sumás a la minoría?`,
+           link: "/predictions"
+        });
+      } else if (pctDRAW >= 50) {
+        facts.push({
+           text: `Fuerte tendencia al CAUTELOSO: El ${pctDRAW}% votó que hay empate entre ${match.teamA} y ${match.teamB}.`,
+           link: "/predictions"
+        });
+      } else {
+        facts.push({
+           text: `Nadie está seguro hoy: La comunidad no se decide (${pctA}% ${match.teamA}, ${pctB}% ${match.teamB}). ¡Tu voto desempata!`,
+           link: "/predictions"
+        });
+      }
+    });
+
+    return facts;
+  }, [communityStats]);
+
+  
+  const [currentFact, setCurrentFact] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFact(prev => (prev + 1) % COMMUNITY_FACTS.length);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
       <CountdownBanner />
+
+      <motion.div 
+        key={`fact-${currentFact}`}
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 5 }}
+        transition={{ duration: 0.5 }}
+        className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200 dark:border-orange-900/50 rounded-xl px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-left shadow-sm gap-3 sm:gap-4"
+      >
+        <p className="text-sm font-semibold text-orange-900 dark:text-orange-200 flex-1">
+          {COMMUNITY_FACTS[currentFact % COMMUNITY_FACTS.length]?.text}
+        </p>
+        <Link href={COMMUNITY_FACTS[currentFact % COMMUNITY_FACTS.length]?.link || "/predictions"} className="w-full sm:w-auto">
+          <Button variant="default" size="sm" className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white border-transparent shadow-sm h-9 text-xs font-bold whitespace-nowrap">
+            Ir a ponerle la contra
+          </Button>
+        </Link>
+      </motion.div>
+
+      <motion.div 
+        key={`tip-${currentTip}`}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.5 }}
+        className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl px-4 py-3 flex items-center justify-center text-center shadow-sm"
+      >
+        <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+          {TIPS[currentTip]}
+        </p>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -177,79 +307,8 @@ export default function Dashboard({ user }: { user: User }) {
         </motion.div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
-          <CardHeader className="bg-blue-50 dark:bg-blue-900/20 border-b border-gray-100 dark:border-gray-700 pb-4">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 text-blue-900 dark:text-blue-400">
-              <Medal className="w-5 h-5" /> {t('dashboard.yourMedals', 'Tus Medallas')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1">
-                <div className="flex justify-between text-sm mb-2 text-gray-600 dark:text-gray-200 font-medium">
-                  <span>{t('dashboard.medalProgress', 'Progreso de medallas')}</span>
-                  <span>{userBadges.length} de {BADGES.length} ({Math.round((userBadges.length / BADGES.length) * 100)}%)</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-6">
-                  <div className="bg-blue-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${(userBadges.length / BADGES.length) * 100}%` }}></div>
-                </div>
-                
-                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">{t('dashboard.earnedMedals', 'Medallas Obtenidas')}</h3>
-                <div className="flex flex-wrap gap-4">
-                  {userBadges.length > 0 ? userBadges.map((badge: any) => badge && (
-                    <div key={badge.id} className="relative group cursor-pointer" onClick={() => setActiveTooltip(activeTooltip === badge.id ? null : badge.id)}>
-                      <div className="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 flex items-center justify-center text-4xl shadow-sm hover:border-blue-400 dark:hover:border-blue-500 hover:scale-105 transition-all">
-                        {badge.icon}
-                      </div>
-                      {/* Tooltip */}
-                      {activeTooltip === badge.id && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl z-50 text-center">
-                          <div className="font-bold text-blue-300 mb-1">{t(`gamification.badges.${badge.id}.name`, badge.name) as string}</div>
-                          <div className="text-gray-300 text-xs">{t(`gamification.badges.${badge.id}.description`, badge.description) as string}</div>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
-                  )) : (
-                    <p className="text-gray-500 dark:text-gray-200 text-sm italic">{t('dashboard.noMedalsYet', 'Aún no has obtenido ninguna medalla. ¡Participá para ganar la primera!')}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="w-full md:w-80 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start gap-2 mb-4">
-                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">{t('dashboard.allMedals', 'Todas las Medallas')}</h3>
-                  <button 
-                    onClick={() => setIsAllBadgesModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
-                  >
-                    {t('dashboard.viewAllMedals', 'Ver todas las medallas')}
-                  </button>
-                </div>
-                <div 
-                  className="space-y-4 cursor-pointer"
-                  onClick={() => setIsAllBadgesModalOpen(true)}
-                >
-                  {BADGES.filter(b => !userBadgeIds.includes(b.id)).slice(0, 4).map(badge => {
-                    const isSecret = badge.isSecret;
-                    return (
-                      <div key={badge.id} className="flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity">
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-2xl grayscale">
-                          {isSecret ? <span className="text-gray-500 font-bold">?</span> : badge.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{isSecret ? t('dashboard.mysteryMedal', 'Medalla misteriosa') as string : t(`gamification.badges.${badge.id}.name`, badge.name) as string}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">{isSecret ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') as string : t(`gamification.badges.${badge.id}.description`, badge.description) as string}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="flex">
+        <UpcomingMatches user={user} />
       </motion.div>
 
       <div className="space-y-4 leaderboard-container">
@@ -270,54 +329,6 @@ export default function Dashboard({ user }: { user: User }) {
           userPoints={selectedUser.points}
           onClose={() => setSelectedUser(null)} 
         />
-      )}
-
-      {isAllBadgesModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700 shrink-0">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <Medal className="w-6 h-6 text-blue-500" /> {t('dashboard.allMedals', 'Todas las Medallas')}
-              </h3>
-              <button onClick={() => setIsAllBadgesModalOpen(false)} className="text-gray-500 dark:text-gray-200 hover:text-gray-700 dark:hover:text-gray-200">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-                 <div className="p-6 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {BADGES.map(badge => {
-                const isEarned = userBadgeIds.includes(badge.id);
-                const isSecretAndNotEarned = badge.isSecret && !isEarned;
-                
-                const displayIcon = isSecretAndNotEarned ? (
-                  <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-2xl font-bold shrink-0">?</div>
-                ) : (
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-3xl shrink-0 ${isEarned ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800' : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 grayscale'}`}>
-                    {badge.icon}
-                  </div>
-                );
-                
-                const displayName = isSecretAndNotEarned ? t('dashboard.mysteryMedal', 'Medalla misteriosa') as string : t(`gamification.badges.${badge.id}.name`, badge.name) as string;
-                const displayDesc = isSecretAndNotEarned ? t('dashboard.mysteryMedalDesc', 'Sabrás su contenido cuando la obtengas') as string : t(`gamification.badges.${badge.id}.description`, badge.description) as string;
-
-                return (
-                  <div key={badge.id} className={`flex items-start gap-4 p-5 min-h-[140px] rounded-xl border ${isEarned ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70'}`}>
-                    {displayIcon}
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`font-bold text-base ${isEarned ? 'text-blue-900 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {displayName}
-                      </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-200 mt-1 line-clamp-3">
-                        {displayDesc}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

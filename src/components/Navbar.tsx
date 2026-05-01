@@ -3,7 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { User, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { Button } from "./ui/button";
-import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette, Newspaper } from "lucide-react";
+import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette, Newspaper, Search } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
@@ -129,8 +129,20 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                 </Button>
               </div>
 
-              {/* Right Side: Notifications & Profile Menu */}
+              {/* Right Side: Search, Notifications & Profile Menu */}
               <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
+                {user && (
+                  <Link href="/profile?tab=friends" passHref className="shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full flex items-center justify-center"
+                      title={t('profile.searchFriends', 'Buscar amigos') as string}
+                    >
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                )}
                 {user && <NotificationCenter user={user} />}
                 {user && (
                   <div className="relative">
