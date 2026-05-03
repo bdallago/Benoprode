@@ -61,11 +61,13 @@ service cloud.firestore {
 
     // Domain Validators
     function isValidUser(data) {
-      return data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
-             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
-             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
-             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 2000)) &&
+      return data.uid is string && data.uid.size() > 0 &&
+             data.displayName is string && data.displayName.size() > 0 &&
+             (!('email' in data) || data.email is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
              (!('lastLogin' in data) || data.lastLogin is string) &&
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('updatedAt' in data) || data.updatedAt is string) &&
              (!('tourCompleted' in data) || data.tourCompleted is bool) &&
              (!('chatWarnings' in data) || data.chatWarnings is number) &&
              (!('isChatBanned' in data) || data.isChatBanned is bool) &&
@@ -108,7 +110,7 @@ service cloud.firestore {
       
       // Create: User can create their own profile. Role must be 'player' unless they are an admin.
       allow create: if isAuthenticated() && isOwner(userId) &&
-                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned']) &&
+                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned']) &&
                     isValidUser(request.resource.data) &&
                     request.resource.data.uid == userId &&
                     ((request.resource.data.role == 'player' && request.resource.data.totalPoints == 0) || isAdmin());
