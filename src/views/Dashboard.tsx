@@ -244,7 +244,7 @@ export default function Dashboard({ user }: { user: User }) {
         </p>
         <Link href={COMMUNITY_FACTS[currentFact % COMMUNITY_FACTS.length]?.link || "/predictions"} className="w-full sm:w-auto">
           <Button variant="default" size="sm" className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white border-transparent shadow-sm h-9 text-xs font-bold whitespace-nowrap">
-            Ir a ponerle la contra
+            Ir a Predicciones
           </Button>
         </Link>
       </motion.div>

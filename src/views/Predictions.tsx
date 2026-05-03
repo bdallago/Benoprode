@@ -5,6 +5,7 @@ import { Save, Lock, Unlock, AlertCircle, CheckCircle2, Share2, Loader2, AlertTr
 import { CountdownBanner } from "../components/CountdownBanner";
 import dynamic from "next/dynamic";
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'next/navigation';
 import { usePredictions } from "../hooks/usePredictions";
 import { GroupStage } from "../components/predictions/GroupStage";
 import { SpecialPredictions } from "../components/predictions/SpecialPredictions";
@@ -18,8 +19,15 @@ const SharePredictionsModal = dynamic(() => import("../components/SharePredictio
 
 export default function Predictions({ user }: { user: User }) {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const [confirmLock, setConfirmLock] = useState(false);
-  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
+  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'groups' || tabParam === 'matches' || tabParam === 'knockout' || tabParam === 'specials') {
+      return tabParam;
+    }
+    return 'groups';
+  });
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const isFirstRender = useRef(true);
   const [isAutoSaving, setIsAutoSaving] = useState(false);

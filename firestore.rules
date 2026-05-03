@@ -191,10 +191,11 @@ service cloud.firestore {
     match /reports/{reportId} {
       // Anyone authenticated can create a report
       allow create: if isAuthenticated() &&
-                    hasOnlyAllowedFields(['message', 'userEmail', 'userName', 'createdAt']) &&
+                    hasOnlyAllowedFields(['message', 'userEmail', 'userName', 'createdAt', 'attachments']) &&
                     request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 5000 &&
                     (!('userEmail' in request.resource.data) || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() < 200)) &&
                     (!('userName' in request.resource.data) || (request.resource.data.userName is string && request.resource.data.userName.size() < 100)) &&
+                    (!('attachments' in request.resource.data) || (request.resource.data.attachments is list && request.resource.data.attachments.size() <= 3)) &&
                     request.resource.data.createdAt is string;
                     
       // Only admins can read, update, delete reports

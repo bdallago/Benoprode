@@ -80,9 +80,9 @@ export function UpcomingMatches({ user }: { user: User }) {
         <CardTitle className="text-lg font-bold flex items-center gap-2 text-blue-900 dark:text-blue-400">
            <Clock className="w-5 h-5" /> Próximos Partidos
         </CardTitle>
-        <Link href="/predictions">
-          <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-bold px-0">
-            Ver fixture completo <ChevronRight className="w-4 h-4 ml-1" />
+        <Link href="/predictions?tab=matches">
+          <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 shadow-sm">
+            Ir a Predicciones individuales <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </Link>
       </CardHeader>
