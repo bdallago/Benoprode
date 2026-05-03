@@ -3,7 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { User, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { Button } from "./ui/button";
-import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette, Newspaper, Search } from "lucide-react";
+import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, User as UserIcon, Palette, Search } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
@@ -101,19 +101,8 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             </div>
               
             <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-2 flex-1 relative">
-              {/* Left Side: News & Theme */}
+              {/* Left Side: Theme */}
               <div className="flex items-center justify-start gap-2 md:gap-3">
-                <Link href="/news" passHref className="shrink-0">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-blue-600/80 hover:bg-blue-500 dark:bg-blue-800/80 dark:hover:bg-blue-700 text-white border-white/40 border-2 shadow-lg hover:scale-105 transition-all flex items-center justify-center h-10 px-3 rounded-full font-bold text-xs gap-1.5"
-                    title="Noticias"
-                  >
-                    <Newspaper className="h-4 w-4" />
-                    {t('navbar.news')}
-                  </Button>
-                </Link>
                 <Button 
                   variant="outline" 
                   size="sm" 

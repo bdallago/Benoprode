@@ -30,9 +30,9 @@ export const SortableItem: React.FC<{ id: string, team: string, index: number, d
       style={style}
       {...(!disabled ? attributes : {})}
       {...(!disabled ? listeners : {})}
-      className={`flex items-center gap-2 p-2 sm:p-3 rounded-md border transition-colors duration-200 touch-none ${
+      className={`flex items-center gap-2 p-2 sm:p-3 rounded-md border transition-[background-color,border-color,box-shadow] duration-200 ${
         isDragging 
-          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800' 
+          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 shadow-xl ring-2 ring-blue-200 dark:ring-blue-800 scale-[1.03] z-50' 
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
       } ${
         disabled 
