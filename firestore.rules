@@ -337,16 +337,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ===============================================================
-    // Collection: global_content
-    // ===============================================================
-    match /global_content/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && docId == 'news' &&
-                   hasOnlyAllowedFields(['cacheHour', 'data', 'updatedAt']) &&
-                   request.resource.data.cacheHour is string &&
-                   request.resource.data.data is map;
-    }
 
     // ===============================================================
     // Collection: statistics

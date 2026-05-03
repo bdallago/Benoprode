@@ -47,7 +47,7 @@
     "profileShort": "Perfil",
     "admin": "Admin",
     "settings": "Ajustes",
-    "news": "Notícias",
+
     "logout": "Sair"
   },
   "dashboard": {
@@ -604,15 +604,7 @@
     "groupComplete": "Grupo Completo",
     "position": "Posição"
   },
-  "news": {
-    "title": "Últimas Notícias",
-    "desc": "Informações relevantes para seus palpites.",
-    "modifyPredictions": "Modificar meus palpites",
-    "readMore": "Ler artigo completo",
-    "on": "em",
-    "noNews": "Não há notícias relevantes no momento.",
-    "notTranslate": "As notícias são mostradas em seu idioma original."
-  },
+
   "landing": {
     "subtitle": "Mostre o quanto sabe de futebol. Jogue o bolão da Copa do Mundo 2026, crie ligas com amigos e compita para ser o melhor.",
     "loginWithGoogle": "Entrar com o Google",

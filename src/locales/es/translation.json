@@ -16,7 +16,7 @@
     "profileShort": "Perfil",
     "admin": "Admin",
     "settings": "Ajustes",
-    "news": "Noticias",
+
     "logout": "Cerrar sesión"
   },
   "dashboard": {
@@ -676,15 +676,7 @@
     "groupComplete": "Grupo Completo",
     "position": "Posición"
   },
-  "news": {
-    "title": "Últimas Noticias",
-    "desc": "Información relevante para tus predicciones.",
-    "modifyPredictions": "Modificar mis predicciones",
-    "readMore": "Leer artículo completo",
-    "on": "en",
-    "noNews": "No hay noticias relevantes en este momento.",
-    "notTranslate": "Las noticias se muestran en su idioma original."
-  },
+
   "landing": {
     "subtitle": "Demostrá cuánto sabés de fútbol. Jugá al prode del Mundial 2026, creá ligas con amigos y competí por ser el mejor pronosticador.",
     "loginWithGoogle": "Ingresar con Google",

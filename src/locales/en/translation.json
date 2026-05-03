@@ -16,7 +16,7 @@
     "profileShort": "Profile",
     "admin": "Admin",
     "settings": "Settings",
-    "news": "News",
+
     "logout": "Log out"
   },
   "dashboard": {
@@ -676,15 +676,7 @@
     "groupComplete": "Complete Group",
     "position": "Position"
   },
-  "news": {
-    "title": "Latest News",
-    "desc": "Relevant info for your predictions.",
-    "modifyPredictions": "Modify my predictions",
-    "readMore": "Read full article",
-    "on": "on",
-    "noNews": "No relevant news at the moment.",
-    "notTranslate": "News are shown in their original language."
-  },
+
   "landing": {
     "subtitle": "Show how much you know about football. Play the 2026 World Cup predictor, create leagues with friends, and compete to be the best.",
     "loginWithGoogle": "Sign in with Google",
