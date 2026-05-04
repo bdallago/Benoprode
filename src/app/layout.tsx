@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "../index.css";
 import { Providers } from "../components/Providers";
 import { ThemeProvider } from "../components/ThemeProvider";
@@ -88,6 +89,18 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18107748327"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+
+              gtag('config', 'AW-18107748327');
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.className} overflow-x-hidden`}>
         <script
