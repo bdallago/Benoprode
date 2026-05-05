@@ -1149,7 +1149,18 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
+                  {[...users].sort((a: any, b: any) => {
+                    const getCreatedTime = (u: any) => {
+                      if (u.createdAt) {
+                        if (typeof u.createdAt === 'string') return new Date(u.createdAt).getTime();
+                        if (u.createdAt.toDate) return u.createdAt.toDate().getTime();
+                        return u.createdAt;
+                      }
+                      if (u.lastLogin) return new Date(u.lastLogin).getTime();
+                      return 0;
+                    };
+                    return getCreatedTime(b) - getCreatedTime(a);
+                  }).map((u) => (
                     <tr key={u.uid} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
                         {u.photoURL ? (

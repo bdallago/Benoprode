@@ -75,7 +75,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
             </Link>
             
             <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 flex-1 px-1">
-              <Link href="/" className={getLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
+              <Link href="/inicio" className={getLinkStyle("/inicio", "bg-red-500 border-red-700", "bg-red-600")}>
                 <Home className="h-4 w-4 shrink-0" /> <span>{t('navbar.dashboard', 'Inicio')}</span>
               </Link>
               <Link href="/instructions" className={getLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>
@@ -174,7 +174,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
       
       {/* Mobile nav (Bottom) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center items-center p-1 bg-blue-950 dark:bg-gray-900 border-t border-blue-800 dark:border-gray-800 transition-colors duration-200 pb-safe gap-0.5 h-16">
-        <Link href="/" className={getMobileLinkStyle("/", "bg-red-500 border-red-700", "bg-red-600")}>
+        <Link href="/inicio" className={getMobileLinkStyle("/inicio", "bg-red-500 border-red-700", "bg-red-600")}>
           <Home className="h-4 w-4 mb-0.5" /> <span className="text-[9px] leading-tight">{t('navbar.dashboard', 'Inicio')}</span>
         </Link>
         <Link href="/instructions" className={getMobileLinkStyle("/instructions", "bg-blue-500 border-blue-700", "bg-blue-600")}>

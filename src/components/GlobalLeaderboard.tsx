@@ -13,6 +13,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'points' | 'newest'>('points');
   
   // States to track sent requests in this session to prevent double-clicks
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
@@ -141,17 +142,20 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           limit(25)
         );
       } else {
+        const sortField = sortBy === 'newest' ? 'createdAt' : 'totalPoints';
+        const sessionKey = sortBy === 'newest' ? 'globalLeaderboardPageNewest' : 'globalLeaderboardPage';
+
         if (dir === 'restore') {
           // Attempt to restore page
           let savedPage = 0;
           try {
-            const saved = sessionStorage.getItem('globalLeaderboardPage');
+            const saved = sessionStorage.getItem(sessionKey);
             if (saved) savedPage = parseInt(saved, 10);
           } catch {}
           
           if (savedPage > 0) {
             const neededSize = (savedPage + 1) * 25;
-            const bigQ = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(neededSize));
+            const bigQ = query(collection(db, "users"), orderBy(sortField, "desc"), limit(neededSize));
             const snap = await getDocs(bigQ);
             
             const startIdx = savedPage * 25;
@@ -170,7 +174,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
               return;
             } else {
               // fallback to page 0 if not enough data
-              sessionStorage.removeItem('globalLeaderboardPage');
+              sessionStorage.removeItem(sessionKey);
               dir = 'first';
             }
           } else {
@@ -179,25 +183,25 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
         }
         
         if (dir === 'first') {
-          q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(25));
+          q = query(collection(db, "users"), orderBy(sortField, "desc"), limit(25));
           setCursors([]);
           setPage(0);
-          try { sessionStorage.setItem('globalLeaderboardPage', '0'); } catch {}
+          try { sessionStorage.setItem(sessionKey, '0'); } catch {}
         } else if (dir === 'next') {
           const lastVisible = cursors[cursors.length - 1];
-          q = query(collection(db, "users"), orderBy("totalPoints", "desc"), startAfter(lastVisible), limit(25));
-          setPage(p => { const newP = p + 1; try { sessionStorage.setItem('globalLeaderboardPage', newP.toString()); } catch {} return newP; });
+          q = query(collection(db, "users"), orderBy(sortField, "desc"), startAfter(lastVisible), limit(25));
+          setPage(p => { const newP = p + 1; try { sessionStorage.setItem(sessionKey, newP.toString()); } catch {} return newP; });
         } else if (dir === 'prev') {
           if (page - 2 < 0) {
-            q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(25));
+            q = query(collection(db, "users"), orderBy(sortField, "desc"), limit(25));
             setCursors([]);
             setPage(0);
-            try { sessionStorage.setItem('globalLeaderboardPage', '0'); } catch {}
+            try { sessionStorage.setItem(sessionKey, '0'); } catch {}
           } else {
             const cursor = cursors[page - 2];
-            q = query(collection(db, "users"), orderBy("totalPoints", "desc"), startAfter(cursor), limit(25));
+            q = query(collection(db, "users"), orderBy(sortField, "desc"), startAfter(cursor), limit(25));
             setCursors(prev => prev.slice(0, prev.length - 1));
-            setPage(p => { const newP = p - 1; try { sessionStorage.setItem('globalLeaderboardPage', newP.toString()); } catch {} return newP; });
+            setPage(p => { const newP = p - 1; try { sessionStorage.setItem(sessionKey, newP.toString()); } catch {} return newP; });
           }
         }
       }
@@ -236,7 +240,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, initialMount, showFriendsOnly]);
+  }, [searchQuery, initialMount, showFriendsOnly, sortBy]);
 
   return (
     <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
@@ -245,16 +249,34 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-400 text-xl m-0">
             <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+            <div className="flex flex-row items-center gap-2 w-full sm:w-auto bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <Button
+                variant={sortBy === 'points' && !showFriendsOnly ? "default" : "ghost"}
+                size="sm"
+                onClick={() => { setSortBy('points'); setShowFriendsOnly(false); setPage(0); setCursors([]); }}
+                className={`flex-1 sm:flex-none ${sortBy === 'points' && !showFriendsOnly ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
+              >
+                Top
+              </Button>
+              <Button
+                variant={sortBy === 'newest' && !showFriendsOnly ? "default" : "ghost"}
+                size="sm"
+                onClick={() => { setSortBy('newest'); setShowFriendsOnly(false); setPage(0); setCursors([]); }}
+                className={`flex-1 sm:flex-none ${sortBy === 'newest' && !showFriendsOnly ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
+              >
+                {t('dashboard.showNewest', 'Los nuevos')}
+              </Button>
+            </div>
             <Button 
               variant={showFriendsOnly ? "default" : "outline"}
               size="sm" 
               onClick={() => { setShowFriendsOnly(!showFriendsOnly); setPage(0); setCursors([]); }} 
               className={`w-full sm:w-auto flex items-center gap-2 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : ''}`}
             >
-               <Users className="w-4 h-4" /> 📌 {t('dashboard.showFriendsOnly', 'Solo mis amigos')}
+               <Users className="w-4 h-4" /> 📌 <span className="hidden sm:inline">{t('dashboard.showFriendsOnly', 'Solo mis amigos')}</span>
             </Button>
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
