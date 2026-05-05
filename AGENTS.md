@@ -7,3 +7,11 @@
 1. Solo responder estrictamente a lo que el usuario pregunta.
 2. No repetir resúmenes de acciones pasadas a menos que sea necesario para la explicación técnica del problema actual.
 3. No buscar contexto en mensajes anteriores a menos que el usuario lo indique explícitamente.
+
+# Contexto Permanente: El Prode de Beno
+El asistente DEBE recordar siempre que "El Prode de Beno" es un juego para el Mundial 2026 con las siguientes características implementadas:
+1. **Core:** Predicción de partidos fase de grupos y eliminatorias.
+2. **Puntuación:** 3 pts resultado exacto, 1 pt empatar/ganador. Puntos extra por posiciones de fase de grupos y equipos que avanzan (Semis, etc.) y preguntas extras.
+3. **Social:** Tiene "Ligas con amigos" (privadas, con código), y "Duelos 1v1" (desafíos directos a otros perfiles).
+4. **Gamificación:** Sistema de Logros/Trofeos (ej: "Constante", "Fiel", "La hora juez", "Jugar mal fue parte de la estrategia"). Leaderboard Global y por Ligas.
+5. **Idioma:** Tonada y jerga Argentina (vos, che, prode, etc).
