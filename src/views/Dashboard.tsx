@@ -39,6 +39,8 @@ import matchesData from "../lib/matches.json";
 import Link from "next/link";
 import { Button } from "../components/ui/button";
 import { GlobalLeaderboard } from "../components/GlobalLeaderboard";
+import { CalendarExportButton } from "../components/CalendarExportButton";
+import { useAuth } from "../components/Providers";
 
 interface Player {
   uid: string;
@@ -50,6 +52,7 @@ interface Player {
 }
 
 export default function Dashboard({ user }: { user: User }) {
+  const { userStats: contextUserStats } = useAuth();
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{
     uid: string;
@@ -74,11 +77,21 @@ export default function Dashboard({ user }: { user: User }) {
   const [exactRank, setExactRank] = useState(0);
 
   useEffect(() => {
+    if (contextUserStats && Object.keys(contextUserStats).length > 0) {
+      setUserStats(contextUserStats);
+      setHasInvitedFriends((contextUserStats.referralsCount || 0) > 0);
+      setIsLeagueCreatorOrMember(contextUserStats.inPrivateLeague || false);
+      setInBenoliga(contextUserStats.inBenoliga || false);
+    }
+  }, [contextUserStats]);
+
+  useEffect(() => {
     // 2. FETCH EXACT RANK AND TOTAL USERS EFFICIENTLY
-    const fetchExactRank = async () => {
+    const fetchExactRank = async (retries = 3) => {
       try {
         const myDoc = await getDoc(doc(db, "users", user.uid));
-        const pts = myDoc.data()?.totalPoints || 0;
+        const data = myDoc.data();
+        const pts = data?.totalPoints || 0;
 
         // 2 parallel queries: Count total users, Count users with MORE points than me
         const [totalSnap, rankSnap] = await Promise.all([
@@ -91,7 +104,12 @@ export default function Dashboard({ user }: { user: User }) {
         setTotalPlayers(totalSnap.data().count);
         setExactRank(rankSnap.data().count + 1); // If 5 people have more points, I am rank 6
       } catch (error) {
-        console.error("Error calculating exact rank", error);
+        if (retries > 0) {
+          console.warn(`Retrying rank fetch... (${retries} left)`);
+          setTimeout(() => fetchExactRank(retries - 1), 2000);
+        } else {
+          console.error("Error calculating exact rank", error);
+        }
       } finally {
         setLoading(false);
       }
@@ -99,23 +117,8 @@ export default function Dashboard({ user }: { user: User }) {
 
     fetchExactRank();
 
-    // Fetch user document for referrals and stats
-    const unsubscribeUser = onSnapshot(
-      doc(db, "users", user.uid),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data() as any;
-          setUserStats((prev: any) => ({ ...prev, ...data }));
-          setHasInvitedFriends((data.referralsCount || 0) > 0);
-          setIsLeagueCreatorOrMember(data.inPrivateLeague || false);
-          setInBenoliga(data.inBenoliga || false);
-        }
-      },
-    );
-
     // Fetch user predictions and actual results to check for perfect group
-    // This is a simplified check. A real implementation might require a cloud function to evaluate this efficiently.
-    const checkPerfectGroup = async () => {
+    const checkPerfectGroup = async (retries = 2) => {
       try {
         const [predsSnap, resultsSnap] = await Promise.all([
           import("firebase/firestore").then((m) =>
@@ -144,14 +147,18 @@ export default function Dashboard({ user }: { user: User }) {
           setHasPerfectGroup(perfect);
         }
       } catch (error) {
-        console.error("Error checking perfect group:", error);
+        if (retries > 0) {
+          setTimeout(() => checkPerfectGroup(retries - 1), 3000);
+        } else {
+          console.error("Error checking perfect group:", error);
+        }
       }
     };
 
     checkPerfectGroup();
 
     return () => {
-      unsubscribeUser();
+      // nothing specialized to clean up here for user doc as it's now global
     };
   }, [user.uid]);
 
@@ -289,7 +296,12 @@ export default function Dashboard({ user }: { user: User }) {
 
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
-      <CountdownBanner />
+      <div className="mb-0">
+        <CountdownBanner />
+        <div className="flex justify-center sm:justify-end mt-4 mb-4 relative z-10">
+          <CalendarExportButton />
+        </div>
+      </div>
 
       <motion.div
         key={`fact-${currentFact}`}

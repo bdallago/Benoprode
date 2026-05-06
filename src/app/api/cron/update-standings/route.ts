@@ -1,43 +1,7 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
-import { initializeApp, applicationDefault, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import fs from "fs";
-import path from "path";
+import { getAdminDb } from "@/lib/firebase-admin";
 import { GROUPS } from "../../../../data";
-
-// Initialize Firebase Admin
-function getDb() {
-  if (getApps().length === 0) {
-    const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-    let credential;
-    
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      credential = require("firebase-admin/app").cert(serviceAccount);
-    } else {
-      credential = applicationDefault();
-    }
-
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      const app = initializeApp({
-        credential,
-        projectId: config.projectId,
-      });
-      return getFirestore(app, config.firestoreDatabaseId);
-    }
-  } else {
-    const app = getApps()[0];
-    const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      return getFirestore(app, config.firestoreDatabaseId);
-    }
-    return getFirestore(app);
-  }
-  return null;
-}
 
 const TEAM_NAME_MAPPING: Record<string, string> = {
   "Korea Republic": "South Korea",
@@ -287,7 +251,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const db = getDb();
+  const db = getAdminDb();
   if (!db || !process.env.API_FOOTBALL_KEY) {
     return NextResponse.json({ error: "Database or API key not configured" }, { status: 500 });
   }

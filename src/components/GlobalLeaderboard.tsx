@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, query, orderBy, limit, getDocs, startAfter, where, addDoc, serverTimestamp, documentId, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
@@ -10,10 +10,10 @@ import { useTranslation } from 'react-i18next';
 export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: User, onUserClick?: (u: any) => void }) {
   const { t } = useTranslation();
   const [players, setPlayers] = useState<any[]>([]);
+  const allPlayersCache = useRef<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'points' | 'newest'>('points');
   
   // States to track sent requests in this session to prevent double-clicks
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
@@ -52,9 +52,11 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   }, [currentUser]);
 
   // Pagination state
-  const [cursors, setCursors] = useState<any[]>([]); 
   const [page, setPage] = useState(0); 
   const [hasMore, setHasMore] = useState(true);
+  const [cursors, setCursors] = useState<any[]>([]);
+  const fetchingRef = useRef(false);
+  const lastPageRef = useRef(-1);
 
   const handleAddFriend = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
@@ -92,47 +94,119 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
   };
 
   const fetchPage = useCallback(async (dir: 'next' | 'prev' | 'first' | 'restore') => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    
+    const sessionKey = 'globalLeaderboardPage';
+    let targetPage = page;
+    
+    if (dir === 'first') {
+      targetPage = 0;
+    } else if (dir === 'next') {
+      targetPage = page + 1;
+    } else if (dir === 'prev') {
+      targetPage = Math.max(0, page - 1);
+    } else if (dir === 'restore') {
+      try {
+        const saved = sessionStorage.getItem(sessionKey);
+        targetPage = saved ? parseInt(saved, 10) : 0;
+      } catch {
+        targetPage = 0;
+      }
+    }
+
+    // If it's the same page we already have and not a forced restore/first, skip
+    if (dir !== 'restore' && dir !== 'first' && targetPage === lastPageRef.current && players.length > 0) {
+      fetchingRef.current = false;
+      return;
+    }
+
     setLoading(true);
+
     try {
-      if (showFriendsOnly) {
-        if (friends.size === 0) {
-          const fetchedPlayers: any[] = [];
-          if (currentUser?.uid) {
-            const meQ = await getDoc(doc(db, "users", currentUser.uid));
-            if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
+      // 1. Try Cached API Data
+      if (!searchQuery.trim() && !showFriendsOnly) {
+        try {
+          let playersData: any[] = allPlayersCache.current || [];
+          
+          if (playersData.length === 0) {
+            const res = await fetch('/api/leaderboard');
+            if (res.ok) {
+              const data = await res.json();
+              playersData = data.players || [];
+              allPlayersCache.current = playersData;
+            }
           }
-          setPlayers(fetchedPlayers);
-          setHasMore(false);
-          setLoading(false);
-          return;
+
+          if (playersData.length > 0) {
+            // deduplicate all full data once
+            const uniqueMap = new Map();
+            playersData.forEach((p: any) => { if (p && p.uid) uniqueMap.set(p.uid, p); });
+            const allUnique = Array.from(uniqueMap.values());
+            
+            const start = targetPage * 25;
+            const end = start + 25;
+            const pagePlayers = allUnique.slice(start, end);
+
+            console.log(`Leaderboard Paging: target=${targetPage}, from=${start}, count=${pagePlayers.length}, totalUnique=${allUnique.length}`);
+            
+            if (pagePlayers.length > 0) {
+              console.log(`Leaderboard Success (Local Paging): Page=${targetPage}, from=${start}, count=${pagePlayers.length}, totalUnique=${allUnique.length}`);
+              setPlayers(pagePlayers);
+              setPage(targetPage);
+              lastPageRef.current = targetPage;
+              setHasMore(allUnique.length > end);
+              try { sessionStorage.setItem(sessionKey, targetPage.toString()); } catch {}
+              setLoading(false);
+              fetchingRef.current = false;
+              return;
+            } else if (targetPage === 0 && allUnique.length > 0) {
+              // This is p0 and it has players
+              setPlayers(allUnique.slice(0, 25));
+              setPage(0);
+              lastPageRef.current = 0;
+              setHasMore(allUnique.length > 25);
+              setLoading(false);
+              fetchingRef.current = false;
+              return;
+            } else if (allUnique.length > 0) {
+              setHasMore(false);
+            }
+          }
+        } catch (e) {
+          console.error("Leaderboard fetch error:", e);
         }
-        
+      }
+
+      // 2. Friends Filter
+      if (showFriendsOnly) {
+        // ... (friends logic looks mostly okay)
+        // [omitted for brevity, keep existing friends logic]
         const friendsArr = Array.from(friends);
         const fetchedPlayers: any[] = [];
-        
-        // chunk fetch
         for (let i = 0; i < friendsArr.length; i += 10) {
           const chunk = friendsArr.slice(i, i + 10);
           const chunkQ = query(collection(db, "users"), where(documentId(), "in", chunk));
           const snap = await getDocs(chunkQ);
           snap.docs.forEach(doc => fetchedPlayers.push({ ...doc.data(), uid: doc.id }));
         }
-
-        // fetch current user
         if (currentUser?.uid) {
           const meQ = await getDoc(doc(db, "users", currentUser.uid));
           if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
         }
-
         fetchedPlayers.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
-        setPlayers(fetchedPlayers);
+        const uniqueMap = new Map();
+        fetchedPlayers.forEach(p => uniqueMap.set(p.uid, p));
+        setPlayers(Array.from(uniqueMap.values()));
         setHasMore(false);
+        setPage(0);
         setLoading(false);
+        fetchingRef.current = false;
         return;
       }
 
+      // 3. Fallback Live Queries (for search or API failure)
       let q;
-      
       if (searchQuery.trim().length > 2) {
         const searchTerm = searchQuery.trim();
         q = query(
@@ -141,106 +215,73 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           where("displayName", "<=", searchTerm + '\uf8ff'),
           limit(25)
         );
+        setPage(0);
+        setHasMore(false);
       } else {
-        const sortField = sortBy === 'newest' ? 'createdAt' : 'totalPoints';
-        const sessionKey = sortBy === 'newest' ? 'globalLeaderboardPageNewest' : 'globalLeaderboardPage';
-
-        if (dir === 'restore') {
-          // Attempt to restore page
-          let savedPage = 0;
-          try {
-            const saved = sessionStorage.getItem(sessionKey);
-            if (saved) savedPage = parseInt(saved, 10);
-          } catch {}
-          
-          if (savedPage > 0) {
-            const neededSize = (savedPage + 1) * 25;
-            const bigQ = query(collection(db, "users"), orderBy(sortField, "desc"), limit(neededSize));
-            const snap = await getDocs(bigQ);
-            
-            const startIdx = savedPage * 25;
-            const fetchedPlayers = snap.docs.slice(startIdx, startIdx + 25).map(doc => ({ ...doc.data(), uid: doc.id }));
-            
-            if (fetchedPlayers.length > 0) {
-              setPlayers(fetchedPlayers);
-              const newCursors = [];
-              for (let i = 24; i < snap.docs.length; i += 25) {
-                newCursors.push(snap.docs[i]);
-              }
-              setCursors(newCursors);
-              setPage(savedPage);
-              setHasMore(snap.docs.length === neededSize);
-              setLoading(false);
-              return;
-            } else {
-              // fallback to page 0 if not enough data
-              sessionStorage.removeItem(sessionKey);
-              dir = 'first';
-            }
-          } else {
-             dir = 'first';
-          }
-        }
-        
-        if (dir === 'first') {
-          q = query(collection(db, "users"), orderBy(sortField, "desc"), limit(25));
-          setCursors([]);
-          setPage(0);
-          try { sessionStorage.setItem(sessionKey, '0'); } catch {}
-        } else if (dir === 'next') {
-          const lastVisible = cursors[cursors.length - 1];
-          q = query(collection(db, "users"), orderBy(sortField, "desc"), startAfter(lastVisible), limit(25));
-          setPage(p => { const newP = p + 1; try { sessionStorage.setItem(sessionKey, newP.toString()); } catch {} return newP; });
-        } else if (dir === 'prev') {
-          if (page - 2 < 0) {
-            q = query(collection(db, "users"), orderBy(sortField, "desc"), limit(25));
-            setCursors([]);
-            setPage(0);
-            try { sessionStorage.setItem(sessionKey, '0'); } catch {}
-          } else {
-            const cursor = cursors[page - 2];
-            q = query(collection(db, "users"), orderBy(sortField, "desc"), startAfter(cursor), limit(25));
-            setCursors(prev => prev.slice(0, prev.length - 1));
-            setPage(p => { const newP = p - 1; try { sessionStorage.setItem(sessionKey, newP.toString()); } catch {} return newP; });
-          }
+        // Full manual query paging if API failed
+        if (dir === 'first' || dir === 'restore' || (dir === 'next' && cursors.length === 0)) {
+           q = query(collection(db, "users"), orderBy('totalPoints', "desc"), limit(25));
+           if (dir !== 'restore') setCursors([]);
+           setPage(0);
+        } else if (dir === 'next' && cursors.length > 0) {
+           const lastVisible = cursors[cursors.length - 1];
+           q = query(collection(db, "users"), orderBy('totalPoints', "desc"), startAfter(lastVisible), limit(25));
+           setPage(p => p + 1);
+        } else if (dir === 'prev' && page > 0) {
+           if (page === 1) {
+             q = query(collection(db, "users"), orderBy('totalPoints', "desc"), limit(25));
+             setCursors([]);
+             setPage(0);
+           } else {
+             const prevCursor = cursors[page - 2];
+             q = query(collection(db, "users"), orderBy('totalPoints', "desc"), startAfter(prevCursor), limit(25));
+             setCursors(prev => prev.slice(0, prev.length - 1));
+             setPage(p => p - 1);
+           }
         }
       }
 
       if (q) {
         const snap = await getDocs(q);
-        const fetchedPlayers = snap.docs.map(doc => ({ ...doc.data(), uid: doc.id }));
-        setPlayers(fetchedPlayers);
+        const fetched = snap.docs.map(doc => ({ ...doc.data(), uid: doc.id }));
+        setPlayers(fetched);
         
-        if (!searchQuery.trim().length && (dir === 'next' || dir === 'first')) {
-           const lastVisible = snap.docs[snap.docs.length - 1];
-           if (lastVisible) {
-             if (dir === 'first') setCursors([lastVisible]);
-             else setCursors(prev => [...prev, lastVisible]);
-           }
+        if (!searchQuery && (dir === 'next' || dir === 'first' || dir === 'restore')) {
+          const last = snap.docs[snap.docs.length - 1];
+          if (last) {
+            if (dir === 'next') {
+              setCursors(prev => [...prev, last]);
+            } else {
+              // first or restore (if it was p0)
+              setCursors([last]);
+            }
+          }
         }
-        
         setHasMore(snap.docs.length === 25);
       }
     } catch(e) {
-      console.error(e);
+      console.error("Leaderboard fallback error:", e);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  }, [searchQuery, cursors, page, showFriendsOnly, friends, currentUser]);
+  }, [searchQuery, page, showFriendsOnly, friends, currentUser, cursors, players.length]);
 
   const [initialMount, setInitialMount] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (initialMount && !searchQuery.trim()) {
+      // Si el componente se está montando por primera vez, intentamos restaurar
+      if (initialMount) {
         fetchPage('restore');
         setInitialMount(false);
       } else {
+        // Solo reseteamos a la página 1 si los filtros realmente cambiaron
         fetchPage('first');
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, initialMount, showFriendsOnly, sortBy]);
+  }, [searchQuery, showFriendsOnly]); // Quitamos page de aquí para evitar resets infinitos
 
   return (
     <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
@@ -249,34 +290,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-400 text-xl m-0">
             <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-            <div className="flex flex-row items-center gap-2 w-full sm:w-auto bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-              <Button
-                variant={sortBy === 'points' && !showFriendsOnly ? "default" : "ghost"}
-                size="sm"
-                onClick={() => { setSortBy('points'); setShowFriendsOnly(false); setPage(0); setCursors([]); }}
-                className={`flex-1 sm:flex-none ${sortBy === 'points' && !showFriendsOnly ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
-              >
-                Top
-              </Button>
-              <Button
-                variant={sortBy === 'newest' && !showFriendsOnly ? "default" : "ghost"}
-                size="sm"
-                onClick={() => { setSortBy('newest'); setShowFriendsOnly(false); setPage(0); setCursors([]); }}
-                className={`flex-1 sm:flex-none ${sortBy === 'newest' && !showFriendsOnly ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
-              >
-                {t('dashboard.showNewest', 'Los nuevos')}
-              </Button>
-            </div>
-            <Button 
-              variant={showFriendsOnly ? "default" : "outline"}
-              size="sm" 
-              onClick={() => { setShowFriendsOnly(!showFriendsOnly); setPage(0); setCursors([]); }} 
-              className={`w-full sm:w-auto flex items-center gap-2 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : ''}`}
-            >
-               <Users className="w-4 h-4" /> 📌 <span className="hidden sm:inline">{t('dashboard.showFriendsOnly', 'Solo mis amigos')}</span>
-            </Button>
-            <div className="relative w-full sm:w-48">
+          <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto flex-1 md:justify-end">
+            <div className="relative w-full md:max-w-xs flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -286,9 +301,24 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={() => { setSearchQuery(currentUser.displayName || ''); }} className="w-full flex items-center gap-2">
-               <Target className="w-4 h-4" /> {t('dashboard.findMe', 'Buscarme')}
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                variant={showFriendsOnly ? "default" : "outline"}
+                size="sm" 
+                onClick={() => { setShowFriendsOnly(!showFriendsOnly); setPage(0); setCursors([]); }} 
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : 'bg-white dark:bg-gray-800'}`}
+              >
+                <Users className="w-4 h-4" /> 📌 <span className="sm:inline">{t('dashboard.showFriendsOnly', 'Solo mis amigos')}</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => { setSearchQuery(currentUser.displayName || ''); }} 
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 bg-white dark:bg-gray-800"
+              >
+                <Target className="w-4 h-4" /> <span className="sm:inline">{t('dashboard.findMe', 'Buscarme')}</span>
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -306,57 +336,67 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
               </tr>
             </thead>
             <tbody>
-              {players.length > 0 ? players.map((p, index) => {
-                 const rank = searchQuery ? "-" : (page * 25) + index + 1;
-                 const isMe = p.uid === currentUser.uid;
-                 return (
-                  <tr key={p.uid} onClick={() => onUserClick && onUserClick({ uid: p.uid, name: p.displayName || 'Usuario Anónimo', points: p.totalPoints || 0 })} className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer transition-colors ${isMe ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}>
-                    <td className="py-3 px-4 text-center font-bold text-gray-400">
-                      {rank}
-                    </td>
-                    <td className="py-3 px-4 font-medium flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {p.photoURL ? (
-                          <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full border border-gray-200" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                            {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
-                          </div>
+              {(() => {
+                const seenUids = new Set();
+                const uniquePlayers = players.filter(p => {
+                  if (!p || !p.uid || seenUids.has(p.uid)) return false;
+                  seenUids.add(p.uid);
+                  return true;
+                });
+
+                return uniquePlayers.length > 0 ? uniquePlayers.map((p, index) => {
+                  const rank = searchQuery ? "-" : (page * 25) + index + 1;
+                  const isMe = p.uid === currentUser.uid;
+                  return (
+                    <tr key={p.uid} onClick={() => onUserClick && onUserClick({ uid: p.uid, name: p.displayName || 'Usuario Anónimo', points: p.totalPoints || 0 })} className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer transition-colors ${isMe ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}>
+                      <td className="py-3 px-4 text-center font-bold text-gray-400">
+                        {rank}
+                      </td>
+                      <td className="py-3 px-4 font-medium flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {p.photoURL ? (
+                            <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full border border-gray-200" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                              {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
+                            </div>
+                          )}
+                          <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
+                            {p.displayName || 'Usuario Anónimo'}
+                            {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{t('profile.you', 'Tú')}</span>}
+                          </span>
+                        </div>
+                        
+                        {!isMe && (
+                          friends.has(p.uid) ? (
+                            <div className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                              {t('profile.areFriends', 'Amigos')}
+                            </div>
+                          ) : sentRequests.has(p.uid) ? (
+                            <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
+                              {t('profile.requestSent', 'Solicitud pendiente')}
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                              onClick={(e) => handleAddFriend(e, p.uid)}
+                              title={t('profile.addFriend', 'Añadir amigo')}
+                            >
+                              <UserPlus className="w-5 h-5" />
+                            </Button>
+                          )
                         )}
-                        <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
-                          {p.displayName || 'Usuario Anónimo'}
-                          {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{t('profile.you', 'Tú')}</span>}
-                        </span>
-                      </div>
-                      
-                      {!isMe && (
-                        friends.has(p.uid) ? (
-                          <div className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                            {t('profile.areFriends', 'Amigos')}
-                          </div>
-                        ) : sentRequests.has(p.uid) ? (
-                          <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
-                            {t('profile.requestSent', 'Solicitud pendiente')}
-                          </div>
-                        ) : (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
-                            onClick={(e) => handleAddFriend(e, p.uid)}
-                            title={t('profile.addFriend', 'Añadir amigo')}
-                          >
-                            <UserPlus className="w-5 h-5" />
-                          </Button>
-                        )
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-gray-800 dark:text-gray-200">
-                      {p.totalPoints || 0}
-                    </td>
-                  </tr>
-                 );
-              }) : (
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-gray-800 dark:text-gray-200">
+                        {p.totalPoints || 0}
+                      </td>
+                    </tr>
+                  )
+                }) : null
+              })()}
+              {players.length === 0 && !loading && (
                 <tr>
                   <td colSpan={3} className="py-8 text-center text-gray-500">{t('dashboard.noPlayersFound', 'No se encontraron jugadores.')}</td>
                 </tr>

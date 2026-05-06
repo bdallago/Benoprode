@@ -13,8 +13,23 @@ import {
   updateDoc,
   increment,
   arrayUnion,
+  getDocFromServer,
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
+
+// Mandatory connection test
+async function testFirestoreConnection() {
+  try {
+    // We try to fetch a dummy doc strictly from server to "wake up" the connection
+    await getDocFromServer(doc(db, "system_stats", "connection_test"));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("offline")) {
+      console.warn("Firestore initialization: client is offline.");
+    }
+  }
+}
+
+testFirestoreConnection();
 import { Navbar } from "./Navbar";
 import "../i18n";
 import { useTranslation } from "react-i18next";
@@ -29,6 +44,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   globalLeagues: any[];
+  userStats: any;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -36,6 +52,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   globalLeagues: [],
+  userStats: {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -43,9 +60,11 @@ export const useAuth = () => useContext(AuthContext);
 function GlobalBadgeListener({
   user,
   globalLeagues,
+  userStats,
 }: {
   user: User;
   globalLeagues: any[];
+  userStats: any;
 }) {
   const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
   const [currentBadge, setCurrentBadge] = useState<any | null>(null);
@@ -59,19 +78,14 @@ function GlobalBadgeListener({
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !userStats) return;
 
-    let myPoints = 0;
-    let isLeagueCreatorOrMember = false;
-    let inBenoliga = false;
-    let hasPerfectGroup = false; // Simplified for now
-    let hasInvitedFriends = false; // Simplified for now
-    let hasSavedPredictions = false;
-    let lockedEarly = false;
-    let userData: any = null;
+    let myPoints = userStats.totalPoints || 0;
+    let hasInvitedFriends = (userStats.referralsCount || 0) > 0;
+    let hasSavedPredictions = !!userStats.hasSavedPredictions;
+    let lockedEarly = !!userStats.lockedEarly;
 
     const checkBadges = () => {
-      // We need userStats here. Let's create a dummy one based on what we have
       const userLeagues = globalLeagues.filter(
         (l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid,
       );
@@ -81,24 +95,24 @@ function GlobalBadgeListener({
       );
       const inPrivateLeague = userLeagues.length > 0;
 
-      const userStats = {
+      const badgeCriteria = {
         referralsCount: hasInvitedFriends ? 1 : 0,
         inBenoliga: inBenoliga,
         inPrivateLeague: inPrivateLeague,
         hasSavedPredictions,
         lockedEarly,
       };
-      if (!userData) return;
+
       const userBadgeIds = Array.from(
-        new Set(getUserBadges(myPoints, userStats)),
+        new Set(getUserBadges(myPoints, badgeCriteria)),
       );
       const userBadgesFull = userBadgeIds
         .map((id) => BADGES.find((b) => b.id === id))
         .filter(Boolean);
 
-      const storedBadges = userData.earnedBadges || [];
+      const storedBadges = userStats.earnedBadges || [];
       const newEarnedBadges = userBadgesFull.filter(
-        (b) => b && !storedBadges.includes(b.id),
+        (b: any) => b && !storedBadges.includes(b.id),
       );
 
       if (newEarnedBadges.length > 0) {
@@ -116,71 +130,56 @@ function GlobalBadgeListener({
         updateDoc(doc(db, "users", user.uid), {
           earnedBadges: newBadgesList,
         }).catch(console.error);
-
-        // Also update local data to prevent immediate refire
-        userData.earnedBadges = newBadgesList;
       } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
         updateDoc(doc(db, "users", user.uid), {
           earnedBadges: userBadgeIds,
         }).catch(console.error);
-        userData.earnedBadges = userBadgeIds;
       }
     };
 
-    const unsubscribeUser = onSnapshot(
-      doc(db, "users", user.uid),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          userData = data;
-          myPoints = data.totalPoints || 0;
-          hasInvitedFriends = (data.referralsCount || 0) > 0;
-          hasSavedPredictions = !!data.hasSavedPredictions;
-          lockedEarly = !!data.lockedEarly;
-          checkBadges();
-        }
-      },
-    );
+    checkBadges();
 
     const unsubscribePredictions = onSnapshot(
       doc(db, "predictions", user.uid),
       (docSnap) => {
-        if (docSnap.exists() && userData) {
+        if (docSnap.exists()) {
           const data = docSnap.data();
           let changed = false;
 
-          if (!userData.hasSavedPredictions) {
-            hasSavedPredictions = true;
+          let nextSavedPredictions = hasSavedPredictions;
+          let nextLockedEarly = lockedEarly;
+
+          if (!userStats.hasSavedPredictions) {
+            nextSavedPredictions = true;
             changed = true;
           }
 
           if (data.isLocked && data.updatedAt) {
-            // Check if locked before June 1st 2026
             const lockedDate = new Date(data.updatedAt);
             const deadline = new Date("2026-06-01T00:00:00Z");
-            if (lockedDate < deadline && !userData.lockedEarly) {
-              lockedEarly = true; // Confiado unlocked
+            if (lockedDate < deadline && !userStats.lockedEarly) {
+              nextLockedEarly = true;
               changed = true;
             }
           }
 
           if (changed) {
             updateDoc(doc(db, "users", user.uid), {
-              hasSavedPredictions,
-              lockedEarly,
+              hasSavedPredictions: nextSavedPredictions,
+              lockedEarly: nextLockedEarly,
             }).catch(console.error);
           }
-
-          checkBadges();
         }
       },
+      (err) => {
+        console.warn("Predictions snapshot error (idle/cancel):", err);
+      }
     );
 
     return () => {
-      unsubscribeUser();
       unsubscribePredictions();
     };
-  }, [user, globalLeagues]);
+  }, [user, globalLeagues, userStats]);
 
   // Effect 1: Process the queue
   useEffect(() => {
@@ -247,6 +246,7 @@ function GlobalBadgeListener({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userStats, setUserStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [globalLeagues, setGlobalLeagues] = useState<any[]>([]);
@@ -257,7 +257,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setUserStats({});
+      return;
+    }
+
+    const unsubscribeUser = onSnapshot(
+      doc(db, "users", user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserStats(docSnap.data());
+        }
+      },
+      (err) => {
+        console.warn("User document snapshot error (idle/cancel):", err);
+      }
+    );
+
     const unsubscribeLeagues = onSnapshot(
       collection(db, "leagues"),
       (snapshot) => {
@@ -265,8 +281,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
         );
       },
+      (err) => {
+        console.warn("Leagues snapshot error (idle/cancel):", err);
+      }
     );
-    return () => unsubscribeLeagues();
+
+    return () => {
+      unsubscribeUser();
+      unsubscribeLeagues();
+    };
   }, [user]);
 
   useEffect(() => {
@@ -401,11 +424,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues }}>
+      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues, userStats }}>
         <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && (
-            <GlobalBadgeListener user={user} globalLeagues={globalLeagues} />
+            <GlobalBadgeListener user={user} globalLeagues={globalLeagues} userStats={userStats} />
           )}
           <main className="container mx-auto px-4 py-8 flex-grow">
             {children}

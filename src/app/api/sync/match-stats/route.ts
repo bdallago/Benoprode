@@ -1,44 +1,8 @@
 import { NextResponse } from "next/server";
-import { initializeApp, applicationDefault, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import fs from "fs";
-import path from "path";
-
-// Initialize Firebase Admin
-function getDb() {
-  if (getApps().length === 0) {
-    const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-    let credential;
-    
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      credential = require("firebase-admin/app").cert(serviceAccount);
-    } else {
-      credential = applicationDefault();
-    }
-
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      const app = initializeApp({
-        credential,
-        projectId: config.projectId,
-      });
-      return getFirestore(app, config.firestoreDatabaseId);
-    }
-  } else {
-    const app = getApps()[0];
-    const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      return getFirestore(app, config.firestoreDatabaseId);
-    }
-    return getFirestore(app);
-  }
-  return null;
-}
+import { getAdminDb } from "@/lib/firebase-admin";
 
 export async function POST(request: Request) {
-  const db = getDb();
+  const db = getAdminDb();
   if (!db) {
     return NextResponse.json({ error: "Database not configured" }, { status: 500 });
   }

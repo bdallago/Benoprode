@@ -1,15 +1,25 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { 
+  getFirestore, 
+  initializeFirestore, 
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import firebaseConfig from "../firebase-applet-config.json";
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId);
+// Initialize the app once
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize storage and set a short max retry time so it doesn't hang forever on permission errors
+// Initialize with settings and correct database ID from config.
+const dbId = (firebaseConfig as any).firestoreDatabaseId || "(default)";
+
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true
+}, dbId);
+
+export const auth = getAuth(app);
 export const storage = getStorage(app);
-storage.maxUploadRetryTime = 10000; // 10 seconds max retry
+storage.maxUploadRetryTime = 10000;
 
 export const googleProvider = new GoogleAuthProvider();

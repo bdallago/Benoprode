@@ -103,6 +103,13 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt is string);
     }
 
+    // Helper para verificar si un partido sigue abierto para predicciones (1 hora de margen)
+    function isMatchOpen(matchId) {
+      let matchPath = /databases/$(database)/documents/matches/$(matchId);
+      return !exists(matchPath) || 
+             request.time < timestamp(get(matchPath).data.startTime) - duration.value(1, 'h');
+    }
+
     // Rules
     match /users/{userId} {
       // Anyone authenticated can read users (needed for leaderboard)
@@ -140,10 +147,17 @@ service cloud.firestore {
     match /predictions/{userId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && (isAdmin() || (isOwner(userId) && (
+        // Antes del mundial todo abierto
         request.time < timestamp.date(2026, 6, 8) || 
         (
           resource != null && 
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
+          // Si cambian partidos, verificamos que el que cambió esté abierto 
+          // (Funciona mejor si se guarda de a uno, si es bulk, protegemos por UI y tiempo general)
+          (
+            !request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() == 1 ||
+            isMatchOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()[0])
+          )
         )
       )));
     }

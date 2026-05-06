@@ -27,7 +27,7 @@ export function CountdownBanner() {
   }, [isLocked]);
 
   const skeletonBanner = (
-    <div className="bg-blue-900 text-transparent p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-blue-400 mb-6 animate-pulse">
+    <div className="bg-blue-900 text-transparent p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-blue-400 animate-pulse">
       <div className="flex items-center gap-3 w-full sm:w-auto">
         <div className="w-6 h-6 rounded-full bg-blue-800"></div>
         <div className="space-y-2 w-full sm:w-48">
@@ -54,7 +54,7 @@ export function CountdownBanner() {
 
   if (isTimeUp) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 mb-6 transition-colors duration-200">
+      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 transition-colors duration-200">
         <Lock className="w-6 h-6 text-red-600 dark:text-red-400" />
         <div>
           <h3 className="font-bold">{t('countdown.timeUp')}</h3>
@@ -65,7 +65,7 @@ export function CountdownBanner() {
   }
 
   return (
-    <div className="bg-blue-900 text-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-blue-400 mb-6">
+    <div className="bg-blue-900 text-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-blue-400">
       <div className="flex items-center gap-3">
         <Clock className="w-6 h-6 text-blue-300" />
         <div>

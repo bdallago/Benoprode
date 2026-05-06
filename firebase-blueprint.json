@@ -1,5 +1,20 @@
 {
   "entities": {
+    "Match": {
+      "title": "Match",
+      "description": "A football match from the tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teamA": { "type": "string" },
+        "teamB": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["scheduled", "live", "finished"] },
+        "resultA": { "type": "number" },
+        "resultB": { "type": "number" }
+      },
+      "required": ["id", "teamA", "teamB", "startTime", "status"]
+    },
     "User": {
       "title": "User",
       "description": "A participant in the Prode game.",
@@ -106,6 +121,10 @@
     }
   },
   "firestore": {
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/Match" },
+      "description": "The master list of tournament matches with times and status."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles and their calculated total points."
