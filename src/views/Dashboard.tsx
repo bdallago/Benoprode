@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useRef, useMemo } from "react";
 import { User } from "firebase/auth";
 import {
@@ -51,8 +53,11 @@ interface Player {
   earnedBadges?: string[];
 }
 
-export default function Dashboard({ user }: { user: User }) {
-  const { userStats: contextUserStats } = useAuth();
+export default function Dashboard({ initialLeaderboardData, initialTotalCount }: { initialLeaderboardData?: Player[], initialTotalCount?: number }) {
+  const { user, userStats: contextUserStats } = useAuth();
+  
+  if (!user) return null; // Protective check
+  
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{
     uid: string;
@@ -73,8 +78,15 @@ export default function Dashboard({ user }: { user: User }) {
 
   const [userStats, setUserStats] = useState<any>({});
 
-  const [totalPlayers, setTotalPlayers] = useState(0);
-  const [exactRank, setExactRank] = useState(0);
+  const [totalPlayers, setTotalPlayers] = useState(initialTotalCount || 0);
+  const [exactRank, setExactRank] = useState(() => {
+    // Intentamos calcular el rank desde la lista pre-cargada para no esperar al fetch
+    if (initialLeaderboardData && user) {
+       const index = initialLeaderboardData.findIndex(p => p.uid === user.uid);
+       if (index !== -1) return index + 1;
+    }
+    return 0;
+  });
 
   useEffect(() => {
     if (contextUserStats && Object.keys(contextUserStats).length > 0) {
@@ -88,24 +100,43 @@ export default function Dashboard({ user }: { user: User }) {
   useEffect(() => {
     // 2. FETCH EXACT RANK AND TOTAL USERS EFFICIENTLY
     const fetchExactRank = async (retries = 3) => {
+      // Si ya tenemos rank y total de los props, no hace falta el fetch pesado inicial
+      if (exactRank > 0 && totalPlayers > 0) {
+        setLoading(false);
+        return;
+      }
+
+      if (typeof window !== "undefined" && !window.navigator.onLine) {
+         console.warn("Skipping rank fetch: Client is offline");
+         setLoading(false);
+         return;
+      }
+
       try {
         const myDoc = await getDoc(doc(db, "users", user.uid));
         const data = myDoc.data();
         const pts = data?.totalPoints || 0;
 
-        // 2 parallel queries: Count total users, Count users with MORE points than me
-        const [totalSnap, rankSnap] = await Promise.all([
-          getCountFromServer(collection(db, "users")),
-          getCountFromServer(
-            query(collection(db, "users"), where("totalPoints", ">", pts)),
-          ),
-        ]);
+        // Si el totalUsers ya lo tenemos de los props, solo pedimos el rank
+        const queries = [];
+        if (totalPlayers === 0) {
+           queries.push(getCountFromServer(collection(db, "users")));
+        } else {
+           queries.push(Promise.resolve({ data: () => ({ count: totalPlayers }) }));
+        }
+
+        queries.push(getCountFromServer(query(collection(db, "users"), where("totalPoints", ">", pts))));
+
+        const [totalSnap, rankSnap]: any = await Promise.all(queries);
 
         setTotalPlayers(totalSnap.data().count);
-        setExactRank(rankSnap.data().count + 1); // If 5 people have more points, I am rank 6
-      } catch (error) {
+        setExactRank(rankSnap.data().count + 1);
+      } catch (error: any) {
+        if (error?.message?.includes("offline")) {
+           console.warn("User is offline, using fallback rank data.");
+           return;
+        }
         if (retries > 0) {
-          console.warn(`Retrying rank fetch... (${retries} left)`);
           setTimeout(() => fetchExactRank(retries - 1), 2000);
         } else {
           console.error("Error calculating exact rank", error);
@@ -119,14 +150,11 @@ export default function Dashboard({ user }: { user: User }) {
 
     // Fetch user predictions and actual results to check for perfect group
     const checkPerfectGroup = async (retries = 2) => {
+      if (typeof window !== "undefined" && !window.navigator.onLine) return;
       try {
         const [predsSnap, resultsSnap] = await Promise.all([
-          import("firebase/firestore").then((m) =>
-            m.getDoc(m.doc(db, "predictions", user.uid)),
-          ),
-          import("firebase/firestore").then((m) =>
-            m.getDoc(m.doc(db, "results", "actual")),
-          ),
+          getDoc(doc(db, "predictions", user.uid)),
+          getDoc(doc(db, "results", "actual"))
         ]);
 
         if (predsSnap.exists() && resultsSnap.exists()) {
@@ -440,7 +468,11 @@ export default function Dashboard({ user }: { user: User }) {
             "Competí contra todos los usuarios registrados en el prode. Acá vas a ver la posición de cada jugador a nivel mundial.",
           )}
         </p>
-        <GlobalLeaderboard currentUser={user} onUserClick={setSelectedUser} />
+        <GlobalLeaderboard 
+          currentUser={user} 
+          onUserClick={setSelectedUser} 
+          initialData={initialLeaderboardData}
+        />
       </div>
 
       {selectedUser && (

@@ -7,11 +7,17 @@ import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check, Use
 import { Button } from './ui/button';
 import { useTranslation } from 'react-i18next';
 
-export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: User, onUserClick?: (u: any) => void }) {
+export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { currentUser: User, onUserClick?: (u: any) => void, initialData?: any[] }) {
   const { t } = useTranslation();
-  const [players, setPlayers] = useState<any[]>([]);
-  const allPlayersCache = useRef<any[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const allPlayersCache = useRef<any[]>(initialData || []);
+  const [players, setPlayers] = useState<any[]>(() => {
+    // Si tenemos datos iniciales, cargamos la primera página de una
+    if (initialData && initialData.length > 0) {
+      return initialData.slice(0, 25);
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(!initialData || initialData.length === 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   
@@ -209,6 +215,23 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
       let q;
       if (searchQuery.trim().length > 2) {
         const searchTerm = searchQuery.trim();
+        const lowSearch = searchTerm.toLowerCase();
+        
+        // Optimización: Si el término está en nuestro cache (Top 1000), lo mostramos instantáneo
+        const localResults = allPlayersCache.current.filter(p => 
+          p.displayName?.toLowerCase().includes(lowSearch)
+        );
+
+        if (localResults.length > 0) {
+           setPlayers(localResults.slice(0, 25));
+           setPage(0);
+           setHasMore(localResults.length > 25);
+           setLoading(false);
+           fetchingRef.current = false;
+           return;
+        }
+
+        // Si no está en el top 1000, buscamos en todo Firestore
         q = query(
           collection(db, "users"),
           where("displayName", ">=", searchTerm),
@@ -267,21 +290,26 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
     }
   }, [searchQuery, page, showFriendsOnly, friends, currentUser, cursors, players.length]);
 
-  const [initialMount, setInitialMount] = useState(true);
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Si el componente se está montando por primera vez, intentamos restaurar
-      if (initialMount) {
-        fetchPage('restore');
-        setInitialMount(false);
-      } else {
-        // Solo reseteamos a la página 1 si los filtros realmente cambiaron
-        fetchPage('first');
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery, showFriendsOnly]); // Quitamos page de aquí para evitar resets infinitos
+    // Si ya tenemos datos iniciales, confiamos en ellos y evitamos el primer fetch
+    if (initialData && initialData.length > 0) {
+       setLoading(false);
+       setHasMore(initialData.length > 25);
+    } else {
+       fetchPage('restore');
+    }
+  }, []);
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    // Evitamos ejecutar el fetch de filtros en el primer render si ya cargamos datos desde el server
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        if (initialData && initialData.length > 0 && !searchQuery && !showFriendsOnly) return;
+    }
+    
+    fetchPage('first');
+  }, [searchQuery, showFriendsOnly]);
 
   return (
     <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
@@ -290,8 +318,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-400 text-xl m-0">
             <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
-          <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto flex-1 md:justify-end">
-            <div className="relative w-full md:flex-1">
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full flex-1 md:ml-4">
+            <div className="relative w-full flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -301,7 +329,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
               <Button 
                 variant={showFriendsOnly ? "default" : "outline"}
                 size="sm" 

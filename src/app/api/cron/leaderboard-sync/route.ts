@@ -13,10 +13,16 @@ export async function GET(req: Request) {
 
   try {
     // 1. Obtener los mejores 1000 jugadores (suficiente para carga inmediata)
-    const snapshot = await db.collection("users")
-      .orderBy("totalPoints", "desc")
-      .limit(1000)
-      .get();
+    // También obtenemos el conteo total para no tener que hacerlo on-demand en el cliente
+    const [snapshot, totalCountSnap] = await Promise.all([
+      db.collection("users")
+        .orderBy("totalPoints", "desc")
+        .limit(1000)
+        .get(),
+      db.collection("users").count().get()
+    ]);
+
+    const totalUsers = totalCountSnap.data().count;
 
     const allPlayers = snapshot.docs.map(doc => ({
       uid: doc.id,
@@ -25,37 +31,43 @@ export async function GET(req: Request) {
       totalPoints: doc.data().totalPoints || 0
     }));
 
-    // 2. Guardar el "Top 1000" en un solo documento para máxima velocidad de lectura
+    // 2. Guardar el "Top 1000" y metadata global en un solo documento para máxima velocidad de lectura
     const statsRef = db.collection("system_stats").doc("leaderboard_top_1000");
     await statsRef.set({
       players: allPlayers,
+      totalCount: totalUsers,
       updatedAt: new Date().toISOString(),
       count: allPlayers.length
     });
 
-    // 3. (Opcional/Backup) Guardar el desglose por chunks de 2500 para el resto
-    const fullSnapshot = await db.collection("users")
-      .orderBy("totalPoints", "desc")
-      .limit(5000)
-      .get();
-    
-    const chunkPlayers = fullSnapshot.docs.map(doc => ({
-      uid: doc.id,
-      displayName: doc.data().displayName || "Anónimo",
-      photoURL: doc.data().photoURL || null,
-      totalPoints: doc.data().totalPoints || 0
-    }));
+    // 3. (Opcional/Backup) Guardar el desglose por chunks para el resto (si hay más de 1000)
+    if (totalUsers > 1000) {
+      const fullSnapshot = await db.collection("users")
+        .orderBy("totalPoints", "desc")
+        .limit(5000)
+        .get();
+      
+      const chunkPlayers = fullSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        displayName: doc.data().displayName || "Anónimo",
+        photoURL: doc.data().photoURL || null,
+        totalPoints: doc.data().totalPoints || 0
+      }));
 
-    const batch = db.batch();
-    const chunkSize = 2500;
-    for (let i = 0; i < 2; i++) {
-       const start = i * chunkSize;
-       const chunkData = chunkPlayers.slice(start, start + chunkSize);
-       const chunkRef = db.collection("system_stats").doc(`leaderboard_chunk_${i + 1}`);
-       batch.set(chunkRef, { 
-         players: chunkData,
-         updatedAt: new Date().toISOString()
-       });
+      const batch = db.batch();
+      const chunkSize = 2500;
+      const chunksCount = Math.min(2, Math.ceil(chunkPlayers.length / chunkSize));
+      
+      for (let i = 0; i < chunksCount; i++) {
+         const start = i * chunkSize;
+         const chunkData = chunkPlayers.slice(start, start + chunkSize);
+         const chunkRef = db.collection("system_stats").doc(`leaderboard_chunk_${i + 1}`);
+         batch.set(chunkRef, { 
+           players: chunkData,
+           updatedAt: new Date().toISOString()
+         });
+      }
+      await batch.commit();
     }
 
     // Guardar metadata para saber cuántos hay en total

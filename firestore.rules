@@ -353,6 +353,14 @@ service cloud.firestore {
 
 
     // ===============================================================
+    // Collection: system_stats
+    // ===============================================================
+    match /system_stats/{statsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
     // Collection: statistics
     // ===============================================================
     match /statistics/{statsId} {

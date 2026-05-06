@@ -3,14 +3,22 @@ import { getFirestore } from "firebase-admin/firestore";
 import fs from "fs";
 import path from "path";
 
+let cachedDb: any = null;
+let cachedConfig: any = null;
+
 export function getAdminDb() {
+  if (cachedDb) return cachedDb;
+
   const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-  if (!fs.existsSync(configPath)) {
-    console.error("Firebase Admin Error: config not found at", configPath);
-    return null;
+  if (!cachedConfig) {
+    if (!fs.existsSync(configPath)) {
+      console.error("Firebase Admin Error: config not found at", configPath);
+      return null;
+    }
+    cachedConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
   }
   
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const config = cachedConfig;
   const dbId = config.firestoreDatabaseId;
 
   if (getApps().length === 0) {
@@ -75,9 +83,11 @@ export function getAdminDb() {
       projectId: config.projectId,
     });
     console.log("Firebase Admin Initialized for DB ID:", dbId);
-    return getFirestore(app, dbId);
+    cachedDb = getFirestore(app, dbId);
+    return cachedDb;
   } else {
     const app = getApps()[0];
-    return getFirestore(app, dbId);
+    cachedDb = getFirestore(app, dbId);
+    return cachedDb;
   }
 }
