@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 
-export const revalidate = 30; // Caché del ISR por 30 segundos
+export const revalidate = 60; // Cache de 1 minuto para el ISR
 
 export async function GET() {
   const db = getAdminDb();
@@ -10,30 +10,24 @@ export async function GET() {
   }
 
   try {
-    // Intentar leer los 4 chunks de 2500 jugadores cada uno
-    const chunkIds = ['leaderboard_chunk_1', 'leaderboard_chunk_2', 'leaderboard_chunk_3', 'leaderboard_chunk_4'];
-    const chunkRefs = chunkIds.map(id => db.collection("system_stats").doc(id));
-    const chunkSnaps = await db.getAll(...chunkRefs);
-
+    // 1. Intentar leer el documento consolidado "Top 1000" para velocidad máxima
+    const topDoc = await db.collection("system_stats").doc("leaderboard_top_1000").get();
+    
     let allPlayers: any[] = [];
-    let foundChunks = false;
 
-    chunkSnaps.forEach(snap => {
-      if (snap.exists) {
-        const data = snap.data();
-        if (data && data.players) {
-          allPlayers = allPlayers.concat(data.players);
-          foundChunks = true;
-        }
+    if (topDoc.exists) {
+      const data = topDoc.data();
+      if (data && data.players) {
+        allPlayers = data.players;
       }
-    });
+    }
 
-    // Si por alguna razón los chunks no existen todavía, fallback a una lectura live del top 500
-    if (!foundChunks) {
-      console.log("Leaderboard: Chunks not found, performing live fallback query...");
+    // 2. Si no hay datos consolidados, intentar chunks antiguos o fallback live
+    if (allPlayers.length === 0) {
+      console.log("Leaderboard: Optimized doc not found, performing live fallback query...");
       const usersSnap = await db.collection("users")
         .orderBy("totalPoints", "desc")
-        .limit(200) // Reducir de 500 a 200 para mejorar velocidad en fallback
+        .limit(200) 
         .get();
 
       allPlayers = usersSnap.docs.map(doc => ({
@@ -44,9 +38,9 @@ export async function GET() {
       }));
     }
 
-    // Cache-Control header para que el navegador y el CDN guarden la respuesta por un rato
+    // 3. Devolver la respuesta con headers de cache agresivos
     const response = NextResponse.json({ players: allPlayers });
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=59');
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     
     return response;
   } catch (error: any) {
