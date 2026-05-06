@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
     const totalUsers = totalCountSnap.data().count;
 
-    const allPlayers = snapshot.docs.map(doc => ({
+    const allPlayers = snapshot.docs.map((doc: any) => ({
       uid: doc.id,
       displayName: doc.data().displayName || "Anónimo",
       photoURL: doc.data().photoURL || null,
@@ -41,20 +41,21 @@ export async function GET(req: Request) {
     });
 
     // 3. (Opcional/Backup) Guardar el desglose por chunks para el resto (si hay más de 1000)
+    const finalBatch = db.batch();
+    
     if (totalUsers > 1000) {
       const fullSnapshot = await db.collection("users")
         .orderBy("totalPoints", "desc")
         .limit(5000)
         .get();
       
-      const chunkPlayers = fullSnapshot.docs.map(doc => ({
+      const chunkPlayers = fullSnapshot.docs.map((doc: any) => ({
         uid: doc.id,
         displayName: doc.data().displayName || "Anónimo",
         photoURL: doc.data().photoURL || null,
         totalPoints: doc.data().totalPoints || 0
       }));
 
-      const batch = db.batch();
       const chunkSize = 2500;
       const chunksCount = Math.min(2, Math.ceil(chunkPlayers.length / chunkSize));
       
@@ -62,21 +63,20 @@ export async function GET(req: Request) {
          const start = i * chunkSize;
          const chunkData = chunkPlayers.slice(start, start + chunkSize);
          const chunkRef = db.collection("system_stats").doc(`leaderboard_chunk_${i + 1}`);
-         batch.set(chunkRef, { 
+         finalBatch.set(chunkRef, { 
            players: chunkData,
            updatedAt: new Date().toISOString()
          });
       }
-      await batch.commit();
     }
 
     // Guardar metadata para saber cuántos hay en total
-    batch.set(db.collection("system_stats").doc("leaderboard_meta"), {
+    finalBatch.set(db.collection("system_stats").doc("leaderboard_meta"), {
       totalCalculated: allPlayers.length,
       lastUpdate: new Date().toISOString()
     });
 
-    await batch.commit();
+    await finalBatch.commit();
 
     return NextResponse.json({ success: true, processed: allPlayers.length });
   } catch (error: any) {
