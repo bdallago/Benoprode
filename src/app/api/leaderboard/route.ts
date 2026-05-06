@@ -30,9 +30,10 @@ export async function GET() {
 
     // Si por alguna razón los chunks no existen todavía, fallback a una lectura live del top 500
     if (!foundChunks) {
+      console.log("Leaderboard: Chunks not found, performing live fallback query...");
       const usersSnap = await db.collection("users")
         .orderBy("totalPoints", "desc")
-        .limit(500)
+        .limit(200) // Reducir de 500 a 200 para mejorar velocidad en fallback
         .get();
 
       allPlayers = usersSnap.docs.map(doc => ({
@@ -43,7 +44,11 @@ export async function GET() {
       }));
     }
 
-    return NextResponse.json({ players: allPlayers });
+    // Cache-Control header para que el navegador y el CDN guarden la respuesta por un rato
+    const response = NextResponse.json({ players: allPlayers });
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=59');
+    
+    return response;
   } catch (error: any) {
     console.error("API Leaderboard Error:", error);
     return NextResponse.json({ 
