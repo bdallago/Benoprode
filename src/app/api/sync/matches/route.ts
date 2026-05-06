@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     // la colección de Firebase poblada y que las reglas de seguridad funcionen.
     const batch = db.batch();
     
-    matchesJson.forEach(match => {
+    matchesJson.forEach((match: any) => {
       const matchRef = db.collection("matches").doc(match.id);
       batch.set(matchRef, {
         id: match.id,

@@ -68,9 +68,9 @@ export function NotificationCenter({ user }: { user: User }) {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       // Find newly added notifications in this snapshot
-      const newDocs = snapshot.docChanges().filter(change => change.type === 'added').map(change => ({ id: change.doc.id, ...change.doc.data() } as Notification));
+      const newDocs = snapshot.docChanges().filter(change => change.type === 'added').map((change: any) => ({ id: change.doc.id, ...change.doc.data() } as Notification));
       
-      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+      const notifs = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Notification));
       notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setNotifications(notifs);
 
@@ -110,7 +110,7 @@ export function NotificationCenter({ user }: { user: User }) {
   const markAllAsRead = async () => {
     const unread = notifications.filter(n => !n.read);
     const batch = writeBatch(db);
-    unread.forEach(n => {
+    unread.forEach((n: Notification) => {
       batch.update(doc(db, "notifications", n.id), { read: true });
     });
     await batch.commit();
@@ -165,7 +165,7 @@ export function NotificationCenter({ user }: { user: User }) {
       const snap = await getDocs(qReq);
       
       const batch = writeBatch(db);
-      snap.docs.forEach(d => {
+      snap.docs.forEach((d: any) => {
         batch.update(d.ref, { status: 'accepted', updatedAt: new Date().toISOString() });
       });
 
@@ -286,7 +286,7 @@ export function NotificationCenter({ user }: { user: User }) {
                   {t('notifications.noNotifications')}
                 </div>
               ) : (
-                notifications.map(notif => (
+                notifications.map((notif: Notification) => (
                   <div 
                     key={notif.id} 
                     className={`p-4 border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors flex gap-3 relative ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}

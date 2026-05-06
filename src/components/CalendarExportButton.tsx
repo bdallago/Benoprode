@@ -33,7 +33,7 @@ export function CalendarExportButton() {
   const generateICS = () => {
     let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//El Prode de Beno//NONSGML v1.0//EN\n";
     
-    matchesData.forEach(match => {
+    matchesData.forEach((match: any) => {
       const matchDate = new Date(match.date);
       // Restar 1 hora y 15 minutos (75 minutos)
       const warningDate = new Date(matchDate.getTime() - (75 * 60 * 1000));

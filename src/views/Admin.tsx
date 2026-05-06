@@ -55,7 +55,7 @@ export default function Admin() {
       const predictionsSnap = await getDocs(collection(db, "predictions"));
       const stats: Record<string, any> = {};
       
-      predictionsSnap.forEach(doc => {
+      predictionsSnap.forEach((doc: any) => {
         const data = doc.data();
         if (data.matches) {
           Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
@@ -174,7 +174,7 @@ export default function Admin() {
         let organicUsers = 0;
         let referredUsers = 0;
         
-        usersData.forEach(u => {
+        usersData.forEach((u: any) => {
           if (u.referredBy) {
             referredUsers++;
           } else {
@@ -279,7 +279,7 @@ export default function Admin() {
         let usersGroupStage = 0;
         let usersSpecialQuestions = 0;
 
-        predictionsSnap.forEach(doc => {
+        predictionsSnap.forEach((doc: any) => {
           const data = doc.data();
           
           let matchesCount = 0;
@@ -315,7 +315,7 @@ export default function Admin() {
         let privateLeagues = 0;
         let publicLeagues = 0;
         
-        leaguesSnap.forEach(doc => {
+        leaguesSnap.forEach((doc: any) => {
           const lData = doc.data();
           if (lData.isPublic) publicLeagues++;
           else privateLeagues++;
@@ -323,7 +323,7 @@ export default function Admin() {
 
         let duelsCreated = duelsSnap.size;
         let duelsAccepted = 0;
-        duelsSnap.forEach(doc => {
+        duelsSnap.forEach((doc: any) => {
            if (doc.data().status === 'accepted' || doc.data().status === 'completed') {
              duelsAccepted++;
            }
@@ -598,7 +598,7 @@ export default function Admin() {
       const usersSnap = await getDocs(collection(db, "users"));
       const batch = writeBatch(db);
       
-      usersSnap.docs.forEach(d => {
+      usersSnap.docs.forEach((d: any) => {
         batch.set(doc(db, "users", d.id), { totalPoints: 0 }, { merge: true });
       });
 
@@ -635,7 +635,7 @@ export default function Admin() {
       
       // 1. Remove user from all leagues
       const leaguesSnap = await getDocs(collection(db, "leagues"));
-      leaguesSnap.docs.forEach(d => {
+      leaguesSnap.docs.forEach((d: any) => {
         const leagueData = d.data();
         if (leagueData.members && leagueData.members.includes(uid)) {
           if (leagueData.members.length === 1) {
@@ -650,34 +650,34 @@ export default function Admin() {
       // 2. Delete Friendships involving the user
       const qF1 = query(collection(db, "friendships"), where("user1Id", "==", uid));
       const snapF1 = await getDocs(qF1);
-      snapF1.forEach(d => batch.delete(d.ref));
+      snapF1.forEach((d: any) => batch.delete(d.ref));
       
       const qF2 = query(collection(db, "friendships"), where("user2Id", "==", uid));
       const snapF2 = await getDocs(qF2);
-      snapF2.forEach(d => batch.delete(d.ref));
+      snapF2.forEach((d: any) => batch.delete(d.ref));
       
       // 3. Delete Friend Requests involving the user
       const qFR1 = query(collection(db, "friendRequests"), where("fromUserId", "==", uid));
       const snapFR1 = await getDocs(qFR1);
-      snapFR1.forEach(d => batch.delete(d.ref));
+      snapFR1.forEach((d: any) => batch.delete(d.ref));
       
       const qFR2 = query(collection(db, "friendRequests"), where("toUserId", "==", uid));
       const snapFR2 = await getDocs(qFR2);
-      snapFR2.forEach(d => batch.delete(d.ref));
+      snapFR2.forEach((d: any) => batch.delete(d.ref));
       
       // 4. Delete Notifications for the user
       const qN = query(collection(db, "notifications"), where("userId", "==", uid));
       const snapN = await getDocs(qN);
-      snapN.forEach(d => batch.delete(d.ref));
+      snapN.forEach((d: any) => batch.delete(d.ref));
       
       // 5. Delete Duels involving the user
       const qD1 = query(collection(db, "duels_v2"), where("challengerId", "==", uid));
       const snapD1 = await getDocs(qD1);
-      snapD1.forEach(d => batch.delete(d.ref));
+      snapD1.forEach((d: any) => batch.delete(d.ref));
       
       const qD2 = query(collection(db, "duels_v2"), where("challengedId", "==", uid));
       const snapD2 = await getDocs(qD2);
-      snapD2.forEach(d => batch.delete(d.ref));
+      snapD2.forEach((d: any) => batch.delete(d.ref));
       
       await batch.commit();
       

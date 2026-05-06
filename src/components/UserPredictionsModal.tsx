@@ -84,7 +84,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                  where('user1Id', 'in', [auth.currentUser.uid, userId])
                );
                const friendsSnap = await getDocs(q3);
-               friendsSnap.docs.forEach(d => {
+               friendsSnap.docs.forEach((d: any) => {
                   if ((d.data().user1Id === auth.currentUser!.uid && d.data().user2Id === userId) ||
                       (d.data().user1Id === userId && d.data().user2Id === auth.currentUser!.uid)) {
                       isFriendsWithUser = true;

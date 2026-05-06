@@ -52,7 +52,7 @@ export function LiveChat() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({
+      const msgs = snapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       })).reverse();

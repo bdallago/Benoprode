@@ -50,7 +50,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
         );
         const snapReq = await getDocs(qReq);
         const pendingUids = new Set<string>();
-        snapReq.forEach(doc => {
+        snapReq.forEach((doc: any) => {
           pendingUids.add(doc.data().toUserId);
         });
         setSentRequests(pendingUids);
@@ -61,8 +61,8 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
         
         const [snap1, snap2] = await Promise.all([getDocs(qFriends1), getDocs(qFriends2)]);
         const friendsUids = new Set<string>();
-        snap1.forEach(doc => friendsUids.add(doc.data().user2Id));
-        snap2.forEach(doc => friendsUids.add(doc.data().user1Id));
+        snap1.forEach((doc: any) => friendsUids.add(doc.data().user2Id));
+        snap2.forEach((doc: any) => friendsUids.add(doc.data().user1Id));
         setFriends(friendsUids);
       } catch (err) {
         console.error("Error fetching social data:", err);

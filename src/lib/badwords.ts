@@ -26,7 +26,7 @@ export const checkBadWords = (text: string): boolean => {
 
 export const filterBadWords = (text: string): string => {
   let filteredText = text;
-  BAD_WORDS.forEach(word => {
+  BAD_WORDS.forEach((word: string) => {
     const regex = new RegExp(`\\b${word}\\b`, 'ig');
     filteredText = filteredText.replace(regex, '***');
   });

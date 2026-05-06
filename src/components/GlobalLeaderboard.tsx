@@ -36,7 +36,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         );
         const snapReq = await getDocs(qReq);
         const pendingUids = new Set<string>();
-        snapReq.forEach(doc => {
+        snapReq.forEach((doc: any) => {
           pendingUids.add(doc.data().toUserId);
         });
         setSentRequests(pendingUids);
@@ -47,8 +47,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         
         const [snap1, snap2] = await Promise.all([getDocs(qFriends1), getDocs(qFriends2)]);
         const friendsUids = new Set<string>();
-        snap1.forEach(doc => friendsUids.add(doc.data().user2Id));
-        snap2.forEach(doc => friendsUids.add(doc.data().user1Id));
+        snap1.forEach((doc: any) => friendsUids.add(doc.data().user2Id));
+        snap2.forEach((doc: any) => friendsUids.add(doc.data().user1Id));
         setFriends(friendsUids);
       } catch (err) {
         console.error("Error fetching social data:", err);
@@ -194,7 +194,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
           const chunk = friendsArr.slice(i, i + 10);
           const chunkQ = query(collection(db, "users"), where(documentId(), "in", chunk));
           const snap = await getDocs(chunkQ);
-          snap.docs.forEach(doc => fetchedPlayers.push({ ...doc.data(), uid: doc.id }));
+          snap.docs.forEach((doc: any) => fetchedPlayers.push({ ...doc.data(), uid: doc.id }));
         }
         if (currentUser?.uid) {
           const meQ = await getDoc(doc(db, "users", currentUser.uid));
@@ -202,7 +202,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         }
         fetchedPlayers.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
         const uniqueMap = new Map();
-        fetchedPlayers.forEach(p => uniqueMap.set(p.uid, p));
+        fetchedPlayers.forEach((p: any) => uniqueMap.set(p.uid, p));
         setPlayers(Array.from(uniqueMap.values()));
         setHasMore(false);
         setPage(0);
@@ -266,7 +266,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
 
       if (q) {
         const snap = await getDocs(q);
-        const fetched = snap.docs.map(doc => ({ ...doc.data(), uid: doc.id }));
+        const fetched = snap.docs.map((doc: any) => ({ ...doc.data(), uid: doc.id }));
         setPlayers(fetched);
         
         if (!searchQuery && (dir === 'next' || dir === 'first' || dir === 'restore')) {
@@ -366,13 +366,13 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
             <tbody>
               {(() => {
                 const seenUids = new Set();
-                const uniquePlayers = players.filter(p => {
+                const uniquePlayers = players.filter((p: any) => {
                   if (!p || !p.uid || seenUids.has(p.uid)) return false;
                   seenUids.add(p.uid);
                   return true;
                 });
 
-                return uniquePlayers.length > 0 ? uniquePlayers.map((p, index) => {
+                return uniquePlayers.length > 0 ? uniquePlayers.map((p: any, index: number) => {
                   const rank = searchQuery ? "-" : (page * 25) + index + 1;
                   const isMe = p.uid === currentUser.uid;
                   return (

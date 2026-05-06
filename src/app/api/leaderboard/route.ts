@@ -30,7 +30,7 @@ export async function GET() {
         .limit(200) 
         .get();
 
-      allPlayers = usersSnap.docs.map(doc => ({
+      allPlayers = usersSnap.docs.map((doc: any) => ({
         uid: doc.id,
         displayName: doc.data().displayName || 'Usuario Anónimo',
         photoURL: doc.data().photoURL || null,

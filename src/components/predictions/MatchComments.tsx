@@ -49,7 +49,7 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const commentsData = snapshot.docs.map(doc => ({
+      const commentsData = snapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       }));
