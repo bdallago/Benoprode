@@ -290,8 +290,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
           <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-400 text-xl m-0">
             <Trophy className="h-6 w-6" /> {t('dashboard.worldRanking', 'Ranking Mundial')}
           </CardTitle>
-          <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto flex-1 md:justify-end">
-            <div className="relative w-full md:max-w-xs flex-1">
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto flex-1 md:justify-end">
+            <div className="relative w-full md:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -301,22 +301,22 @@ export function GlobalLeaderboard({ currentUser, onUserClick }: { currentUser: U
                 className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full md:w-auto">
               <Button 
                 variant={showFriendsOnly ? "default" : "outline"}
                 size="sm" 
                 onClick={() => { setShowFriendsOnly(!showFriendsOnly); setPage(0); setCursors([]); }} 
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : 'bg-white dark:bg-gray-800'}`}
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 ${showFriendsOnly ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' : 'bg-white dark:bg-gray-800'}`}
               >
-                <Users className="w-4 h-4" /> 📌 <span className="sm:inline">{t('dashboard.showFriendsOnly', 'Solo mis amigos')}</span>
+                <Users className="w-4 h-4" /> 📌 <span className="inline">{t('dashboard.showFriendsOnly', 'Solo mis amigos')}</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => { setSearchQuery(currentUser.displayName || ''); }} 
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 bg-white dark:bg-gray-800"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-10 bg-white dark:bg-gray-800"
               >
-                <Target className="w-4 h-4" /> <span className="sm:inline">{t('dashboard.findMe', 'Buscarme')}</span>
+                <Target className="w-4 h-4" /> <span className="inline">{t('dashboard.findMe', 'Buscarme')}</span>
               </Button>
             </div>
           </div>

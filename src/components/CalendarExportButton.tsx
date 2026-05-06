@@ -66,33 +66,12 @@ export function CalendarExportButton() {
   return (
     <>
       <Button 
-        onClick={() => setIsOpen(true)}
-        className="bg-green-600 hover:bg-green-500 text-white flex items-center gap-2 shadow-md hover:scale-105 transition-transform border-2 border-green-900 border-b-4 active:border-b-2 active:translate-y-0.5"
+        disabled
+        className="bg-gray-400 dark:bg-gray-700 text-white flex items-center gap-2 opacity-70 cursor-not-allowed cursor-not-allowed pointer-events-none"
       >
-        {isSuccess ? <CheckCircle2 className="w-5 h-5" /> : <Calendar className="w-5 h-5" />}
-        {isSuccess ? t('calendar.synced', '¡Listo!') : t('calendar.addToCalendar', 'Agendar Mundial en mi Calendario')}
+        <Calendar className="w-5 h-5" />
+        {t('calendar.comingSoon', 'Agendar Mundial (Próximamente)')}
       </Button>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="text-amber-500" /> {t('calendar.warningTitle', '¿Agendar todos los partidos?')}
-            </DialogTitle>
-            <DialogDescription className="py-2">
-              {t('calendar.warningDesc', 'Esta acción descargará un archivo para agregar los 48 partidos del mundial a tu calendario. Se agendarán 1 hora y 15 minutos antes del inicio de cada uno para que tengas 15 minutos de margen para hacer tu predicción.')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button variant="ghost" onClick={() => setIsOpen(false)}>
-              {t('common.cancel', 'Cancelar')}
-            </Button>
-            <Button onClick={exportToGoogle} className="bg-blue-600 hover:bg-blue-700 font-bold">
-              {t('calendar.confirm', '¡Sí, agendar todo!')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
