@@ -291,15 +291,9 @@ export default function Admin() {
 
       while (hasMore) {
         // Query users in chunks of 50
-        const usersQueryParts = [collection(db, "users"), orderBy("__name__"), limit(50)];
-        if (lastDoc) usersQueryParts.push(startAfter(lastDoc));
-        
-        let q;
-        switch (usersQueryParts.length) {
-          case 3: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any); break;
-          case 4: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any, usersQueryParts[3] as any); break;
-          default: q = query(usersQueryParts[0] as any);
-        }
+        const constraints: QueryConstraint[] = [orderBy("__name__"), limit(50)];
+        if (lastDoc) constraints.push(startAfter(lastDoc));
+        const q = query(collection(db, "users"), ...constraints);
 
         const usersSnapChunk = await getDocs(q);
         if (usersSnapChunk.empty) {
@@ -438,15 +432,9 @@ export default function Admin() {
 
       while (hasMore) {
         // Query users in chunks of 50
-        const usersQueryParts = [collection(db, "users"), orderBy("__name__"), limit(50)];
-        if (lastDoc) usersQueryParts.push(startAfter(lastDoc));
-        
-        let q;
-        switch (usersQueryParts.length) {
-          case 3: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any); break;
-          case 4: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any, usersQueryParts[3] as any); break;
-          default: q = query(usersQueryParts[0] as any);
-        }
+        const constraints: QueryConstraint[] = [orderBy("__name__"), limit(50)];
+        if (lastDoc) constraints.push(startAfter(lastDoc));
+        const q = query(collection(db, "users"), ...constraints);
 
         const usersSnapChunk = await getDocs(q);
         if (usersSnapChunk.empty) {
