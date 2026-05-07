@@ -1,0 +1,434 @@
+[
+  {
+    "id": "match_1",
+    "teamA": "México",
+    "teamB": "Sudáfrica",
+    "date": "2026-06-11T19:00:00.000Z"
+  },
+  {
+    "id": "match_2",
+    "teamA": "Corea del Sur",
+    "teamB": "República Checa",
+    "date": "2026-06-12T02:00:00.000Z"
+  },
+  {
+    "id": "match_3",
+    "teamA": "Canadá",
+    "teamB": "Bosnia y Herzegovina",
+    "date": "2026-06-12T19:00:00.000Z"
+  },
+  {
+    "id": "match_4",
+    "teamA": "Estados Unidos",
+    "teamB": "Paraguay",
+    "date": "2026-06-13T01:00:00.000Z"
+  },
+  {
+    "id": "match_5",
+    "teamA": "Qatar",
+    "teamB": "Suiza",
+    "date": "2026-06-13T19:00:00.000Z"
+  },
+  {
+    "id": "match_6",
+    "teamA": "Brasil",
+    "teamB": "Marruecos",
+    "date": "2026-06-13T22:00:00.000Z"
+  },
+  {
+    "id": "match_7",
+    "teamA": "Haití",
+    "teamB": "Escocia",
+    "date": "2026-06-14T01:00:00.000Z"
+  },
+  {
+    "id": "match_8",
+    "teamA": "Australia",
+    "teamB": "Turquía",
+    "date": "2026-06-14T04:00:00.000Z"
+  },
+  {
+    "id": "match_9",
+    "teamA": "Alemania",
+    "teamB": "Curazao",
+    "date": "2026-06-14T17:00:00.000Z"
+  },
+  {
+    "id": "match_10",
+    "teamA": "Países Bajos",
+    "teamB": "Japón",
+    "date": "2026-06-14T20:00:00.000Z"
+  },
+  {
+    "id": "match_11",
+    "teamA": "Costa de Marfil",
+    "teamB": "Ecuador",
+    "date": "2026-06-14T23:00:00.000Z"
+  },
+  {
+    "id": "match_12",
+    "teamA": "Suecia",
+    "teamB": "Túnez",
+    "date": "2026-06-15T02:00:00.000Z"
+  },
+  {
+    "id": "match_13",
+    "teamA": "España",
+    "teamB": "Cabo Verde",
+    "date": "2026-06-15T16:00:00.000Z"
+  },
+  {
+    "id": "match_14",
+    "teamA": "Bélgica",
+    "teamB": "Egipto",
+    "date": "2026-06-15T19:00:00.000Z"
+  },
+  {
+    "id": "match_15",
+    "teamA": "Arabia Saudita",
+    "teamB": "Uruguay",
+    "date": "2026-06-15T22:00:00.000Z"
+  },
+  {
+    "id": "match_16",
+    "teamA": "Irán",
+    "teamB": "Nueva Zelanda",
+    "date": "2026-06-16T01:00:00.000Z"
+  },
+  {
+    "id": "match_17",
+    "teamA": "Francia",
+    "teamB": "Senegal",
+    "date": "2026-06-16T19:00:00.000Z"
+  },
+  {
+    "id": "match_18",
+    "teamA": "Irak",
+    "teamB": "Noruega",
+    "date": "2026-06-16T22:00:00.000Z"
+  },
+  {
+    "id": "match_19",
+    "teamA": "Argentina",
+    "teamB": "Argelia",
+    "date": "2026-06-17T01:00:00.000Z"
+  },
+  {
+    "id": "match_20",
+    "teamA": "Austria",
+    "teamB": "Jordania",
+    "date": "2026-06-17T04:00:00.000Z"
+  },
+  {
+    "id": "match_21",
+    "teamA": "Portugal",
+    "teamB": "República Democrática del Congo",
+    "date": "2026-06-17T17:00:00.000Z"
+  },
+  {
+    "id": "match_22",
+    "teamA": "Inglaterra",
+    "teamB": "Croacia",
+    "date": "2026-06-17T20:00:00.000Z"
+  },
+  {
+    "id": "match_23",
+    "teamA": "Ghana",
+    "teamB": "Panamá",
+    "date": "2026-06-17T23:00:00.000Z"
+  },
+  {
+    "id": "match_24",
+    "teamA": "Uzbekistán",
+    "teamB": "Colombia",
+    "date": "2026-06-18T02:00:00.000Z"
+  },
+  {
+    "id": "match_25",
+    "teamA": "República Checa",
+    "teamB": "Sudáfrica",
+    "date": "2026-06-18T16:00:00.000Z"
+  },
+  {
+    "id": "match_26",
+    "teamA": "Suiza",
+    "teamB": "Bosnia y Herzegovina",
+    "date": "2026-06-18T19:00:00.000Z"
+  },
+  {
+    "id": "match_27",
+    "teamA": "Canadá",
+    "teamB": "Qatar",
+    "date": "2026-06-18T22:00:00.000Z"
+  },
+  {
+    "id": "match_28",
+    "teamA": "México",
+    "teamB": "Corea del Sur",
+    "date": "2026-06-19T01:00:00.000Z"
+  },
+  {
+    "id": "match_29",
+    "teamA": "Estados Unidos",
+    "teamB": "Australia",
+    "date": "2026-06-19T19:00:00.000Z"
+  },
+  {
+    "id": "match_30",
+    "teamA": "Escocia",
+    "teamB": "Marruecos",
+    "date": "2026-06-19T22:00:00.000Z"
+  },
+  {
+    "id": "match_31",
+    "teamA": "Brasil",
+    "teamB": "Haití",
+    "date": "2026-06-20T01:00:00.000Z"
+  },
+  {
+    "id": "match_32",
+    "teamA": "Turquía",
+    "teamB": "Paraguay",
+    "date": "2026-06-20T04:00:00.000Z"
+  },
+  {
+    "id": "match_33",
+    "teamA": "Países Bajos",
+    "teamB": "Suecia",
+    "date": "2026-06-20T17:00:00.000Z"
+  },
+  {
+    "id": "match_34",
+    "teamA": "Alemania",
+    "teamB": "Costa de Marfil",
+    "date": "2026-06-20T20:00:00.000Z"
+  },
+  {
+    "id": "match_35",
+    "teamA": "Ecuador",
+    "teamB": "Curazao",
+    "date": "2026-06-21T00:00:00.000Z"
+  },
+  {
+    "id": "match_36",
+    "teamA": "Túnez",
+    "teamB": "Japón",
+    "date": "2026-06-21T04:00:00.000Z"
+  },
+  {
+    "id": "match_37",
+    "teamA": "España",
+    "teamB": "Arabia Saudita",
+    "date": "2026-06-21T16:00:00.000Z"
+  },
+  {
+    "id": "match_38",
+    "teamA": "Bélgica",
+    "teamB": "Irán",
+    "date": "2026-06-21T19:00:00.000Z"
+  },
+  {
+    "id": "match_39",
+    "teamA": "Uruguay",
+    "teamB": "Cabo Verde",
+    "date": "2026-06-21T22:00:00.000Z"
+  },
+  {
+    "id": "match_40",
+    "teamA": "Nueva Zelanda",
+    "teamB": "Egipto",
+    "date": "2026-06-22T01:00:00.000Z"
+  },
+  {
+    "id": "match_41",
+    "teamA": "Argentina",
+    "teamB": "Austria",
+    "date": "2026-06-22T17:00:00.000Z"
+  },
+  {
+    "id": "match_42",
+    "teamA": "Francia",
+    "teamB": "Irak",
+    "date": "2026-06-22T21:00:00.000Z"
+  },
+  {
+    "id": "match_43",
+    "teamA": "Noruega",
+    "teamB": "Senegal",
+    "date": "2026-06-23T00:00:00.000Z"
+  },
+  {
+    "id": "match_44",
+    "teamA": "Jordania",
+    "teamB": "Argelia",
+    "date": "2026-06-23T03:00:00.000Z"
+  },
+  {
+    "id": "match_45",
+    "teamA": "Portugal",
+    "teamB": "Uzbekistán",
+    "date": "2026-06-23T17:00:00.000Z"
+  },
+  {
+    "id": "match_46",
+    "teamA": "Inglaterra",
+    "teamB": "Ghana",
+    "date": "2026-06-23T20:00:00.000Z"
+  },
+  {
+    "id": "match_47",
+    "teamA": "Panamá",
+    "teamB": "Croacia",
+    "date": "2026-06-23T23:00:00.000Z"
+  },
+  {
+    "id": "match_48",
+    "teamA": "Colombia",
+    "teamB": "República Democrática del Congo",
+    "date": "2026-06-24T02:00:00.000Z"
+  },
+  {
+    "id": "match_49",
+    "teamA": "Suiza",
+    "teamB": "Canadá",
+    "date": "2026-06-24T19:00:00.000Z"
+  },
+  {
+    "id": "match_50",
+    "teamA": "Bosnia y Herzegovina",
+    "teamB": "Qatar",
+    "date": "2026-06-24T19:00:00.000Z"
+  },
+  {
+    "id": "match_51",
+    "teamA": "Escocia",
+    "teamB": "Brasil",
+    "date": "2026-06-24T22:00:00.000Z"
+  },
+  {
+    "id": "match_52",
+    "teamA": "Marruecos",
+    "teamB": "Haití",
+    "date": "2026-06-24T22:00:00.000Z"
+  },
+  {
+    "id": "match_53",
+    "teamA": "República Checa",
+    "teamB": "México",
+    "date": "2026-06-25T01:00:00.000Z"
+  },
+  {
+    "id": "match_54",
+    "teamA": "Sudáfrica",
+    "teamB": "Corea del Sur",
+    "date": "2026-06-25T01:00:00.000Z"
+  },
+  {
+    "id": "match_55",
+    "teamA": "Ecuador",
+    "teamB": "Alemania",
+    "date": "2026-06-25T20:00:00.000Z"
+  },
+  {
+    "id": "match_56",
+    "teamA": "Curazao",
+    "teamB": "Costa de Marfil",
+    "date": "2026-06-25T20:00:00.000Z"
+  },
+  {
+    "id": "match_57",
+    "teamA": "Túnez",
+    "teamB": "Países Bajos",
+    "date": "2026-06-25T23:00:00.000Z"
+  },
+  {
+    "id": "match_58",
+    "teamA": "Japón",
+    "teamB": "Suecia",
+    "date": "2026-06-25T23:00:00.000Z"
+  },
+  {
+    "id": "match_59",
+    "teamA": "Turquía",
+    "teamB": "Estados Unidos",
+    "date": "2026-06-26T02:00:00.000Z"
+  },
+  {
+    "id": "match_60",
+    "teamA": "Paraguay",
+    "teamB": "Australia",
+    "date": "2026-06-26T02:00:00.000Z"
+  },
+  {
+    "id": "match_61",
+    "teamA": "Noruega",
+    "teamB": "Francia",
+    "date": "2026-06-26T19:00:00.000Z"
+  },
+  {
+    "id": "match_62",
+    "teamA": "Senegal",
+    "teamB": "Irak",
+    "date": "2026-06-26T19:00:00.000Z"
+  },
+  {
+    "id": "match_63",
+    "teamA": "Uruguay",
+    "teamB": "España",
+    "date": "2026-06-27T00:00:00.000Z"
+  },
+  {
+    "id": "match_64",
+    "teamA": "Cabo Verde",
+    "teamB": "Arabia Saudita",
+    "date": "2026-06-27T00:00:00.000Z"
+  },
+  {
+    "id": "match_65",
+    "teamA": "Nueva Zelanda",
+    "teamB": "Bélgica",
+    "date": "2026-06-27T03:00:00.000Z"
+  },
+  {
+    "id": "match_66",
+    "teamA": "Egipto",
+    "teamB": "Irán",
+    "date": "2026-06-27T03:00:00.000Z"
+  },
+  {
+    "id": "match_67",
+    "teamA": "Panamá",
+    "teamB": "Inglaterra",
+    "date": "2026-06-27T21:00:00.000Z"
+  },
+  {
+    "id": "match_68",
+    "teamA": "Croacia",
+    "teamB": "Ghana",
+    "date": "2026-06-27T21:00:00.000Z"
+  },
+  {
+    "id": "match_69",
+    "teamA": "Colombia",
+    "teamB": "Portugal",
+    "date": "2026-06-27T23:30:00.000Z"
+  },
+  {
+    "id": "match_70",
+    "teamA": "República Democrática del Congo",
+    "teamB": "Uzbekistán",
+    "date": "2026-06-27T23:30:00.000Z"
+  },
+  {
+    "id": "match_71",
+    "teamA": "Jordania",
+    "teamB": "Argentina",
+    "date": "2026-06-28T02:00:00.000Z"
+  },
+  {
+    "id": "match_72",
+    "teamA": "Argelia",
+    "teamB": "Austria",
+    "date": "2026-06-28T02:00:00.000Z"
+  }
+]

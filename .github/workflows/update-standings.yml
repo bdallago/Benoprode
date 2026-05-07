@@ -1,0 +1,38 @@
+name: Update Standings Cron
+
+on:
+  schedule:
+    # Match times in Argentina (UTC-3): 13:00, 16:00, 19:00, 22:00
+    # In UTC: 16:00, 19:00, 22:00, 01:00 (next day)
+    
+    # 13:00 ARG (16:00 UTC) -> +110 mins = 14:50 ARG (17:50 UTC)
+    # Iterating every 5 mins for 12 times (until 15:45 ARG / 18:45 UTC)
+    - cron: '50,55 17 * * *'
+    - cron: '0,5,10,15,20,25,30,35,40,45 18 * * *'
+    
+    # 16:00 ARG (19:00 UTC) -> +110 mins = 17:50 ARG (20:50 UTC)
+    # Iterating every 5 mins for 12 times (until 18:45 ARG / 21:45 UTC)
+    - cron: '50,55 20 * * *'
+    - cron: '0,5,10,15,20,25,30,35,40,45 21 * * *'
+    
+    # 19:00 ARG (22:00 UTC) -> +110 mins = 20:50 ARG (23:50 UTC)
+    # Iterating every 5 mins for 12 times (until 21:45 ARG / 00:45 UTC next day)
+    - cron: '50,55 23 * * *'
+    - cron: '0,5,10,15,20,25,30,35,40,45 0 * * *'
+    
+    # 22:00 ARG (01:00 UTC next day) -> +110 mins = 23:50 ARG (02:50 UTC)
+    # Iterating every 5 mins for 12 times (until 00:45 ARG / 03:45 UTC)
+    - cron: '50,55 2 * * *'
+    - cron: '0,5,10,15,20,25,30,35,40,45 3 * * *'
+
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  update-standings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Update API
+        run: |
+          curl -X GET https://www.elprodedebeno.com.ar/api/cron/update-standings
+          echo "Triggered update API"

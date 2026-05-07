@@ -1,0 +1,161 @@
+{
+  "entities": {
+    "Match": {
+      "title": "Match",
+      "description": "A football match from the tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teamA": { "type": "string" },
+        "teamB": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["scheduled", "live", "finished"] },
+        "resultA": { "type": "number" },
+        "resultB": { "type": "number" }
+      },
+      "required": ["id", "teamA", "teamB", "startTime", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A participant in the Prode game.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "player"] },
+        "totalPoints": { "type": "number", "description": "Calculated total points" }
+      },
+      "required": ["uid", "displayName", "email", "role", "totalPoints"]
+    },
+    "Prediction": {
+      "title": "Prediction",
+      "description": "A user's predictions for the tournament.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID of the predictor" },
+        "groups": { "type": "object", "description": "Map of group letter to array of 4 team names in predicted order" },
+        "specials": { "type": "object", "description": "Map of special question keys to string answers" },
+        "knockouts": { "type": "object", "description": "Map of knockout stages to array of advancing teams" },
+        "isLocked": { "type": "boolean", "description": "Whether the prediction is locked and cannot be edited" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "groups", "specials", "knockouts", "isLocked"]
+    },
+    "TournamentResult": {
+      "title": "TournamentResult",
+      "description": "The actual results of the tournament, used to calculate points.",
+      "type": "object",
+      "properties": {
+        "groups": { "type": "object", "description": "Map of group letter to array of 4 team names in actual order" },
+        "specials": { "type": "object", "description": "Map of special question keys to actual string answers" },
+        "knockouts": { "type": "object", "description": "Map of knockout stages to array of actual advancing teams" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["groups", "specials", "knockouts"]
+    },
+    "League": {
+      "title": "League",
+      "description": "A private or public tournament/league created by a user.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "createdBy": { "type": "string", "description": "Firebase Auth UID of the creator" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "Array of Firebase Auth UIDs of members" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isPublic": { "type": "boolean", "description": "Whether the league is public or private" }
+      },
+      "required": ["name", "createdBy", "members", "createdAt", "isPublic"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "A pending friend request between two users.",
+      "type": "object",
+      "properties": {
+        "fromUserId": { "type": "string" },
+        "toUserId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUserId", "toUserId", "status", "createdAt"]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "An established friendship between two users.",
+      "type": "object",
+      "properties": {
+        "user1Id": { "type": "string" },
+        "user2Id": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1Id", "user2Id", "createdAt"]
+    },
+    "Duel": {
+      "title": "Duel",
+      "description": "A challenge between two users on a specific match or group.",
+      "type": "object",
+      "properties": {
+        "challengerId": { "type": "string" },
+        "challengedId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "challengerPrediction": { "type": "object" },
+        "challengedPrediction": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "active", "completed", "rejected"] },
+        "winnerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["challengerId", "challengedId", "matchId", "challengerPrediction", "status", "createdAt"]
+    },
+    "MatchStatistics": {
+      "title": "MatchStatistics",
+      "description": "Aggregated prediction statistics for matches.",
+      "type": "object",
+      "properties": {
+        "A": { "type": "number", "description": "Count of votes for Home Win (Team A)" },
+        "B": { "type": "number", "description": "Count of votes for Away Win (Team B)" },
+        "DRAW": { "type": "number", "description": "Count of votes for Draw" },
+        "total": { "type": "number", "description": "Total count of votes for the match" }
+      },
+      "required": ["A", "B", "DRAW", "total"]
+    }
+  },
+  "firestore": {
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/Match" },
+      "description": "The master list of tournament matches with times and status."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles and their calculated total points."
+    },
+    "/predictions/{userId}": {
+      "schema": { "$ref": "#/entities/Prediction" },
+      "description": "Stores each user's predictions. Document ID matches the user's UID."
+    },
+    "/results/actual": {
+      "schema": { "$ref": "#/entities/TournamentResult" },
+      "description": "Singleton document storing the actual tournament results."
+    },
+    "/leagues/{leagueId}": {
+      "schema": { "$ref": "#/entities/League" },
+      "description": "Stores user-created leagues/tournaments."
+    },
+    "/friendRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/FriendRequest" },
+      "description": "Stores friend requests."
+    },
+    "/friendships/{friendshipId}": {
+      "schema": { "$ref": "#/entities/Friendship" },
+      "description": "Stores established friendships."
+    },
+    "/duels/{duelId}": {
+      "schema": { "$ref": "#/entities/Duel" },
+      "description": "Stores duels between users."
+    },
+    "/statistics/matches": {
+      "schema": { "type": "object", "additionalProperties": { "$ref": "#/entities/MatchStatistics" } },
+      "description": "Stores aggregated prediction stats for every match ID."
+    }
+  }
+}

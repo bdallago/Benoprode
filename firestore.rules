@@ -1,0 +1,374 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (required)
+    //   - email: string (required)
+    //   - photoURL: string (optional)
+    //   - role: string (required, 'admin' or 'player')
+    //   - totalPoints: number (required)
+    //   - tourCompleted: boolean (optional)
+    //
+    // Collection: predictions
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - groups: map (required)
+    //   - specials: map (required)
+    //   - knockouts: map (required)
+    //   - matches: map (optional)
+    //   - isLocked: boolean (required)
+    //   - updatedAt: string (optional)
+    //
+    // Collection: results
+    // Document ID: actual
+    // Fields:
+    //   - groups: map (required)
+    //   - specials: map (required)
+    //   - knockouts: map (required)
+    //   - updatedAt: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        ('email' in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "bdallago01@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             data.displayName is string && data.displayName.size() > 0 &&
+             (!('email' in data) || data.email is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('lastLogin' in data) || data.lastLogin is string) &&
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('updatedAt' in data) || data.updatedAt is string) &&
+             (!('tourCompleted' in data) || data.tourCompleted is bool) &&
+             (!('chatWarnings' in data) || data.chatWarnings is number) &&
+             (!('isChatBanned' in data) || data.isChatBanned is bool) &&
+             (!('referralsCount' in data) || data.referralsCount is number) &&
+             (!('referredBy' in data) || data.referredBy is string || data.referredBy == null) &&
+             (!('unlockedBadges' in data) || data.unlockedBadges is list) &&
+             (!('earnedBadges' in data) || data.earnedBadges is list) &&
+             (!('hasSavedPredictions' in data) || data.hasSavedPredictions is bool) &&
+             (!('lockedEarly' in data) || data.lockedEarly is bool) &&
+             (!('inPrivateLeague' in data) || data.inPrivateLeague is bool) &&
+             (!('inBenoliga' in data) || data.inBenoliga is bool) &&
+             (!('activeDays' in data) || data.activeDays is list) &&
+             (!('loginCount' in data) || data.loginCount is number) &&
+             data.role in ['admin', 'player'] &&
+             data.totalPoints is number && data.totalPoints >= 0;
+    }
+
+    function isValidPrediction(data) {
+      return data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.groups is map &&
+             data.specials is map &&
+             data.knockouts is map &&
+             (!('matches' in data) || data.matches is map) &&
+             data.isLocked is bool &&
+             (!('updatedAt' in data) || data.updatedAt is string);
+    }
+
+    function isValidResult(data) {
+      return data.groups is map &&
+             data.specials is map &&
+             data.knockouts is map &&
+             (!('standings' in data) || data.standings is map) &&
+             (!('updatedAt' in data) || data.updatedAt is string);
+    }
+
+    // Helper para verificar si un partido sigue abierto para predicciones (1 hora de margen)
+    function isMatchOpen(matchId) {
+      let matchPath = /databases/$(database)/documents/matches/$(matchId);
+      return !exists(matchPath) || 
+             request.time < timestamp(get(matchPath).data.startTime) - duration.value(1, 'h');
+    }
+
+    // Rules
+    match /users/{userId} {
+      // Anyone authenticated can read users (needed for leaderboard)
+      allow read: if isAuthenticated();
+      
+      // Create: User can create their own profile. Role must be 'player' unless they are an admin.
+      allow create: if isAuthenticated() && isOwner(userId) &&
+                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned']) &&
+                    isValidUser(request.resource.data) &&
+                    request.resource.data.uid == userId &&
+                    ((request.resource.data.role == 'player' && request.resource.data.totalPoints == 0) || isAdmin());
+                    
+      // Update: User can update their own profile (cannot change role/points). Admin can update any profile.
+      allow update: if isAuthenticated() && (
+                      (isOwner(userId) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount']) &&
+                       isValidUser(request.resource.data) &&
+                       (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid) &&
+                       (!('role' in resource.data) || request.resource.data.role == resource.data.role) &&
+                       (!('totalPoints' in resource.data) || request.resource.data.totalPoints == resource.data.totalPoints))
+                      ||
+                      (isAdmin() &&
+                       isValidUser(request.resource.data) &&
+                       (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid))
+                      ||
+                      (!isOwner(userId) &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralsCount']) &&
+                       request.resource.data.referralsCount == resource.data.referralsCount + 1)
+                    );
+                    
+      // Delete: Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    match /predictions/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isAdmin() || (isOwner(userId) && (
+        // Antes del mundial todo abierto
+        request.time < timestamp.date(2026, 6, 8) || 
+        (
+          resource != null && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
+          // Si cambian partidos, verificamos que el que cambió esté abierto 
+          // (Funciona mejor si se guarda de a uno, si es bulk, protegemos por UI y tiempo general)
+          (
+            !request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() == 1 ||
+            isMatchOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()[0])
+          )
+        )
+      )));
+    }
+
+    match /results/{docId} {
+      // Anyone authenticated can read results
+      allow read: if isAuthenticated();
+      
+      // Only admins can create/update/delete results
+      allow write: if isAdmin() && docId == 'actual' &&
+                   hasOnlyAllowedFields(['groups', 'standings', 'specials', 'knockouts', 'updatedAt']) &&
+                   isValidResult(request.resource.data);
+    }
+    // ===============================================================
+    // Collection: leagues
+    // ===============================================================
+    match /leagues/{leagueId} {
+      // Anyone authenticated can read all leagues
+      allow read: if isAuthenticated();
+      
+      // Any authenticated user can create a league
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['name', 'createdBy', 'members', 'createdAt', 'isPublic']) &&
+                    request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 50 &&
+                    request.resource.data.createdBy == request.auth.uid &&
+                    request.resource.data.members is list && request.resource.data.members.size() > 0 && request.resource.data.members[0] == request.auth.uid &&
+                    request.resource.data.createdAt is string &&
+                    request.resource.data.isPublic is bool;
+                    
+      // Any authenticated user can update a league (to join/leave)
+      allow update: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['name', 'createdBy', 'members', 'createdAt', 'isPublic']) &&
+                    request.resource.data.name == resource.data.name &&
+                    request.resource.data.createdBy == resource.data.createdBy &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (!('isPublic' in request.resource.data) || request.resource.data.isPublic == resource.data.isPublic) &&
+                    request.resource.data.members is list && request.resource.data.members.size() <= 1000;
+                    
+      // Only admin can delete, or the last member leaving
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.members.size() == 1 && resource.data.members[0] == request.auth.uid);
+    }
+    // ===============================================================
+    // Collection: reports
+    // ===============================================================
+    match /reports/{reportId} {
+      // Anyone authenticated can create a report
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['message', 'userEmail', 'userName', 'createdAt', 'attachments']) &&
+                    request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 5000 &&
+                    (!('userEmail' in request.resource.data) || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() < 200)) &&
+                    (!('userName' in request.resource.data) || (request.resource.data.userName is string && request.resource.data.userName.size() < 100)) &&
+                    (!('attachments' in request.resource.data) || (request.resource.data.attachments is list && request.resource.data.attachments.size() <= 3)) &&
+                    request.resource.data.createdAt is string;
+                    
+      // Only admins can read, update, delete reports
+      allow read, update, delete: if isAdmin();
+    }
+    
+    // ===============================================================
+    // Collection: notifications
+    // ===============================================================
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      
+      // Allow creation only if the notification is directed to a valid user.
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['userId', 'type', 'title', 'message', 'read', 'createdAt', 'actionUrl']) &&
+                    request.resource.data.userId is string &&
+                    request.resource.data.type in ['friend_request', 'league_invite', 'match_result', 'badge_earned', 'ranking_drop', 'system_alert', 'duel_invite', 'duel_accepted'] &&
+                    request.resource.data.title is string &&
+                    request.resource.data.message is string &&
+                    request.resource.data.read == false &&
+                    request.resource.data.createdAt is string;
+                    
+      // Only allow updating read status
+      allow update: if isAuthenticated() && 
+                    request.auth.uid == resource.data.userId &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+                    request.resource.data.read is bool;
+                    
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    // ===============================================================
+    // Collection: friendRequests
+    // ===============================================================
+    match /friendRequests/{requestId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['fromUserId', 'toUserId', 'status', 'createdAt']) &&
+                    request.resource.data.fromUserId == request.auth.uid &&
+                    request.resource.data.toUserId is string && request.resource.data.toUserId.size() > 0 &&
+                    request.resource.data.status == 'pending' &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['fromUserId', 'toUserId', 'status', 'createdAt']) &&
+                    request.resource.data.fromUserId == resource.data.fromUserId &&
+                    request.resource.data.toUserId == resource.data.toUserId &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (
+                      (request.auth.uid == resource.data.toUserId && request.resource.data.status in ['accepted', 'rejected']) ||
+                      (request.auth.uid == resource.data.fromUserId && request.resource.data.status == 'rejected')
+                    );
+                    
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+    }
+
+    // ===============================================================
+    // Collection: friendships
+    // ===============================================================
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['user1Id', 'user2Id', 'createdAt']) &&
+                    (request.auth.uid == request.resource.data.user1Id || request.auth.uid == request.resource.data.user2Id) &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if false; // Friendships are immutable, delete to remove
+      
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+    }
+
+    // ===============================================================
+    // Collection: matches subcollections
+    // ===============================================================
+    match /matches/{matchId}/comments/{commentId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['text', 'userId', 'userName', 'createdAt']) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 1000 &&
+                    request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100;
+                    
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
+    }
+
+    // ===============================================================
+    // Collection: liveChat
+    // ===============================================================
+    match /liveChat/{messageId} {
+      // Anyone authenticated can read chat messages
+      allow read: if isAuthenticated();
+      
+      // Anyone authenticated can create a chat message
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['text', 'userId', 'userName', 'createdAt']) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() < 500 &&
+                    request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100;
+                    
+      // Only admins can update/delete messages
+      allow update, delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Collection: duels_v2
+    // ===============================================================
+    match /duels_v2/{duelId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['challengerId', 'challengerName', 'challengedId', 'challengedName', 'matchId', 'duelType', 'challengerPrediction', 'challengedPrediction', 'status', 'winnerId', 'createdAt']) &&
+                    request.resource.data.challengerId == request.auth.uid &&
+                    request.resource.data.challengedId is string &&
+                    request.resource.data.matchId is string &&
+                    request.resource.data.duelType is string &&
+                    request.resource.data.challengerPrediction is map &&
+                    request.resource.data.challengedPrediction is map &&
+                    request.resource.data.status == 'pending' &&
+                    (!('winnerId' in request.resource.data) || request.resource.data.winnerId == null) &&
+                    request.resource.data.createdAt is string;
+                    
+      allow update: if isAuthenticated() &&
+                    hasOnlyAllowedFields(['challengerId', 'challengerName', 'challengedId', 'challengedName', 'matchId', 'duelType', 'challengerPrediction', 'challengedPrediction', 'status', 'winnerId', 'createdAt']) &&
+                    request.resource.data.challengerId == resource.data.challengerId &&
+                    request.resource.data.challengedId == resource.data.challengedId &&
+                    request.resource.data.matchId == resource.data.matchId &&
+                    request.resource.data.challengerPrediction == resource.data.challengerPrediction &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    (
+                      // User accepting or rejecting a duel
+                      (request.auth.uid == resource.data.challengedId && request.resource.data.status in ['accepted', 'rejected']) ||
+                      // Admin or system updating winner
+                      (isAdmin() && request.resource.data.status == 'completed')
+                    );
+                    
+      allow delete: if isAdmin();
+    }
+
+
+    // ===============================================================
+    // Collection: system_stats
+    // ===============================================================
+    match /system_stats/{statsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // Collection: statistics
+    // ===============================================================
+    match /statistics/{statsId} {
+      allow read: if isAuthenticated();
+      // Admins can do anything. 
+      // Players can update 'matches' stats (increments).
+      allow create, update: if isAuthenticated() && (isAdmin() || statsId == 'matches');
+      allow delete: if isAdmin();
+    }
+  }
+}

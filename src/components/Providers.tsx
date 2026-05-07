@@ -1,0 +1,468 @@
+"use client";
+
+import { useState, useEffect, createContext, useContext, useRef } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  updateDoc,
+  increment,
+  arrayUnion,
+  getDocFromServer,
+} from "firebase/firestore";
+import { auth, db } from "../firebase";
+
+// Mandatory connection test
+async function testFirestoreConnection() {
+  try {
+    // We try to fetch a dummy doc strictly from server to "wake up" the connection
+    await getDocFromServer(doc(db, "system_stats", "connection_test"));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("offline")) {
+      console.warn("Firestore initialization: client is offline.");
+    }
+  }
+}
+
+testFirestoreConnection();
+import { Navbar } from "./Navbar";
+import "../i18n";
+import { useTranslation } from "react-i18next";
+import { usePathname, useRouter } from "next/navigation";
+import { getUserBadges, BADGES } from "../lib/gamification";
+import { X } from "lucide-react";
+import { useTheme } from "./ThemeProvider";
+import { TooltipProvider } from "./ui/tooltip";
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  isAdmin: boolean;
+  globalLeagues: any[];
+  userStats: any;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  isAdmin: false,
+  globalLeagues: [],
+  userStats: {},
+});
+
+export const useAuth = () => useContext(AuthContext);
+
+function GlobalBadgeListener({
+  user,
+  globalLeagues,
+  userStats,
+}: {
+  user: User;
+  globalLeagues: any[];
+  userStats: any;
+}) {
+  const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
+  const [currentBadge, setCurrentBadge] = useState<any | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+    );
+    audioRef.current.volume = 0.5;
+  }, []);
+
+  useEffect(() => {
+    if (!user || !userStats) return;
+
+    let myPoints = userStats.totalPoints || 0;
+    let hasInvitedFriends = (userStats.referralsCount || 0) > 0;
+    let hasSavedPredictions = !!userStats.hasSavedPredictions;
+    let lockedEarly = !!userStats.lockedEarly;
+
+    const checkBadges = () => {
+      const userLeagues = globalLeagues.filter(
+        (l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid,
+      );
+      const inBenoliga = userLeagues.some(
+        (l: any) =>
+          l.name?.toLowerCase().includes("beno") || l.id === "benoliga",
+      );
+      const inPrivateLeague = userLeagues.length > 0;
+
+      const badgeCriteria = {
+        referralsCount: hasInvitedFriends ? 1 : 0,
+        inBenoliga: inBenoliga,
+        inPrivateLeague: inPrivateLeague,
+        hasSavedPredictions,
+        lockedEarly,
+      };
+
+      const userBadgeIds = Array.from(
+        new Set(getUserBadges(myPoints, badgeCriteria)),
+      );
+      const userBadgesFull = userBadgeIds
+        .map((id) => BADGES.find((b) => b.id === id))
+        .filter(Boolean);
+
+      const storedBadges = userStats.earnedBadges || [];
+      const newEarnedBadges = userBadgesFull.filter(
+        (b: any) => b && !storedBadges.includes(b.id),
+      );
+
+      if (newEarnedBadges.length > 0) {
+        setBadgeQueue((prev: any[]) => {
+          const existingIds = prev.map((p) => p.id);
+          const toAdd = newEarnedBadges.filter(
+            (b) => b && !existingIds.includes(b.id),
+          );
+          return [...prev, ...(toAdd as any[])];
+        });
+
+        const newBadgesList = Array.from(
+          new Set([...storedBadges, ...userBadgeIds]),
+        );
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: newBadgesList,
+        }).catch(console.error);
+      } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
+        updateDoc(doc(db, "users", user.uid), {
+          earnedBadges: userBadgeIds,
+        }).catch(console.error);
+      }
+    };
+
+    checkBadges();
+
+    const unsubscribePredictions = onSnapshot(
+      doc(db, "predictions", user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          let changed = false;
+
+          let nextSavedPredictions = hasSavedPredictions;
+          let nextLockedEarly = lockedEarly;
+
+          if (!userStats.hasSavedPredictions) {
+            nextSavedPredictions = true;
+            changed = true;
+          }
+
+          if (data.isLocked && data.updatedAt) {
+            const lockedDate = new Date(data.updatedAt);
+            const deadline = new Date("2026-06-01T00:00:00Z");
+            if (lockedDate < deadline && !userStats.lockedEarly) {
+              nextLockedEarly = true;
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            updateDoc(doc(db, "users", user.uid), {
+              hasSavedPredictions: nextSavedPredictions,
+              lockedEarly: nextLockedEarly,
+            }).catch(console.error);
+          }
+        }
+      },
+      (err) => {
+        console.warn("Predictions snapshot error (idle/cancel):", err);
+      }
+    );
+
+    return () => {
+      unsubscribePredictions();
+    };
+  }, [user, globalLeagues, userStats]);
+
+  // Effect 1: Process the queue
+  useEffect(() => {
+    if (badgeQueue.length > 0 && !currentBadge) {
+      const t = setTimeout(() => {
+        setCurrentBadge(badgeQueue[0]);
+      }, 500); // 500ms delay between badges
+      return () => clearTimeout(t);
+    }
+  }, [badgeQueue, currentBadge]);
+
+  // Effect 2: Handle the active badge timer
+  useEffect(() => {
+    if (currentBadge) {
+      if (audioRef.current) {
+        // Only try to play if user interacted with document, otherwise ignore safely
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            // normal behavior in modern browsers when no interaction yet
+          });
+        }
+      }
+
+      const timer = setTimeout(() => {
+        setCurrentBadge(null);
+        setBadgeQueue((prev: any[]) => prev.slice(1));
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentBadge]);
+
+  if (!currentBadge) return null;
+
+  return (
+    <div
+      key={currentBadge.id}
+      className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-10 fade-in duration-500"
+    >
+      <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white p-4 rounded-lg shadow-2xl border-2 border-sky-300 flex items-center gap-4 max-w-sm relative pr-10">
+        <button
+          onClick={() => {
+            setCurrentBadge(null);
+            setBadgeQueue((prev: any[]) => prev.slice(1));
+          }}
+          className="absolute top-2 right-2 text-sky-200 hover:text-white transition-colors"
+          title="Cerrar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <div className="text-4xl animate-bounce">{currentBadge.icon}</div>
+        <div>
+          <p className="text-xs font-bold text-sky-100 uppercase tracking-wider">
+            ¡Nueva Medalla Desbloqueada!
+          </p>
+          <h4 className="font-bold text-lg">{currentBadge.name}</h4>
+          <p className="text-sm text-sky-50">{currentBadge.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [userStats, setUserStats] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [globalLeagues, setGlobalLeagues] = useState<any[]>([]);
+
+  const { t } = useTranslation();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    if (!user) {
+      setUserStats({});
+      return;
+    }
+
+    const unsubscribeUser = onSnapshot(
+      doc(db, "users", user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserStats(docSnap.data());
+        }
+      },
+      (err) => {
+        console.warn("User document snapshot error (idle/cancel):", err);
+      }
+    );
+
+    const unsubscribeLeagues = onSnapshot(
+      collection(db, "leagues"),
+      (snapshot) => {
+        setGlobalLeagues(
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+        );
+      },
+      (err) => {
+        console.warn("Leagues snapshot error (idle/cancel):", err);
+      }
+    );
+
+    return () => {
+      unsubscribeUser();
+      unsubscribeLeagues();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      setLoading(false); // Unblock UI immediately after auth state is known
+
+      if (currentUser) {
+        try {
+          const isAdminEmail =
+            currentUser.email?.toLowerCase() === "bdallago01@gmail.com";
+
+          // Check if user exists in db, if not create
+          const userRef = doc(db, "users", currentUser.uid);
+          let userSnap;
+          try {
+            userSnap = await getDoc(userRef);
+          } catch (e: any) {
+            if (e.message?.includes("offline")) {
+              console.warn("Client is offline, skipping user DB sync.");
+              // Fallback to basic admin check based on email since we can't read DB
+              setIsAdmin(isAdminEmail);
+              return;
+            }
+            throw e;
+          }
+
+          if (!userSnap.exists()) {
+            const role = isAdminEmail ? "admin" : "player";
+            setIsAdmin(isAdminEmail);
+
+            const refId = localStorage.getItem("referralId");
+            const todayStr = new Date().toISOString().split("T")[0];
+
+            await setDoc(userRef, {
+              uid: currentUser.uid,
+              displayName: currentUser.displayName || "Usuario",
+              email: currentUser.email || `${currentUser.uid}@no-email.com`,
+              photoURL: currentUser.photoURL || "",
+              role: role,
+              totalPoints: 0,
+              referralsCount: 0,
+              referredBy: refId || null,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+              activeDays: [todayStr],
+              loginCount: 1,
+              tourCompleted: false,
+              chatWarnings: 0,
+              isChatBanned: false,
+            });
+
+            if (refId && refId !== currentUser.uid) {
+              try {
+                const referrerRef = doc(db, "users", refId);
+                const referrerSnap = await getDoc(referrerRef);
+                if (referrerSnap.exists()) {
+                  await updateDoc(referrerRef, {
+                    referralsCount: increment(1),
+                  });
+                }
+              } catch (err) {
+                console.error("Error updating referrer points:", err);
+              }
+            }
+
+            localStorage.removeItem(`user_badges_${currentUser.uid}`);
+          } else {
+            const userData = userSnap.data();
+            const currentRole = userData.role;
+            setIsAdmin(isAdminEmail || currentRole === "admin");
+
+            const todayStr = new Date().toISOString().split("T")[0];
+            const updates: any = {
+              lastLogin: new Date().toISOString(),
+              loginCount: increment(1),
+              activeDays: arrayUnion(todayStr),
+              uid: currentUser.uid,
+            };
+
+            if (isAdminEmail && currentRole !== "admin") updates.role = "admin";
+            else if (!currentRole) updates.role = "player";
+
+            if (userData.totalPoints == null) updates.totalPoints = 0;
+            if (!userData.displayName)
+              updates.displayName = currentUser.displayName || "Usuario";
+            if (!userData.email)
+              updates.email =
+                currentUser.email || `${currentUser.uid}@no-email.com`;
+            if (userData.chatWarnings == null) updates.chatWarnings = 0;
+            if (userData.isChatBanned == null) updates.isChatBanned = false;
+
+            await updateDoc(userRef, updates);
+          }
+
+          // Auto-create Benoliga if admin
+          if (isAdminEmail) {
+            try {
+              const benoligaRef = doc(db, "leagues", "benoliga");
+              const benoligaSnap = await getDoc(benoligaRef);
+              if (!benoligaSnap.exists()) {
+                await setDoc(benoligaRef, {
+                  name: "La Benoliga",
+                  createdBy: currentUser.uid,
+                  members: [currentUser.uid],
+                  createdAt: new Date().toISOString(),
+                  isPublic: true,
+                });
+              }
+            } catch (e) {
+              console.error("Error auto-creating Benoliga", e);
+            }
+          }
+        } catch (error) {
+          console.error("Error in auth state change:", error);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues, userStats }}>
+        <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+          <Navbar user={user} isAdmin={isAdmin} />
+          {user && (
+            <GlobalBadgeListener user={user} globalLeagues={globalLeagues} userStats={userStats} />
+          )}
+          <main className="container mx-auto px-4 py-8 flex-grow">
+            {children}
+          </main>
+
+          <footer
+            className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: 'url("/footer.jpeg")' }}
+          >
+            <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-200">
+              <p>
+                {t("footer.developedBy")}{" "}
+                <a
+                  href="https://x.com/imbenodl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-blue-300 font-medium transition-colors"
+                >
+                  @imbenodl
+                </a>
+              </p>
+              <p>
+                {t("footer.contact")}{" "}
+                <a
+                  href="mailto:bdallago01@gmail.com"
+                  className="text-white hover:text-blue-300 transition-colors"
+                >
+                  bdallago01@gmail.com
+                </a>
+              </p>
+            </div>
+          </footer>
+        </div>
+      </AuthContext.Provider>
+    </TooltipProvider>
+  );
+}
