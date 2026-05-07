@@ -1,5 +1,6 @@
 import { initializeApp, applicationDefault, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import fs from "fs";
 import path from "path";
 
@@ -22,9 +23,9 @@ export function getAdminDb() {
 
   if (getApps().length === 0) {
     let credential;
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    if (process.env.FIREBASE_ADMIN_KEY) {
       try {
-        let rawKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+        let rawKey = process.env.FIREBASE_ADMIN_KEY.trim();
         
         // Log basic info for debugging (not the key itself)
         console.log(`Firebase Admin: Key length=${rawKey.length}, startsWith=${rawKey.substring(0, 10).replace(/\n/g, "\\n")}...`);
@@ -73,7 +74,7 @@ export function getAdminDb() {
         return null;
       }
     } else {
-      console.warn("Firebase Admin Warning: FIREBASE_SERVICE_ACCOUNT_KEY not found, using applicationDefault. This might cause PERMISSION_DENIED for non-default databases.");
+      console.warn("Firebase Admin Warning: FIREBASE_ADMIN_KEY not found, using applicationDefault. This might cause PERMISSION_DENIED for non-default databases.");
       credential = applicationDefault();
     }
     
@@ -89,4 +90,12 @@ export function getAdminDb() {
     globalAny.cachedDb = getFirestore(app, dbId);
     return globalAny.cachedDb;
   }
+}
+
+export function getAdminAuth() {
+  // Ensure the Admin app is initialized first, then return Auth on the same app instance.
+  getAdminDb();
+  const apps = getApps();
+  if (!apps.length) return null;
+  return getAuth(apps[0]);
 }

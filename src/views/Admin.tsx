@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, getCountFromServer, QueryConstraint } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, QueryConstraint } from "firebase/firestore";
+import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
 import { Button } from "../components/ui/button";
@@ -119,6 +119,8 @@ export default function Admin() {
     organicUsers: 0,
     referredUsers: 0
   });
+  const [analyticsUpdatedAt, setAnalyticsUpdatedAt] = useState<string | null>(null);
+  const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -159,33 +161,33 @@ export default function Admin() {
         const usersData = usersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as any));
         setUsers(usersData);
         
-        // Replace heavy analytics loops with fast counts!
-        console.log("Admin: Fetching DB counts...");
-        const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
-        const leaguesCount = (await getCountFromServer(collection(db, "leagues"))).data().count;
-        const duelsCount = (await getCountFromServer(collection(db, "duels_v2"))).data().count;
-        const predsCount = (await getCountFromServer(collection(db, "predictions"))).data().count;
-
-        setAnalytics({
-          totalUsers: usersCount,
-          newUsers7d: 0, // Disabled for performance
-          returningUsersAtLeastOnce: 0, // Disabled
-          returningUsersMultiple: 0, // Disabled
-          activeToday: 0, // Disabled
-          wau: 0, // Disabled
-          mau: 0, // Disabled
-          dormant14d: 0, // Disabled
-          totalLeagues: leaguesCount,
-          privateLeagues: 0, // Disabled
-          publicLeagues: 0, // Disabled
-          duelsCreated: duelsCount,
-          duelsAccepted: 0, // Disabled
-          usersGroupStage: predsCount, // Approximated
-          usersSpecialQuestions: 0, // Disabled
-          completePredictions: 0, // Disabled
-          organicUsers: 0, // Disabled
-          referredUsers: 0 // Disabled
-        });
+        // Read pre-calculated analytics from single document
+        console.log("Admin: Fetching estadisticas_globales...");
+        const statsSnap = await getDoc(doc(db, "estadisticas_globales", "actual"));
+        if (statsSnap.exists()) {
+          const s = statsSnap.data();
+          setAnalytics({
+            totalUsers:              s.usuarios?.total         ?? 0,
+            newUsers7d:              s.usuarios?.nuevos7d      ?? 0,
+            returningUsersAtLeastOnce: s.usuarios?.regresaron1vez    ?? 0,
+            returningUsersMultiple:  s.usuarios?.regresaronVarias   ?? 0,
+            activeToday:             s.usuarios?.activosHoy    ?? 0,
+            wau:                     s.usuarios?.activosSemana ?? 0,
+            mau:                     s.usuarios?.activosMes    ?? 0,
+            dormant14d:              s.usuarios?.inactivos14d  ?? 0,
+            totalLeagues:            s.torneos?.total          ?? 0,
+            privateLeagues:          s.torneos?.privadas       ?? 0,
+            publicLeagues:           s.torneos?.publicas       ?? 0,
+            duelsCreated:            s.duelos?.creados         ?? 0,
+            duelsAccepted:           s.duelos?.aceptados       ?? 0,
+            usersGroupStage:         s.participacion?.conPrediccion ?? 0,
+            usersSpecialQuestions:   s.participacion?.conEspeciales ?? 0,
+            completePredictions:     s.participacion?.prodeCompleto ?? 0,
+            organicUsers:            s.usuarios?.organicos     ?? 0,
+            referredUsers:           s.usuarios?.referidos     ?? 0,
+          });
+          setAnalyticsUpdatedAt(s.actualizadoEn ?? null);
+        }
         
         // Fetch reports
         console.log("Admin: Fetching reports...");
@@ -205,6 +207,51 @@ export default function Admin() {
 
     fetchData();
   }, []);
+
+  const recalcularEstadisticas = async () => {
+    setRecalculating(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("No autenticado");
+      const res = await fetch("/api/admin/recalcular-estadisticas", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      // Re-read the updated document
+      const statsSnap = await getDoc(doc(db, "estadisticas_globales", "actual"));
+      if (statsSnap.exists()) {
+        const s = statsSnap.data();
+        setAnalytics({
+          totalUsers:              s.usuarios?.total         ?? 0,
+          newUsers7d:              s.usuarios?.nuevos7d      ?? 0,
+          returningUsersAtLeastOnce: s.usuarios?.regresaron1vez    ?? 0,
+          returningUsersMultiple:  s.usuarios?.regresaronVarias   ?? 0,
+          activeToday:             s.usuarios?.activosHoy    ?? 0,
+          wau:                     s.usuarios?.activosSemana ?? 0,
+          mau:                     s.usuarios?.activosMes    ?? 0,
+          dormant14d:              s.usuarios?.inactivos14d  ?? 0,
+          totalLeagues:            s.torneos?.total          ?? 0,
+          privateLeagues:          s.torneos?.privadas       ?? 0,
+          publicLeagues:           s.torneos?.publicas       ?? 0,
+          duelsCreated:            s.duelos?.creados         ?? 0,
+          duelsAccepted:           s.duelos?.aceptados       ?? 0,
+          usersGroupStage:         s.participacion?.conPrediccion ?? 0,
+          usersSpecialQuestions:   s.participacion?.conEspeciales ?? 0,
+          completePredictions:     s.participacion?.prodeCompleto ?? 0,
+          organicUsers:            s.usuarios?.organicos     ?? 0,
+          referredUsers:           s.usuarios?.referidos     ?? 0,
+        });
+        setAnalyticsUpdatedAt(s.actualizadoEn ?? null);
+      }
+      setMessage({ type: 'success', text: `Estadísticas recalculadas. Actualizado: ${new Date(data.actualizadoEn).toLocaleString()}` });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: `Error al recalcular: ${err.message}` });
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const handleGroupChange = (groupLetter: string, index: number, value: string) => {
     setActualGroups((prev: any) => {
@@ -629,9 +676,33 @@ export default function Admin() {
 
       {activeTab === 'analytics' && (
         <div className="space-y-6 pt-4 pb-12">
-          <h2 className="text-2xl font-bold text-indigo-700 border-b border-indigo-200 pb-2 flex items-center gap-2">
-            <Calculator className="w-6 h-6" /> {t('admin.analytics.title')}
-          </h2>
+          <div className="flex items-center justify-between border-b border-indigo-200 pb-2">
+            <h2 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
+              <Calculator className="w-6 h-6" /> {t('admin.analytics.title')}
+            </h2>
+            <div className="flex items-center gap-3">
+              {analyticsUpdatedAt && (
+                <span className="text-xs text-gray-400">
+                  Actualizado: {new Date(analyticsUpdatedAt).toLocaleString()}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={recalcularEstadisticas}
+                disabled={recalculating}
+                className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                <Calculator className="w-4 h-4" />
+                {recalculating ? 'Calculando...' : 'Recalcular'}
+              </Button>
+            </div>
+          </div>
+          {!analyticsUpdatedAt && (
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              No hay datos calculados aún. Pulsá "Recalcular" para generar las estadísticas.
+            </p>
+          )}
           <p className="text-sm text-gray-600 mb-4">{t('admin.analytics.description')}</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
