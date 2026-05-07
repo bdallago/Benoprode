@@ -54,18 +54,18 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
     }
   };
 
-  // Calculate ranks first
+  // Calculate ranks in one O(n) pass — players arrives pre-sorted by points desc
   const playersWithRank = useMemo(() => {
-    return players.map(player => {
-      const rank = players.findIndex(p => p.totalPoints === player.totalPoints) + 1;
-      const pct = players.length > 1 ? (rank / players.length) * 100 : 100;
-      let topBadges = [];
-      if (pct <= 10 && player.totalPoints > 0) {
-        topBadges.push('Top 10%');
-      } else if (pct <= 30 && player.totalPoints > 0) {
-        topBadges.push('Top 30%');
+    let currentRank = 1;
+    return players.map((player, index) => {
+      if (index > 0 && player.totalPoints < players[index - 1].totalPoints) {
+        currentRank = index + 1;
       }
-      return { ...player, rank, topBadges };
+      const pct = players.length > 1 ? (currentRank / players.length) * 100 : 100;
+      const topBadges: string[] = [];
+      if (pct <= 10 && player.totalPoints > 0) topBadges.push('Top 10%');
+      else if (pct <= 30 && player.totalPoints > 0) topBadges.push('Top 30%');
+      return { ...player, rank: currentRank, topBadges };
     });
   }, [players]);
 

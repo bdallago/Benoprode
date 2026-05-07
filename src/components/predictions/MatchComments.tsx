@@ -15,6 +15,7 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -40,8 +41,9 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
     return () => observer.disconnect();
   }, []);
 
+  // Listener starts on first expand and lives until unmount — never recreated on collapse/re-expand
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!hasLoaded) return;
 
     const q = query(
       collection(db, `matches/${matchId}/comments`),
@@ -49,15 +51,11 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const commentsData = snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setComments(commentsData);
+      setComments(snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })));
     });
 
     return () => unsubscribe();
-  }, [matchId, isExpanded]);
+  }, [matchId, hasLoaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +83,7 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
   return (
     <div ref={containerRef} className="mt-4 border-t dark:border-gray-700 pt-3 flex flex-col items-center relative">
       <button 
-        onClick={() => { setIsExpanded(!isExpanded); setShowTooltip(false); }}
+        onClick={() => { if (!hasLoaded) setHasLoaded(true); setIsExpanded(p => !p); setShowTooltip(false); }}
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400 font-medium transition-colors w-full justify-center relative z-10"
       >
         <MessageCircle className="w-4 h-4" />
