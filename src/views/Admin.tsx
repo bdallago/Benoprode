@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, QueryConstraint } from "firebase/firestore";
+import { useState, useEffect, useRef } from "react";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, QueryConstraint, DocumentSnapshot } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -43,11 +43,59 @@ export default function Admin() {
   
   // State for users
   const [users, setUsers] = useState<UserProfile[]>([]);
-  
+  const [userSearch, setUserSearch] = useState('');
+  const [lastUserDoc, setLastUserDoc] = useState<DocumentSnapshot | null>(null);
+  const [hasMoreUsers, setHasMoreUsers] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const searchIsFirstRender = useRef(true);
+
   // State for reports
   const [reports, setReports] = useState<Report[]>([]);
   const [activeTab, setActiveTab] = useState<'results' | 'users' | 'reports' | 'analytics'>('results');
   const [syncingStats, setSyncingStats] = useState(false);
+
+  const loadUsers = async (search: string, mode: 'reset' | 'append') => {
+    if (mode === 'append') setLoadingMore(true);
+    try {
+      let snap;
+      if (search.trim()) {
+        const field = search.includes('@') ? 'email' : 'displayName';
+        const q = query(
+          collection(db, 'users'),
+          where(field, '>=', search),
+          where(field, '<=', search + ''),
+          limit(50)
+        );
+        snap = await getDocs(q);
+        setLastUserDoc(null);
+        setHasMoreUsers(false);
+      } else {
+        const constraints: QueryConstraint[] = [];
+        if (mode === 'append' && lastUserDoc) constraints.push(startAfter(lastUserDoc));
+        constraints.push(limit(50));
+        snap = await getDocs(query(collection(db, 'users'), ...constraints));
+        setLastUserDoc(snap.docs[snap.docs.length - 1] ?? null);
+        setHasMoreUsers(snap.docs.length === 50);
+      }
+      const newUsers = snap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
+      if (mode === 'append') {
+        setUsers(prev => [...prev, ...newUsers]);
+      } else {
+        setUsers(newUsers);
+      }
+    } finally {
+      if (mode === 'append') setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchIsFirstRender.current) {
+      searchIsFirstRender.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => loadUsers(userSearch, 'reset'), 300);
+    return () => clearTimeout(timeout);
+  }, [userSearch]);
 
   const syncMatchStats = async () => {
     setSyncingStats(true);
@@ -154,12 +202,8 @@ export default function Admin() {
           setActualGroups(GROUPS);
         }
 
-        // Fetch 50 users for the list
-        console.log("Admin: Fetching 50 users...");
-        const usersSnap = await getDocs(query(collection(db, "users"), limit(50)));
-        console.log("Admin: Fetched 50 users.");
-        const usersData = usersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as any));
-        setUsers(usersData);
+        // Fetch users via shared loadUsers
+        await loadUsers('', 'reset');
         
         // Read pre-calculated analytics from single document
         console.log("Admin: Fetching estadisticas_globales...");
@@ -436,9 +480,7 @@ export default function Admin() {
       window.scrollTo(0, 0);
 
       // Refresh just the visible users
-      const freshUsersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50)));
-      const freshUsersData = freshUsersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
-      setUsers(freshUsersData);
+      await loadUsers('', 'reset');
 
     } catch (error: any) {
       console.error("Error calculating points:", error);
@@ -502,9 +544,7 @@ export default function Admin() {
       }
 
       // Re-fetch only 50 users to update the UI
-      const freshUsersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50)));
-      const freshUsersData = freshUsersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
-      setUsers(freshUsersData);
+      await loadUsers('', 'reset');
 
       setMessage({ type: 'success', text: t('admin.messages.resetSuccess') });
       window.scrollTo(0, 0);
@@ -1057,7 +1097,25 @@ export default function Admin() {
           <Users className="w-6 h-6" /> {t('admin.users.title')}
         </h2>
         <p className="text-sm text-gray-600 mb-4">{t('admin.users.description')}</p>
-        
+
+        <div className="flex items-center gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="Buscar por nombre o email (prefijo)..."
+            value={userSearch}
+            onChange={e => setUserSearch(e.target.value)}
+            className="w-full md:w-96 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300 dark:bg-gray-800 dark:text-gray-100"
+          />
+          {userSearch && (
+            <button
+              onClick={() => setUserSearch('')}
+              className="text-xs text-gray-400 hover:text-gray-600 whitespace-nowrap"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -1072,18 +1130,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...users].sort((a: any, b: any) => {
-                    const getCreatedTime = (u: any) => {
-                      if (u.createdAt) {
-                        if (typeof u.createdAt === 'string') return new Date(u.createdAt).getTime();
-                        if (u.createdAt.toDate) return u.createdAt.toDate().getTime();
-                        return u.createdAt;
-                      }
-                      if (u.lastLogin) return new Date(u.lastLogin).getTime();
-                      return 0;
-                    };
-                    return getCreatedTime(b) - getCreatedTime(a);
-                  }).map((u) => (
+                  {users.map((u) => (
                     <tr key={u.uid} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
                         {u.photoURL ? (
@@ -1138,6 +1185,19 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
+
+        {!userSearch && hasMoreUsers && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => loadUsers('', 'append')}
+              disabled={loadingMore}
+              className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+            >
+              {loadingMore ? 'Cargando...' : `Cargar más usuarios`}
+            </Button>
+          </div>
+        )}
       </div>
       )}
 
