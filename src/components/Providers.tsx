@@ -129,11 +129,11 @@ function GlobalBadgeListener({
         );
         updateDoc(doc(db, "users", user.uid), {
           earnedBadges: newBadgesList,
-        }).catch(console.error);
+        }).catch(e => console.warn('Badge persist failed:', e));
       } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
         updateDoc(doc(db, "users", user.uid), {
           earnedBadges: userBadgeIds,
-        }).catch(console.error);
+        }).catch(e => console.warn('Badge persist failed:', e));
       }
     };
 
@@ -167,7 +167,7 @@ function GlobalBadgeListener({
             updateDoc(doc(db, "users", user.uid), {
               hasSavedPredictions: nextSavedPredictions,
               lockedEarly: nextLockedEarly,
-            }).catch(console.error);
+            }).catch(e => console.warn('Could not update prediction flags:', e));
           }
         }
       },

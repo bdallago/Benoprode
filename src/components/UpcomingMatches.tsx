@@ -60,7 +60,7 @@ export function UpcomingMatches({ user }: { user: User }) {
       
       // Simular onWrite Cloud Function asincrónica para actualizar las estadísticas base
       // del % de elegibilidad global a mostrar en vivo en el panel sin recargar
-      fetch('/api/sync/match-stats', { method: 'POST' }).catch(console.error);
+      fetch('/api/sync/match-stats', { method: 'POST' }).catch(e => console.warn('Match stats sync skipped:', e));
 
     } catch (error) {
       console.error("Error saving match prediction:", error);

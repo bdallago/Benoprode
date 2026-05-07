@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -50,25 +50,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const promises = [
+        const [predSnap, resSnap, leaguesSnap, userSnap, currentUserPredSnap] = await Promise.all([
           getDoc(doc(db, "predictions", userId)),
           getDoc(doc(db, "results", "actual")),
-          import("firebase/firestore").then(m => m.getDocs(m.query(m.collection(db, "leagues"), m.where("members", "array-contains", userId)))),
-          getDoc(doc(db, "users", userId))
-        ];
-
-        let isFriendsWithUser = false;
-        let hasPendingRequest = false;
-        if (user) {
-           promises.push(getDoc(doc(db, "predictions", user.uid)));
-        }
-
-        const resolved = await Promise.all(promises);
-        const predSnap = resolved[0] as any;
-        const resSnap = resolved[1] as any;
-        const leaguesSnap = resolved[2] as any;
-        const userSnap = resolved[3] as any;
-        const currentUserPredSnap = resolved.length > 4 ? resolved[4] as any : null;
+          getDocs(query(collection(db, "leagues"), where("members", "array-contains", userId))),
+          getDoc(doc(db, "users", userId)),
+          user ? getDoc(doc(db, "predictions", user.uid)) : Promise.resolve(null)
+        ]);
 
         if (predSnap.exists()) {
           setPredictions(predSnap.data());

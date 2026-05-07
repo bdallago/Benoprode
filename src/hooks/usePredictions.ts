@@ -5,7 +5,9 @@ import { GROUPS } from "../data";
 import { useTranslation } from 'react-i18next';
 
 // Fase de grupos se bloquea el 8 de Junio a las 00:00hs (-03:00 para alinear con Bs As)
-const DEADLINE = new Date('2026-06-08T00:00:00-03:00').getTime();
+const GROUP_STAGE_DEADLINE = new Date('2026-06-08T00:00:00-03:00').getTime();
+// Lock anticipado: quien guarda antes del 1 de Junio gana la medalla lockedEarly
+const EARLY_LOCK_DEADLINE = new Date('2026-06-01T00:00:00-03:00').getTime();
 
 export function usePredictions(userId: string) {
   const { t } = useTranslation();
@@ -13,7 +15,7 @@ export function usePredictions(userId: string) {
   const [saving, setSaving] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
-  const [timeLeft, setTimeLeft] = useState(DEADLINE - Date.now());
+  const [timeLeft, setTimeLeft] = useState(GROUP_STAGE_DEADLINE - Date.now());
 
   // State for predictions
   const [groupPredictions, setGroupPredictions] = useState<Record<string, string[]>>(GROUPS);
@@ -76,7 +78,7 @@ export function usePredictions(userId: string) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const remaining = DEADLINE - Date.now();
+      const remaining = GROUP_STAGE_DEADLINE - Date.now();
       setTimeLeft(remaining);
       
       // Auto-lock if time is up and it wasn't locked before
@@ -89,7 +91,7 @@ export function usePredictions(userId: string) {
     return () => clearInterval(interval);
   }, [isLocked, loading]);
 
-  const isGroupStageLocked = Date.now() >= DEADLINE || isLocked;
+  const isGroupStageLocked = Date.now() >= GROUP_STAGE_DEADLINE || isLocked;
   // We keep effectiveIsLocked as the global overall lock (which mostly applies to Groups / Knockout overall manual locking)
   // but we will expose isGroupStageLocked natively.
   const effectiveIsLocked = isLocked || isGroupStageLocked;
@@ -101,9 +103,8 @@ export function usePredictions(userId: string) {
     try {
       const now = Date.now();
       const tenMins = 10 * 60 * 1000;
-      const lockedLastMinute = now >= DEADLINE - tenMins && now < DEADLINE;
-      const DEADLINE_EARLY = new Date('2026-06-01T00:00:00-03:00').getTime();
-      const lockedEarly = lock && now < DEADLINE_EARLY;
+      const lockedLastMinute = now >= GROUP_STAGE_DEADLINE - tenMins && now < GROUP_STAGE_DEADLINE;
+      const lockedEarly = lock && now < EARLY_LOCK_DEADLINE;
 
       const docRef = doc(db, "predictions", userId);
       

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { User } from "firebase/auth";
 import {
   collection,
@@ -9,7 +9,6 @@ import {
   onSnapshot,
   doc,
   getDoc,
-  limit,
   getCountFromServer,
   where,
 } from "firebase/firestore";

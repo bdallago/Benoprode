@@ -11,7 +11,7 @@ import firebaseConfig from "../firebase-applet-config.json";
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize with settings and correct database ID from config.
-const dbId = (firebaseConfig as any).firestoreDatabaseId || "(default)";
+const dbId = (firebaseConfig as typeof firebaseConfig & { firestoreDatabaseId?: string }).firestoreDatabaseId || "(default)";
 
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,

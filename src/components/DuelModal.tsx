@@ -83,7 +83,7 @@ export function DuelModal({ challengedId, challengedName, matchId, matchData, ch
 
   let arePredictionsIdentical = myValue === hisValue;
   
-  const isMatch = duelType === 'match_winner' || duelType === 'match_exact' || duelType === 'match' as any;
+  const isMatch = duelType === 'match_winner' || duelType === 'match_exact' || duelType === 'match';
   const winnerIsIdentical = isMatch && (renderPredictionValue(myPrediction, 'match_winner') === renderPredictionValue(challengedPrediction, 'match_winner'));
   const exactIsIdentical = isMatch && (renderPredictionValue(myPrediction, 'match_exact') === renderPredictionValue(challengedPrediction, 'match_exact'));
 

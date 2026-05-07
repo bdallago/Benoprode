@@ -71,15 +71,14 @@ export function computePoints(
   for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
     const pm = predMatches[matchId];
     if (!pm || !actualMatch) continue;
-    const am = actualMatch as any;
-    if (pm.outcome && am.outcome && pm.outcome === am.outcome) {
+    if (pm.outcome && actualMatch.outcome && pm.outcome === actualMatch.outcome) {
       totalPoints += 1;
       correctMatchCount++;
     }
     if (
       pm.teamA !== "" && pm.teamB !== "" &&
-      am.teamA !== "" && am.teamB !== "" &&
-      pm.teamA === am.teamA && pm.teamB === am.teamB
+      actualMatch.teamA !== "" && actualMatch.teamB !== "" &&
+      pm.teamA === actualMatch.teamA && pm.teamB === actualMatch.teamB
     ) {
       totalPoints += 1;
       exactMatchCount++;
