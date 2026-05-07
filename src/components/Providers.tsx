@@ -5,15 +5,19 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
   onSnapshot,
   collection,
   query,
   where,
+  limit,
+  startAfter,
   updateDoc,
   increment,
   arrayUnion,
   getDocFromServer,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -44,6 +48,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   globalLeagues: any[];
+  hasMoreLeagues: boolean;
+  loadMoreLeagues: () => Promise<void>;
   userStats: any;
 }
 
@@ -52,6 +58,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   globalLeagues: [],
+  hasMoreLeagues: false,
+  loadMoreLeagues: async () => {},
   userStats: {},
 });
 
@@ -250,6 +258,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [globalLeagues, setGlobalLeagues] = useState<any[]>([]);
+  const [hasMoreLeagues, setHasMoreLeagues] = useState(false);
+  const lastLeagueDocRef = useRef<DocumentSnapshot | null>(null);
 
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -259,6 +269,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       setUserStats({});
+      setGlobalLeagues([]);
+      setHasMoreLeagues(false);
+      lastLeagueDocRef.current = null;
       return;
     }
 
@@ -274,12 +287,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // Scoped listener: only the user's own leagues (first 20), no unbounded collection read
     const unsubscribeLeagues = onSnapshot(
-      collection(db, "leagues"),
+      query(collection(db, "leagues"), where("members", "array-contains", user.uid), limit(20)),
       (snapshot) => {
-        setGlobalLeagues(
-          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
-        );
+        lastLeagueDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+        setHasMoreLeagues(snapshot.docs.length === 20);
+        setGlobalLeagues(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
       },
       (err) => {
         console.warn("Leagues snapshot error (idle/cancel):", err);
@@ -414,6 +428,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const loadMoreLeagues = async () => {
+    if (!user || !lastLeagueDocRef.current) return;
+    try {
+      const snap = await getDocs(
+        query(collection(db, "leagues"), where("members", "array-contains", user.uid), startAfter(lastLeagueDocRef.current), limit(20))
+      );
+      lastLeagueDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
+      setHasMoreLeagues(snap.docs.length === 20);
+      setGlobalLeagues((prev) => [...prev, ...snap.docs.map((d) => ({ id: d.id, ...d.data() }))]);
+    } catch (e) {
+      console.warn("loadMoreLeagues failed:", e);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -424,7 +452,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues, userStats }}>
+      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues, hasMoreLeagues, loadMoreLeagues, userStats }}>
         <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && (

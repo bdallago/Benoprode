@@ -5,7 +5,12 @@ export async function GET(req: Request) {
   // Verificación de seguridad mínima (podés agregar headers Authorization)
   const db = getAdminDb();
   if (!db) return NextResponse.json({ error: "DB Error" }, { status: 500 });
-  
+
+  const authHeader = req.headers.get("authorization");
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const testMode = searchParams.get('testLive') === 'true';
 

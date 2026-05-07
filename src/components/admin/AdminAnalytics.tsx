@@ -66,6 +66,7 @@ export function AdminAnalytics({ onMessage }: Props) {
   const { t } = useTranslation();
   const [analytics, setAnalytics] = useState<AnalyticsData>(EMPTY_ANALYTICS);
   const [analyticsUpdatedAt, setAnalyticsUpdatedAt] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function AdminAnalytics({ onMessage }: Props) {
         setAnalytics(mapDocToAnalytics(snap.data()));
         setAnalyticsUpdatedAt(snap.data().actualizadoEn ?? null);
       }
-    }).catch(e => console.warn("AdminAnalytics: failed to fetch stats:", e));
+    }).catch(e => console.warn("AdminAnalytics: failed to fetch stats:", e)).finally(() => setLoading(false));
   }, []);
 
   const recalcularEstadisticas = async () => {
@@ -96,10 +97,17 @@ export function AdminAnalytics({ onMessage }: Props) {
       onMessage({ type: "success", text: `Estadísticas recalculadas. Actualizado: ${new Date(data.actualizadoEn).toLocaleString()}` });
     } catch (err: any) {
       onMessage({ type: "error", text: `Error al recalcular: ${err.message}` });
+      setTimeout(() => onMessage(null), 5000);
     } finally {
       setRecalculating(false);
     }
   };
+
+  if (loading) return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+    </div>
+  );
 
   return (
     <div className="space-y-6 pt-4 pb-12">

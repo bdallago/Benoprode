@@ -373,9 +373,8 @@ service cloud.firestore {
     // ===============================================================
     match /statistics/{statsId} {
       allow read: if isAuthenticated();
-      // Admins can do anything. 
-      // Players can update 'matches' stats (increments).
-      allow create, update: if isAuthenticated() && (isAdmin() || statsId == 'matches');
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && (isAdmin() || statsId == 'matches');
       allow delete: if isAdmin();
     }
   }

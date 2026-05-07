@@ -22,13 +22,15 @@ interface Props {
 export function AdminReports({ onMessage }: Props) {
   const { t } = useTranslation();
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc")))
       .then((snap) => {
         setReports(snap.docs.map((d) => ({ ...d.data(), id: d.id } as Report)));
       })
-      .catch((e) => console.warn("AdminReports: failed to fetch reports:", e));
+      .catch((e) => console.warn("AdminReports: failed to fetch reports:", e))
+      .finally(() => setLoading(false));
   }, []);
 
   const deleteReport = async (id: string) => {
@@ -43,6 +45,12 @@ export function AdminReports({ onMessage }: Props) {
       setTimeout(() => onMessage(null), 5000);
     }
   };
+
+  if (loading) return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+    </div>
+  );
 
   return (
     <div className="space-y-6 pt-4 pb-12">

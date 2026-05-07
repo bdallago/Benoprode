@@ -34,6 +34,7 @@ export function AdminUsers({ onMessage }: Props) {
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ uid: string; name: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const searchIsFirstRender = useRef(true);
 
   const loadUsers = async (search: string, mode: "reset" | "append") => {
@@ -71,7 +72,7 @@ export function AdminUsers({ onMessage }: Props) {
   };
 
   useEffect(() => {
-    loadUsers("", "reset");
+    loadUsers("", "reset").finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -148,6 +149,12 @@ export function AdminUsers({ onMessage }: Props) {
       setTimeout(() => onMessage(null), 5000);
     }
   };
+
+  if (loading) return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+    </div>
+  );
 
   return (
     <div className="space-y-6 pt-4 pb-12">

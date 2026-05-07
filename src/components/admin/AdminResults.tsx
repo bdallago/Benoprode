@@ -32,6 +32,7 @@ export function AdminResults({ onMessage }: Props) {
   const [calculating, setCalculating] = useState(false);
   const [syncingStats, setSyncingStats] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getDoc(doc(db, "results", "actual"))
@@ -51,7 +52,8 @@ export function AdminResults({ onMessage }: Props) {
         setActualKnockouts(data.knockouts || {});
         setActualMatches(data.matches || {});
       })
-      .catch((e) => console.warn("AdminResults: failed to fetch results:", e));
+      .catch((e) => console.warn("AdminResults: failed to fetch results:", e))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleGroupChange = (groupLetter: string, index: number, value: string) => {
@@ -243,6 +245,12 @@ export function AdminResults({ onMessage }: Props) {
       setTimeout(() => onMessage(null), 5000);
     }
   };
+
+  if (loading) return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+    </div>
+  );
 
   return (
     <>
