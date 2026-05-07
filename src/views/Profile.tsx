@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { fetchUsersInChunks } from "../lib/firestore-utils";
 import {
   Trophy,
   Users,
@@ -43,6 +44,7 @@ import matchesData from "../lib/matches.json";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../components/Providers";
+import { useSocial } from "../hooks/useSocial";
 
 interface ProfileProps {
   user: User;
@@ -55,6 +57,15 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const targetUserId = profileId || user.uid;
   const searchParams = useSearchParams();
   const { t } = useTranslation();
+  const { 
+    friends, 
+    sentRequests, 
+    receivedRequests, 
+    addFriend, 
+    acceptRequest, 
+    rejectRequest 
+  } = useSocial(user);
+  
   const initialTab =
     (searchParams.get("tab") as "stats" | "friends" | "duels") || "stats";
 
@@ -72,12 +83,15 @@ export default function Profile({ user, profileId }: ProfileProps) {
     }
   }, [searchParams]);
 
-  // Friendship state
-  const [friendStatus, setFriendStatus] = useState<
-    "none" | "pending_sent" | "pending_received" | "friends"
-  >("none");
-  const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
-  const [friendshipId, setFriendshipId] = useState<string | null>(null);
+  // Friendship state - Derived from useSocial
+  const friendStatus = friends.has(targetUserId) 
+    ? "friends" 
+    : sentRequests.has(targetUserId) 
+      ? "pending_sent" 
+      : receivedRequests.has(targetUserId) 
+        ? "pending_received" 
+        : "none";
+
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
   const [duelsList, setDuelsList] = useState<any[]>([]);
@@ -185,13 +199,10 @@ export default function Profile({ user, profileId }: ProfileProps) {
       snap1.docs.forEach((d: any) => friendIds.add(d.data().user2Id));
       snap2.docs.forEach((d: any) => friendIds.add(d.data().user1Id));
 
-      const friendsData: any[] = [];
-      for (const fid of Array.from(friendIds)) {
-        const fDoc = await getDoc(doc(db, "users", fid));
-        if (fDoc.exists()) {
-          friendsData.push({ id: fid, ...fDoc.data() });
-        }
-      }
+      const uidsArray = Array.from(friendIds);
+      const fetchedPlayers = await fetchUsersInChunks(db, uidsArray);
+      
+      const friendsData = fetchedPlayers.map(f => ({ ...f, id: f.uid }));
       setFriendsList(friendsData);
     };
 
@@ -244,22 +255,27 @@ export default function Profile({ user, profileId }: ProfileProps) {
           where("status", "==", "pending"),
         ),
         async (snap) => {
-          const p = await Promise.all(
-            snap.docs.map(async (d) => {
-              const uDoc = await getDoc(doc(db, "users", d.data().fromUserId));
-              return {
-                id: d.id,
-                fromUserId: d.data().fromUserId,
-                ...uDoc.data(),
-              };
-            }),
-          );
+          if (snap.empty) {
+            setPendingRequestsList([]);
+            return;
+          }
+          const reqs = snap.docs.map(d => ({ reqId: d.id, ...d.data() }));
+          const uids = reqs.map((r: any) => r.fromUserId);
+          const fetchedUsers = await fetchUsersInChunks(db, uids);
+          
+          const p = reqs.map((req: any) => {
+            const u = fetchedUsers.find(user => user.uid === req.fromUserId);
+            return {
+              id: req.reqId,
+              fromUserId: req.fromUserId,
+              ...u
+            };
+          });
           setPendingRequestsList(p);
         },
       );
     }
 
-    // Let's implement H2H calculation here
     return () => {
       unsubF1();
       unsubF2();
@@ -310,98 +326,20 @@ export default function Profile({ user, profileId }: ProfileProps) {
   }, [duelsList, isOwnProfile, user.uid, profileId]);
 
   useEffect(() => {
-    if (isOwnProfile) return;
-
-    // Check friendship status
-    const q1 = query(
-      collection(db, "friendRequests"),
-      where("fromUserId", "==", user.uid),
-      where("toUserId", "==", targetUserId),
-    );
-    const q2 = query(
-      collection(db, "friendRequests"),
-      where("fromUserId", "==", targetUserId),
-      where("toUserId", "==", user.uid),
-    );
-    const q3 = query(
-      collection(db, "friendships"),
-      where("user1Id", "in", [user.uid, targetUserId]),
-    );
-
-    const unsub1 = onSnapshot(q1, (snap) => {
-      if (!snap.empty) {
-        const req = snap.docs[0];
-        if (req.data().status === "pending") {
-          setFriendStatus("pending_sent");
-          setFriendRequestId(req.id);
-        }
-      }
-    });
-
-    const unsub2 = onSnapshot(q2, (snap) => {
-      if (!snap.empty) {
-        const req = snap.docs[0];
-        if (req.data().status === "pending") {
-          setFriendStatus("pending_received");
-          setFriendRequestId(req.id);
-        }
-      }
-    });
-
-    const unsub3 = onSnapshot(q3, (snap) => {
-      const friendship = snap.docs.find(
-        (d) =>
-          (d.data().user1Id === user.uid &&
-            d.data().user2Id === targetUserId) ||
-          (d.data().user1Id === targetUserId && d.data().user2Id === user.uid),
-      );
-      if (friendship) {
-        setFriendStatus("friends");
-        setFriendshipId(friendship.id);
-      }
-    });
-
-    return () => {
-      unsub1();
-      unsub2();
-      unsub3();
-    };
+    // Relationships are now handled by useSocial
   }, [user.uid, targetUserId, isOwnProfile]);
 
   const handleSendFriendRequest = async () => {
     try {
-      await addDoc(collection(db, "friendRequests"), {
-        fromUserId: user.uid,
-        toUserId: targetUserId,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-      });
-      // Add notification for the user receiving request
-      await addDoc(collection(db, "notifications"), {
-        userId: targetUserId,
-        type: "friend_request",
-        title: "Nueva solicitud de amistad",
-        message: `${user.displayName || "Un usuario"} quiere añadirte como amigo.`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/profile?tab=friends`,
-      });
+      await addFriend(targetUserId);
     } catch (error) {
       console.error("Error sending friend request:", error);
     }
   };
 
   const handleAcceptFriendRequest = async () => {
-    if (!friendRequestId) return;
     try {
-      await updateDoc(doc(db, "friendRequests", friendRequestId), {
-        status: "accepted",
-      });
-      await addDoc(collection(db, "friendships"), {
-        user1Id: user.uid,
-        user2Id: targetUserId,
-        createdAt: new Date().toISOString(),
-      });
+      await acceptRequest(targetUserId);
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
@@ -919,24 +857,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white p-2"
                           onClick={async () => {
-                            // Accept request inline
-                            await updateDoc(doc(db, "friendRequests", req.id), {
-                              status: "accepted",
-                            });
-                            await addDoc(collection(db, "friendships"), {
-                              user1Id: user!.uid,
-                              user2Id: req.fromUserId,
-                              createdAt: new Date().toISOString(),
-                            });
-                            await addDoc(collection(db, "notifications"), {
-                              userId: req.fromUserId,
-                              type: "system_alert",
-                              title: "Solicitud Aceptada",
-                              message: `${user!.displayName || "Un usuario"} aceptó tu solicitud de amistad.`,
-                              read: false,
-                              createdAt: new Date().toISOString(),
-                              actionUrl: "/profile?tab=friends",
-                            });
+                            await acceptRequest(req.fromUserId);
                           }}
                         >
                           <Check className="w-4 h-4" />
@@ -946,10 +867,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                           variant="outline"
                           className="text-red-600 border-red-200 hover:bg-red-50 p-2"
                           onClick={() => {
-                            // Reject request inline
-                            updateDoc(doc(db, "friendRequests", req.id), {
-                              status: "rejected",
-                            });
+                            rejectRequest(req.fromUserId);
                           }}
                         >
                           <X className="w-4 h-4" />

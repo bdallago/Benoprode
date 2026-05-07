@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 import { es, enUS } from "date-fns/locale";
+import { useSocial } from "../hooks/useSocial";
 
 interface Notification {
   id: string;
@@ -45,6 +46,7 @@ function getRelativeTime(dateString: string) {
 
 export function NotificationCenter({ user }: { user: User }) {
   const { t, i18n } = useTranslation();
+  const { acceptRequest } = useSocial(user);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -155,41 +157,13 @@ export function NotificationCenter({ user }: { user: User }) {
     }
   };
 
-  const handleAcceptFriendRequest = async (notif: Notification, e: React.MouseEvent) => {
+  const handleAcceptFriendRequestAction = async (notif: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!notif.fromUserId) return;
     setProcessingId(notif.id);
     
     try {
-      // Find the request
-      const qReq = query(collection(db, 'friendRequests'), where('fromUserId', '==', notif.fromUserId), where('toUserId', '==', user.uid), where('status', '==', 'pending'));
-      const snap = await getDocs(qReq);
-      
-      const batch = writeBatch(db);
-      snap.docs.forEach((d: any) => {
-        batch.update(d.ref, { status: 'accepted', updatedAt: new Date().toISOString() });
-      });
-
-      // Create friendship record
-      const friendshipRef = doc(collection(db, 'friendships'));
-      batch.set(friendshipRef, {
-        user1Id: user.uid,
-        user2Id: notif.fromUserId,
-        createdAt: new Date().toISOString()
-      });
-      
-      await batch.commit();
-
-      // Notify the requester
-      await addDoc(collection(db, "notifications"), {
-        userId: notif.fromUserId,
-        type: 'system_alert',
-        title: 'Solicitud Aceptada',
-        message: `${user.displayName || "Un usuario"} aceptó tu solicitud de amistad.`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/profile?tab=friends`
-      });
-
+      await acceptRequest(notif.fromUserId);
       await markAsRead(notif.id);
     } catch (err) {
       console.error(err);
@@ -315,7 +289,7 @@ export function NotificationCenter({ user }: { user: User }) {
                       {/* Action Buttons for specific types */}
                       {!notif.read && notif.type === 'friend_request' && notif.fromUserId && (
                         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-gray-600 dark:text-blue-400" onClick={(e) => handleAcceptFriendRequest(notif, e)} disabled={processingId === notif.id}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs bg-white text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-gray-600 dark:text-blue-400" onClick={(e) => handleAcceptFriendRequestAction(notif, e)} disabled={processingId === notif.id}>
                             {t('notifications.acceptRequest')}
                           </Button>
                         </div>

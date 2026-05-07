@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, arrayUnion, arrayRemove, deleteDoc, getDocs, where, documentId } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, getDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { fetchUsersInChunks } from "../lib/firestore-utils";
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../components/Providers";
@@ -46,22 +47,7 @@ export function useLeagues(userId: string) {
         // Clear previous players list to avoid showing stale data from another league
         setPlayers([]);
 
-        // Batch in groups of 30 due to Firestore 'in' limits
-        const chunks = [];
-        for (let i = 0; i < uids.length; i += 30) {
-          chunks.push(uids.slice(i, i + 30));
-        }
-        
-        let allPlayers: Player[] = [];
-        for (const chunk of chunks) {
-          const q = query(
-            collection(db, "users"), 
-            where(documentId(), "in", chunk)
-          );
-          const snap = await getDocs(q);
-          const p = snap.docs.map(d => ({ ...d.data(), uid: d.id } as Player));
-          allPlayers = [...allPlayers, ...p];
-        }
+        const allPlayers = await fetchUsersInChunks(db, uids);
 
         // Diagnostic: if counts don't match, log the missing UIDs for debugging
         if (allPlayers.length < uids.length) {

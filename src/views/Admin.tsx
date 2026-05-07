@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, getCountFromServer } from "firebase/firestore";
 import { db } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -52,23 +52,46 @@ export default function Admin() {
   const syncMatchStats = async () => {
     setSyncingStats(true);
     try {
-      const predictionsSnap = await getDocs(collection(db, "predictions"));
       const stats: Record<string, any> = {};
-      
-      predictionsSnap.forEach((doc: any) => {
-        const data = doc.data();
-        if (data.matches) {
-          Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
-            if (pred && (pred.outcome === 'A' || pred.outcome === 'B' || pred.outcome === 'DRAW')) {
-              if (!stats[matchId]) {
-                stats[matchId] = { A: 0, B: 0, DRAW: 0, total: 0 };
-              }
-              stats[matchId][pred.outcome]++;
-              stats[matchId].total++;
-            }
-          });
+      let lastDoc = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        // Query predictions in chunks of 100
+        const queryParts = [collection(db, "predictions"), orderBy("__name__"), limit(100)];
+        if (lastDoc) queryParts.push(startAfter(lastDoc));
+        
+        let q;
+        switch (queryParts.length) {
+          case 3: q = query(queryParts[0] as any, queryParts[1] as any, queryParts[2] as any); break;
+          case 4: q = query(queryParts[0] as any, queryParts[1] as any, queryParts[2] as any, queryParts[3] as any); break;
+          default: q = query(queryParts[0] as any);
         }
-      });
+
+        const predictionsSnap = await getDocs(q);
+        
+        if (predictionsSnap.empty) {
+          hasMore = false;
+          break;
+        }
+
+        lastDoc = predictionsSnap.docs[predictionsSnap.docs.length - 1];
+
+        predictionsSnap.forEach((doc: any) => {
+          const data = doc.data();
+          if (data.matches) {
+            Object.entries(data.matches).forEach(([matchId, pred]: [string, any]) => {
+              if (pred && (pred.outcome === 'A' || pred.outcome === 'B' || pred.outcome === 'DRAW')) {
+                if (!stats[matchId]) {
+                  stats[matchId] = { A: 0, B: 0, DRAW: 0, total: 0 };
+                }
+                stats[matchId][pred.outcome]++;
+                stats[matchId].total++;
+              }
+            });
+          }
+        });
+      }
       
       await setDoc(doc(db, "statistics", "matches"), stats);
       setMessage({ type: 'success', text: "Las estadísticas globales han sido sincronizadas correctamente." });
@@ -135,219 +158,39 @@ export default function Admin() {
           setActualGroups(GROUPS);
         }
 
-        // Fetch users
-        console.log("Admin: Fetching users...");
-        const usersSnap = await getDocs(collection(db, "users"));
-        console.log("Admin: Fetched users.");
+        // Fetch 50 users for the list
+        console.log("Admin: Fetching 50 users...");
+        const usersSnap = await getDocs(query(collection(db, "users"), limit(50)));
+        console.log("Admin: Fetched 50 users.");
         const usersData = usersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as any));
         setUsers(usersData);
         
-        // Fetch predictions to calculate analytics
-        console.log("Admin: Fetching predictions...");
-        const predictionsSnap = await getDocs(collection(db, "predictions"));
-        console.log("Admin: Fetched predictions.");
-        
-        // Fetch leagues
-        console.log("Admin: Fetching leagues...");
-        const leaguesSnap = await getDocs(collection(db, "leagues"));
-        console.log("Admin: Fetched leagues.");
-
-        // Fetch duels
-        console.log("Admin: Fetching duels...");
-        const duelsSnap = await getDocs(collection(db, "duels_v2"));
-        console.log("Admin: Fetched duels.");
-
-        // Calculate analytics
-        const today = new Date().toISOString().split('T')[0];
-        const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        let activeTodayCount = 0;
-        let wau = 0;
-        let mau = 0;
-        let newUsers7d = 0;
-        let returningUsersAtLeastOnce = 0;
-        let returningUsersMultiple = 0;
-        let dormant14d = 0;
-        let organicUsers = 0;
-        let referredUsers = 0;
-        
-        usersData.forEach((u: any) => {
-          if (u.referredBy) {
-            referredUsers++;
-          } else {
-            organicUsers++;
-          }
-
-          let loginDate = null;
-          if (u.lastLogin) {
-            loginDate = new Date(u.lastLogin);
-          }
-          
-          let createDate = null;
-          if (u.createdAt) {
-            if (typeof u.createdAt === 'string') createDate = new Date(u.createdAt);
-            else if (u.createdAt.toDate) createDate = u.createdAt.toDate();
-          }
-
-          if (createDate && createDate >= sevenDaysAgo) {
-            newUsers7d++;
-          } else if (!createDate && loginDate && loginDate >= sevenDaysAgo) {
-            // Usuarios antiguos de hace unos pocos dias que aun no tenian el campo createdAt
-            if (!u.loginCount || (u.loginCount === 1 && !u.totalPoints)) {
-               newUsers7d++;
-            }
-          }
-          
-          // Activity based on activeDays and strict 24h checks
-          let isActive24h = false;
-          if (u.lastLogin) {
-            const loginTime = new Date(u.lastLogin).getTime();
-            if (now.getTime() - loginTime <= 24 * 60 * 60 * 1000) {
-              isActive24h = true;
-            }
-          }
-          if (isActive24h) activeTodayCount++;
-
-          const activeDays: string[] = Array.isArray(u.activeDays) ? u.activeDays : [];
-          
-          if (activeDays.length > 0) {
-             
-             const stringSevenDays = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-             const stringFourteenDays = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-             const stringThirtyDays = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-             let hasWAU = false;
-             let hasMAU = false;
-             let hasRecentActivity = false;
-
-             activeDays.forEach((d: string) => {
-               if (d >= stringSevenDays) hasWAU = true;
-               if (d >= stringThirtyDays) hasMAU = true;
-               if (d >= stringFourteenDays) hasRecentActivity = true;
-             });
-
-             if (hasWAU) wau++;
-             if (hasMAU) mau++;
-             if (!hasRecentActivity) dormant14d++;
-             
-             // Smart Return Logic: If they have only 1 active day but they existed before today, they are returning!
-             let isReturning = activeDays.length > 1;
-             let isMultipleReturning = activeDays.length > 2;
-
-             // Fallbacks for older users getting added to activeDays today
-             if (activeDays.length === 1 && createDate) {
-               const dayOfCreation = createDate.toISOString().split('T')[0];
-               if (activeDays[0] > dayOfCreation) {
-                 isReturning = true;
-               }
-             }
-             // Reliable fallback from incremented login count
-             if (typeof u.loginCount === 'number') {
-                if (u.loginCount > 1) isReturning = true;
-                if (u.loginCount > 2) isMultipleReturning = true;
-             }
-
-             if (isReturning) returningUsersAtLeastOnce++;
-             if (isMultipleReturning) returningUsersMultiple++;
-          } else {
-            // Fallback for old tracking
-            if (loginDate) {
-              if (loginDate >= sevenDaysAgo) wau++;
-              if (loginDate >= thirtyDaysAgo) mau++;
-              if (loginDate < fourteenDaysAgo) dormant14d++;
-            }
-            if (typeof u.loginCount === 'number') {
-               if (u.loginCount > 1) returningUsersAtLeastOnce++;
-               if (u.loginCount > 2) returningUsersMultiple++;
-            } else if (createDate && loginDate) {
-               if (createDate.toDateString() !== loginDate.toDateString()) {
-                 returningUsersAtLeastOnce++;
-               }
-            } else if (!createDate && loginDate) {
-               returningUsersAtLeastOnce++;
-               if (u.totalPoints && u.totalPoints > 0) {
-                 returningUsersMultiple++;
-               }
-            }
-          }
-        });
-
-        let completePredictions = 0;
-        let usersGroupStage = 0;
-        let usersSpecialQuestions = 0;
-
-        predictionsSnap.forEach((doc: any) => {
-          const data = doc.data();
-          
-          let matchesCount = 0;
-          if (data.matches) {
-            Object.values(data.matches).forEach((m: any) => {
-              if (m && m.outcome && m.outcome !== "") matchesCount++;
-            });
-          }
-          
-          let specialsCount = 0;
-          if (data.specials) {
-             Object.values(data.specials).forEach((s: any) => {
-               if (s && typeof s === 'string' && s.trim() !== "") specialsCount++;
-             });
-          }
-          
-          const hasMatches = matchesCount >= 48; // Llenaron los 48 de grupos o mas
-          const hasGroups = data.hasSavedPredictions === true || data.isLocked === true; // Guardaron o fijaron grupos
-          const hasSpecials = specialsCount > 0; // Guardaron al menos 1
-          
-          if (hasGroups) usersGroupStage++;
-          if (hasSpecials) usersSpecialQuestions++;
-          
-          if (matchesCount >= 72 && specialsCount >= 10 && data.isLocked === true) {
-            completePredictions++;
-          } else if (matchesCount >= 48 && specialsCount >= 10) {
-            // Cuentan como completos temporalmente si llenaron grupos y esp pero quiza no fijaron aun
-            completePredictions++;
-          }
-        });
-
-        let totalLeagues = leaguesSnap.size;
-        let privateLeagues = 0;
-        let publicLeagues = 0;
-        
-        leaguesSnap.forEach((doc: any) => {
-          const lData = doc.data();
-          if (lData.isPublic) publicLeagues++;
-          else privateLeagues++;
-        });
-
-        let duelsCreated = duelsSnap.size;
-        let duelsAccepted = 0;
-        duelsSnap.forEach((doc: any) => {
-           if (doc.data().status === 'accepted' || doc.data().status === 'completed') {
-             duelsAccepted++;
-           }
-        });
+        // Replace heavy analytics loops with fast counts!
+        console.log("Admin: Fetching DB counts...");
+        const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
+        const leaguesCount = (await getCountFromServer(collection(db, "leagues"))).data().count;
+        const duelsCount = (await getCountFromServer(collection(db, "duels_v2"))).data().count;
+        const predsCount = (await getCountFromServer(collection(db, "predictions"))).data().count;
 
         setAnalytics({
-          totalUsers: usersData.length,
-          newUsers7d,
-          returningUsersAtLeastOnce,
-          returningUsersMultiple,
-          activeToday: activeTodayCount,
-          wau,
-          mau,
-          dormant14d,
-          totalLeagues,
-          privateLeagues,
-          publicLeagues,
-          duelsCreated,
-          duelsAccepted,
-          usersGroupStage,
-          usersSpecialQuestions,
-          completePredictions,
-          organicUsers,
-          referredUsers
+          totalUsers: usersCount,
+          newUsers7d: 0, // Disabled for performance
+          returningUsersAtLeastOnce: 0, // Disabled
+          returningUsersMultiple: 0, // Disabled
+          activeToday: 0, // Disabled
+          wau: 0, // Disabled
+          mau: 0, // Disabled
+          dormant14d: 0, // Disabled
+          totalLeagues: leaguesCount,
+          privateLeagues: 0, // Disabled
+          publicLeagues: 0, // Disabled
+          duelsCreated: duelsCount,
+          duelsAccepted: 0, // Disabled
+          usersGroupStage: predsCount, // Approximated
+          usersSpecialQuestions: 0, // Disabled
+          completePredictions: 0, // Disabled
+          organicUsers: 0, // Disabled
+          referredUsers: 0 // Disabled
         });
         
         // Fetch reports
@@ -446,121 +289,121 @@ export default function Admin() {
       const actualG = sanitizedActualG;
       const actualS = actualData.specials || {};
       const actualK = actualData.knockouts || {};
+      const actualM = actualData.matches || {};
 
-      // 2. Fetch all predictions
-      const predictionsSnap = await getDocs(collection(db, "predictions"));
-      const predictions = predictionsSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      let lastDoc = null;
+      let hasMore = true;
+      let totalProcessed = 0;
 
-      // Fetch all users to ensure we only update existing ones
-      const usersSnapCheck = await getDocs(collection(db, "users"));
-      const existingUserIds = new Set(usersSnapCheck.docs.map(d => d.id));
-
-      // 3. Prepare batch update for users
-      const batch = writeBatch(db);
-      
-      for (const pred of predictions) {
-        if (!existingUserIds.has(pred.id)) continue; // Skip if user doc is missing
+      while (hasMore) {
+        // Query users in chunks of 50
+        const usersQueryParts = [collection(db, "users"), orderBy("__name__"), limit(50)];
+        if (lastDoc) usersQueryParts.push(startAfter(lastDoc));
         
-        let totalPoints = 0;
-        const pGroups = pred.groups || {};
+        let q;
+        switch (usersQueryParts.length) {
+          case 3: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any); break;
+          case 4: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any, usersQueryParts[3] as any); break;
+          default: q = query(usersQueryParts[0] as any);
+        }
+
+        const usersSnapChunk = await getDocs(q);
+        if (usersSnapChunk.empty) {
+          hasMore = false;
+          break;
+        }
+
+        lastDoc = usersSnapChunk.docs[usersSnapChunk.docs.length - 1];
+
+        // Get those 50 users' uids
+        const uidsChunk = usersSnapChunk.docs.map(d => d.id);
+
+        // Fetch their predictions
+        const pQuery = query(collection(db, "predictions"), where("__name__", "in", uidsChunk));
+        const pSnap = await getDocs(pQuery);
         
-        // Sanitize pGroups
-        const sanitizedPGroups: Record<string, string[]> = {};
-        for (const [groupLetter, currentTeams] of Object.entries(GROUPS)) {
-          const savedTeams = pGroups[groupLetter] || [];
-          const validSavedTeams = (savedTeams as string[]).filter(t => currentTeams.includes(t));
-          const missingTeams = currentTeams.filter(t => !validSavedTeams.includes(t));
-          sanitizedPGroups[groupLetter] = [...validSavedTeams, ...missingTeams];
-        }
+        const predictionsMap = new Map();
+        pSnap.docs.forEach(d => predictionsMap.set(d.id, d.data()));
 
-        const pSpecials = pred.specials || {};
+        const batch = writeBatch(db);
 
-        // Calculate Group Points
-        // +1 Punto por cada acierto en la posición exacta
-        // +2 Puntos por cada grupo perfecto (All 4 in correct order)
-        for (const [groupLetter, actualTeams] of Object.entries(actualG)) {
-          const predictedTeams = sanitizedPGroups[groupLetter];
-          if (!predictedTeams || !Array.isArray(actualTeams)) continue;
+        for (const userDoc of usersSnapChunk.docs) {
+          const uid = userDoc.id;
+          const pred = predictionsMap.get(uid);
+          let totalPoints = 0;
 
-          // Check exact matches
-          let exactMatches = 0;
-          for (let i = 0; i < 4; i++) {
-            if (actualTeams[i] && predictedTeams[i] === actualTeams[i]) {
-              exactMatches++;
-              totalPoints += 1;
+          if (pred) {
+            const pGroups = pred.groups || {};
+            const sanitizedPGroups: Record<string, string[]> = {};
+            for (const [groupLetter, currentTeams] of Object.entries(GROUPS)) {
+              const savedTeams = pGroups[groupLetter] || [];
+              const validSavedTeams = (savedTeams as string[]).filter(t => currentTeams.includes(t));
+              const missingTeams = currentTeams.filter(t => !validSavedTeams.includes(t));
+              sanitizedPGroups[groupLetter] = [...validSavedTeams, ...missingTeams];
+            }
+
+            const pSpecials = pred.specials || {};
+            const pMatches = pred.matches || {};
+
+            // Calculate Group Points
+            for (const [groupLetter, actualTeams] of Object.entries(actualG)) {
+              const predictedTeams = sanitizedPGroups[groupLetter];
+              if (!predictedTeams || !Array.isArray(actualTeams)) continue;
+              let exactMatches = 0;
+              for (let i = 0; i < 4; i++) {
+                if (actualTeams[i] && predictedTeams[i] === actualTeams[i]) {
+                  exactMatches++;
+                  totalPoints += 1;
+                }
+              }
+              if (exactMatches === 4) totalPoints += 3;
+            }
+
+            // Calculate Special Points
+            for (const [qId, actualAnswer] of Object.entries(actualS)) {
+              const predictedAnswer = pSpecials[qId];
+              if (predictedAnswer && actualAnswer && typeof actualAnswer === 'string' && typeof predictedAnswer === 'string') {
+                if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
+                  totalPoints += 10;
+                }
+              }
+            }
+
+            // Calculate Match Points
+            for (const [matchId, actualMatch] of Object.entries(actualM)) {
+              const predictedMatch = pMatches[matchId];
+              if (predictedMatch && actualMatch) {
+                const pMatch = predictedMatch as any;
+                const aMatch = actualMatch as any;
+                if (pMatch.outcome && aMatch.outcome && pMatch.outcome === aMatch.outcome) totalPoints += 1;
+                if (
+                  pMatch.teamA !== '' && pMatch.teamB !== '' &&
+                  aMatch.teamA !== '' && aMatch.teamB !== '' &&
+                  pMatch.teamA === aMatch.teamA &&
+                  pMatch.teamB === aMatch.teamB
+                ) {
+                  totalPoints += 1;
+                }
+              }
             }
           }
 
-          // Check perfect group
-          if (exactMatches === 4) {
-            totalPoints += 3; // Changed from 2 to 3
-          }
+          // Update user document
+          batch.set(doc(db, "users", uid), { totalPoints }, { merge: true });
         }
 
-        // Calculate Special Points (+10 each)
-        for (const [qId, actualAnswer] of Object.entries(actualS)) {
-          const predictedAnswer = pSpecials[qId];
-          if (predictedAnswer && actualAnswer && typeof actualAnswer === 'string' && typeof predictedAnswer === 'string') {
-            if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
-              totalPoints += 10;
-            }
-          }
-        }
-
-        // Calculate Match Points
-        const pMatches = pred.matches || {};
-        const actualM = actualData.matches || {};
-        for (const [matchId, actualMatch] of Object.entries(actualM)) {
-          const predictedMatch = pMatches[matchId];
-          if (predictedMatch && actualMatch) {
-            const pMatch = predictedMatch as any;
-            const aMatch = actualMatch as any;
-            // Check outcome
-            if (pMatch.outcome && aMatch.outcome && pMatch.outcome === aMatch.outcome) {
-              totalPoints += 1;
-            }
-            // Check exact result
-            if (
-              pMatch.teamA !== '' && pMatch.teamB !== '' &&
-              aMatch.teamA !== '' && aMatch.teamB !== '' &&
-              pMatch.teamA === aMatch.teamA &&
-              pMatch.teamB === aMatch.teamB
-            ) {
-              totalPoints += 1;
-            }
-          }
-        }
-
-        // Calculate Knockout Points (Disabled for now)
-        /*
-        const pKnockouts = pred.knockouts || {};
-        for (const stage of KNOCKOUT_STAGES) {
-          const actualTeams = actualK[stage.id] || [];
-          const predictedTeams = pKnockouts[stage.id] || [];
-          
-          const uniquePredicted = Array.from(new Set(predictedTeams.filter(Boolean)));
-          for (const pTeam of uniquePredicted) {
-            if (actualTeams.includes(pTeam)) {
-              totalPoints += stage.points;
-            }
-          }
-        }
-        */
-
-        // Update user document
-        const userRef = doc(db, "users", pred.id); // Use pred.id which is guaranteed to be the UID
-        batch.set(userRef, { totalPoints }, { merge: true });
+        await batch.commit();
+        totalProcessed += usersSnapChunk.size;
+        console.log(`Processed ${totalProcessed} users points...`);
       }
-
-      await batch.commit();
-
-      // Re-fetch users to update the UI with new points
-      const usersSnap = await getDocs(collection(db, "users"));
-      const usersData = usersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
-      setUsers(usersData);
 
       setMessage({ type: 'success', text: t('admin.messages.calcSuccess') });
       window.scrollTo(0, 0);
+
+      // Refresh just the visible users
+      const freshUsersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50)));
+      const freshUsersData = freshUsersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
+      setUsers(freshUsersData);
 
     } catch (error: any) {
       console.error("Error calculating points:", error);
@@ -594,19 +437,45 @@ export default function Admin() {
       setActualKnockouts({});
       setActualMatches({});
 
-      // 3. Reset points for all users
-      const usersSnap = await getDocs(collection(db, "users"));
-      const batch = writeBatch(db);
-      
-      usersSnap.docs.forEach((d: any) => {
-        batch.set(doc(db, "users", d.id), { totalPoints: 0 }, { merge: true });
-      });
+      // 3. Reset points for all users in chunks
+      let lastDoc = null;
+      let hasMore = true;
+      let totalProcessed = 0;
 
-      await batch.commit();
+      while (hasMore) {
+        // Query users in chunks of 50
+        const usersQueryParts = [collection(db, "users"), orderBy("__name__"), limit(50)];
+        if (lastDoc) usersQueryParts.push(startAfter(lastDoc));
+        
+        let q;
+        switch (usersQueryParts.length) {
+          case 3: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any); break;
+          case 4: q = query(usersQueryParts[0] as any, usersQueryParts[1] as any, usersQueryParts[2] as any, usersQueryParts[3] as any); break;
+          default: q = query(usersQueryParts[0] as any);
+        }
 
-      const updatedUsersSnap = await getDocs(collection(db, "users"));
-      const usersData = updatedUsersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
-      setUsers(usersData);
+        const usersSnapChunk = await getDocs(q);
+        if (usersSnapChunk.empty) {
+          hasMore = false;
+          break;
+        }
+
+        lastDoc = usersSnapChunk.docs[usersSnapChunk.docs.length - 1];
+        const batch = writeBatch(db);
+
+        usersSnapChunk.docs.forEach((d: any) => {
+          batch.set(doc(db, "users", d.id), { totalPoints: 0 }, { merge: true });
+        });
+
+        await batch.commit();
+        totalProcessed += usersSnapChunk.size;
+        console.log(`Reset points for ${totalProcessed} users...`);
+      }
+
+      // Re-fetch only 50 users to update the UI
+      const freshUsersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(50)));
+      const freshUsersData = freshUsersSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
+      setUsers(freshUsersData);
 
       setMessage({ type: 'success', text: t('admin.messages.resetSuccess') });
       window.scrollTo(0, 0);
@@ -634,7 +503,8 @@ export default function Admin() {
       batch.delete(predRef);
       
       // 1. Remove user from all leagues
-      const leaguesSnap = await getDocs(collection(db, "leagues"));
+      const userLeaguesQuery = query(collection(db, "leagues"), where("members", "array-contains", uid));
+      const leaguesSnap = await getDocs(userLeaguesQuery);
       leaguesSnap.docs.forEach((d: any) => {
         const leagueData = d.data();
         if (leagueData.members && leagueData.members.includes(uid)) {

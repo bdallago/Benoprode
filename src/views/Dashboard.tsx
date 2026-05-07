@@ -99,7 +99,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
 
   useEffect(() => {
     // 2. FETCH EXACT RANK AND TOTAL USERS EFFICIENTLY
-    const fetchExactRank = async (retries = 3) => {
+    const fetchExactRank = async () => {
       // Si ya tenemos rank y total de los props, no hace falta el fetch pesado inicial
       if (exactRank > 0 && totalPlayers > 0) {
         setLoading(false);
@@ -132,15 +132,8 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
         setTotalPlayers(totalSnap.data().count);
         setExactRank(rankSnap.data().count + 1);
       } catch (error: any) {
-        if (error?.message?.includes("offline")) {
-           console.warn("User is offline, using fallback rank data.");
-           return;
-        }
-        if (retries > 0) {
-          setTimeout(() => fetchExactRank(retries - 1), 2000);
-        } else {
-          console.error("Error calculating exact rank", error);
-        }
+        // Eliminamos el setTimeout que causaba saturación en cascada y lo dejamos como soft-fail
+        console.warn("Error calculating exact rank (soft fail):", error?.message || error);
       } finally {
         setLoading(false);
       }
@@ -149,7 +142,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
     fetchExactRank();
 
     // Fetch user predictions and actual results to check for perfect group
-    const checkPerfectGroup = async (retries = 2) => {
+    const checkPerfectGroup = async () => {
       if (typeof window !== "undefined" && !window.navigator.onLine) return;
       try {
         const [predsSnap, resultsSnap] = await Promise.all([
@@ -174,12 +167,9 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
           }
           setHasPerfectGroup(perfect);
         }
-      } catch (error) {
-        if (retries > 0) {
-          setTimeout(() => checkPerfectGroup(retries - 1), 3000);
-        } else {
-          console.error("Error checking perfect group:", error);
-        }
+      } catch (error: any) {
+        // Soft fail sin retries recursivos
+        console.warn("Error checking perfect group (soft fail):", error?.message || error);
       }
     };
 

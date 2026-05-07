@@ -10,6 +10,8 @@ import { Button } from "./ui/button";
 import { useTranslation } from 'react-i18next';
 import { getUserBadges, BADGES } from "../lib/gamification";
 import { DuelModal } from "./DuelModal";
+import { useSocial } from "../hooks/useSocial";
+import { useAuth } from "./Providers";
 
 interface UserPredictionsModalProps {
   userId: string;
@@ -20,6 +22,9 @@ interface UserPredictionsModalProps {
 
 export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose }: UserPredictionsModalProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { friends, sentRequests, addFriend } = useSocial(user);
+  
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState<any>(null);
   const [currentUserPredictions, setCurrentUserPredictions] = useState<any>(null);
@@ -28,32 +33,14 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [duelData, setDuelData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
 
-  const [isFriend, setIsFriend] = useState(false);
-  const [requestSent, setRequestSent] = useState(false);
+  const isFriend = friends.has(userId);
+  const requestSent = sentRequests.has(userId);
   const [userStats, setUserStats] = useState<any>({});
 
-  const handleAddFriend = async () => {
-    if (!auth.currentUser || requestSent || isFriend || auth.currentUser.uid === userId) return;
-
+  const handleAddFriendAction = async () => {
+    if (!user || requestSent || isFriend || user.uid === userId) return;
     try {
-      await addDoc(collection(db, "friendRequests"), {
-        fromUserId: auth.currentUser.uid,
-        toUserId: userId,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-      
-      await addDoc(collection(db, "notifications"), {
-        userId: userId,
-        type: "friend_request",
-        title: "Nueva solicitud de amistad",
-        message: `${auth.currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/profile?tab=friends`
-      });
-
-      setRequestSent(true);
+      await addFriend(userId);
     } catch (err) {
       console.error("Error sending friend request", err);
       alert("Hubo un error al enviar la solicitud.");
@@ -66,44 +53,14 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         const promises = [
           getDoc(doc(db, "predictions", userId)),
           getDoc(doc(db, "results", "actual")),
-          import("firebase/firestore").then(m => m.getDocs(m.collection(db, "leagues"))),
+          import("firebase/firestore").then(m => m.getDocs(m.query(m.collection(db, "leagues"), m.where("members", "array-contains", userId)))),
           getDoc(doc(db, "users", userId))
         ];
 
         let isFriendsWithUser = false;
         let hasPendingRequest = false;
-        if (auth.currentUser) {
-           promises.push(getDoc(doc(db, "predictions", auth.currentUser.uid)));
-           
-           if (auth.currentUser.uid !== userId) {
-               const firestoreHelpers = await import("firebase/firestore");
-               const { query, collection, where, getDocs } = firestoreHelpers;
-               
-               const q3 = query(
-                 collection(db, 'friendships'),
-                 where('user1Id', 'in', [auth.currentUser.uid, userId])
-               );
-               const friendsSnap = await getDocs(q3);
-               friendsSnap.docs.forEach((d: any) => {
-                  if ((d.data().user1Id === auth.currentUser!.uid && d.data().user2Id === userId) ||
-                      (d.data().user1Id === userId && d.data().user2Id === auth.currentUser!.uid)) {
-                      isFriendsWithUser = true;
-                  }
-               });
-               setIsFriend(isFriendsWithUser);
-
-               const qRequest = query(
-                 collection(db, 'friendRequests'),
-                 where('fromUserId', '==', auth.currentUser.uid),
-                 where('toUserId', '==', userId),
-                 where('status', '==', 'pending')
-               );
-               const requestSnap = await getDocs(qRequest);
-               if (!requestSnap.empty) {
-                 hasPendingRequest = true;
-               }
-               setRequestSent(hasPendingRequest);
-           }
+        if (user) {
+           promises.push(getDoc(doc(db, "predictions", user.uid)));
         }
 
         const resolved = await Promise.all(promises);
@@ -169,7 +126,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                 <Link href={`/profile/${userId}`} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors shrink-0">
                   {t('profile.viewProfile', 'Ver Perfil')}
                 </Link>
-                {auth.currentUser && auth.currentUser.uid !== userId && (
+                {user && user.uid !== userId && (
                   isFriend ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
                       {t('profile.areFriends', 'Amigos')}
@@ -183,7 +140,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       variant="outline" 
                       size="sm" 
                       className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                      onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
+                      onClick={(e) => { e.preventDefault(); handleAddFriendAction(); }}
                     >
                       <UserPlus className="w-4 h-4" /> {t('profile.addFriend', 'Añadir amigo')}
                     </Button>
@@ -207,7 +164,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const isLocked = predictions.isLocked;
   // Use `isLocked` as the lock status of the viewed user
   // Can only challenge if BOTH users have locked their predictions and are friends
-  const canChallenge = auth.currentUser && auth.currentUser.uid !== userId && isLocked && currentUserPredictions?.isLocked && isFriend;
+  const canChallenge = user && user.uid !== userId && isLocked && currentUserPredictions?.isLocked && isFriend;
 
   const groups = predictions.groups || GROUPS;
   const specials = predictions.specials || {};
@@ -250,7 +207,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                 {t('profile.viewProfile', 'Ver Perfil')}
               </Link>
               
-              {auth.currentUser && auth.currentUser.uid !== userId && (
+              {user && user.uid !== userId && (
                 isFriend ? (
                   <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 shrink-0">
                     {t('profile.areFriends', 'Amigos')}
@@ -264,7 +221,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                     variant="outline" 
                     size="sm" 
                     className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    onClick={(e) => { e.preventDefault(); handleAddFriend(); }}
+                    onClick={(e) => { e.preventDefault(); handleAddFriendAction(); }}
                   >
                     <UserPlus className="w-4 h-4" /> {t('profile.addFriend', 'Añadir amigo')}
                   </Button>
@@ -319,7 +276,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         </div>
 
         <div className="px-6 pb-6 pt-4 space-y-8 bg-white dark:bg-gray-800">
-          {!canChallenge && auth.currentUser && auth.currentUser.uid !== userId && (
+          {!canChallenge && user && user.uid !== userId && (
              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-sm text-blue-800 dark:text-blue-300 flex items-center justify-center sm:justify-start gap-2 border-0">
                 <AlertCircle className="w-4 h-4 shrink-0" /> 
                 <span>{t('userPredictions.needsLockToChallenge', 'Para poder retar a este jugador, ambos deben haber fijado sus predicciones y ser amigos.')}</span>

@@ -146,6 +146,19 @@ async function calculatePoints(database: any) {
        userResults[i].context.topPercentage = (currentRank / totalUsers) * 100;
     }
 
+    // Leaderboard Aggregation - Top 1000 in one doc
+    const top1000 = userResults.slice(0, 1000).map(r => ({
+      uid: r.userId,
+      displayName: r.userData.displayName || "Anónimo",
+      photoURL: r.userData.photoURL || null,
+      totalPoints: r.totalPoints
+    }));
+    await database.collection("system_stats").doc("leaderboard_top_1000").set({
+      players: top1000,
+      totalCount: totalUsers,
+      updatedAt: new Date().toISOString()
+    });
+
     // Batch write calculations to Firestore
     const chunks: any[][] = [];
     let currentChunk: any[] = [];

@@ -3,22 +3,21 @@ import { getFirestore } from "firebase-admin/firestore";
 import fs from "fs";
 import path from "path";
 
-let cachedDb: any = null;
-let cachedConfig: any = null;
+const globalAny = globalThis as any;
 
 export function getAdminDb() {
-  if (cachedDb) return cachedDb;
+  if (globalAny.cachedDb) return globalAny.cachedDb;
 
   const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-  if (!cachedConfig) {
+  if (!globalAny.cachedConfig) {
     if (!fs.existsSync(configPath)) {
       console.error("Firebase Admin Error: config not found at", configPath);
       return null;
     }
-    cachedConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    globalAny.cachedConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
   }
   
-  const config = cachedConfig;
+  const config = globalAny.cachedConfig;
   const dbId = config.firestoreDatabaseId;
 
   if (getApps().length === 0) {
@@ -83,11 +82,11 @@ export function getAdminDb() {
       projectId: config.projectId,
     });
     console.log("Firebase Admin Initialized for DB ID:", dbId);
-    cachedDb = getFirestore(app, dbId);
-    return cachedDb;
+    globalAny.cachedDb = getFirestore(app, dbId);
+    return globalAny.cachedDb;
   } else {
     const app = getApps()[0];
-    cachedDb = getFirestore(app, dbId);
-    return cachedDb;
+    globalAny.cachedDb = getFirestore(app, dbId);
+    return globalAny.cachedDb;
   }
 }

@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, orderBy, limit, getDocs, startAfter, where, addDoc, serverTimestamp, documentId, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, startAfter, where, documentId, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Check, Users } from 'lucide-react';
+import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTranslation } from 'react-i18next';
+import { useSocial } from '../hooks/useSocial';
+import { fetchUsersInChunks } from '../lib/firestore-utils';
 
 export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { currentUser: User, onUserClick?: (u: any) => void, initialData?: any[] }) {
   const { t } = useTranslation();
+  const { friends, sentRequests, addFriend } = useSocial(currentUser);
   const allPlayersCache = useRef<any[]>(initialData || []);
   const [players, setPlayers] = useState<any[]>(() => {
-    // Si tenemos datos iniciales, cargamos la primera página de una
     if (initialData && initialData.length > 0) {
       return initialData.slice(0, 25);
     }
@@ -20,42 +22,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
   const [loading, setLoading] = useState(!initialData || initialData.length === 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
-  
-  // States to track sent requests in this session to prevent double-clicks
-  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
-  const [friends, setFriends] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!currentUser?.uid) return;
-    const fetchData = async () => {
-      try {
-        const qReq = query(
-          collection(db, "friendRequests"),
-          where("fromUserId", "==", currentUser.uid),
-          where("status", "==", "pending")
-        );
-        const snapReq = await getDocs(qReq);
-        const pendingUids = new Set<string>();
-        snapReq.forEach((doc: any) => {
-          pendingUids.add(doc.data().toUserId);
-        });
-        setSentRequests(pendingUids);
-
-        // Fetch friendships
-        const qFriends1 = query(collection(db, "friendships"), where("user1Id", "==", currentUser.uid));
-        const qFriends2 = query(collection(db, "friendships"), where("user2Id", "==", currentUser.uid));
-        
-        const [snap1, snap2] = await Promise.all([getDocs(qFriends1), getDocs(qFriends2)]);
-        const friendsUids = new Set<string>();
-        snap1.forEach((doc: any) => friendsUids.add(doc.data().user2Id));
-        snap2.forEach((doc: any) => friendsUids.add(doc.data().user1Id));
-        setFriends(friendsUids);
-      } catch (err) {
-        console.error("Error fetching social data:", err);
-      }
-    };
-    fetchData();
-  }, [currentUser]);
 
   // Pagination state
   const [page, setPage] = useState(0); 
@@ -64,37 +30,11 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
   const fetchingRef = useRef(false);
   const lastPageRef = useRef(-1);
 
-  const handleAddFriend = async (e: React.MouseEvent, targetUserId: string) => {
+  const handleAddFriendAction = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
-    if (sentRequests.has(targetUserId)) return;
-
     try {
-      // Create request
-      await addDoc(collection(db, "friendRequests"), {
-        fromUserId: currentUser.uid,
-        toUserId: targetUserId,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-      
-      // Notify them
-      await addDoc(collection(db, "notifications"), {
-        userId: targetUserId,
-        type: "friend_request",
-        title: "Nueva solicitud de amistad",
-        message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/profile?tab=friends`
-      });
-
-      setSentRequests(prev => {
-        const next = new Set(prev);
-        next.add(targetUserId);
-        return next;
-      });
+      await addFriend(targetUserId);
     } catch (err) {
-      console.error("Error sending friend request", err);
       alert("Hubo un error al enviar la solicitud.");
     }
   };
@@ -121,7 +61,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
       }
     }
 
-    // If it's the same page we already have and not a forced restore/first, skip
     if (dir !== 'restore' && dir !== 'first' && targetPage === lastPageRef.current && players.length > 0) {
       fetchingRef.current = false;
       return;
@@ -136,16 +75,16 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
           let playersData: any[] = allPlayersCache.current || [];
           
           if (playersData.length === 0) {
-            const res = await fetch('/api/leaderboard');
-            if (res.ok) {
-              const data = await res.json();
-              playersData = data.players || [];
+            const topDocRef = doc(db, "system_stats", "leaderboard_top_1000");
+            const topDocSnap = await getDoc(topDocRef);
+            if (topDocSnap.exists()) {
+              const data = topDocSnap.data();
+              playersData = data?.players || [];
               allPlayersCache.current = playersData;
             }
           }
 
           if (playersData.length > 0) {
-            // deduplicate all full data once
             const uniqueMap = new Map();
             playersData.forEach((p: any) => { if (p && p.uid) uniqueMap.set(p.uid, p); });
             const allUnique = Array.from(uniqueMap.values());
@@ -153,11 +92,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
             const start = targetPage * 25;
             const end = start + 25;
             const pagePlayers = allUnique.slice(start, end);
-
-            console.log(`Leaderboard Paging: target=${targetPage}, from=${start}, count=${pagePlayers.length}, totalUnique=${allUnique.length}`);
             
             if (pagePlayers.length > 0) {
-              console.log(`Leaderboard Success (Local Paging): Page=${targetPage}, from=${start}, count=${pagePlayers.length}, totalUnique=${allUnique.length}`);
               setPlayers(pagePlayers);
               setPage(targetPage);
               lastPageRef.current = targetPage;
@@ -167,7 +103,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
               fetchingRef.current = false;
               return;
             } else if (targetPage === 0 && allUnique.length > 0) {
-              // This is p0 and it has players
               setPlayers(allUnique.slice(0, 25));
               setPage(0);
               lastPageRef.current = 0;
@@ -186,19 +121,14 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
 
       // 2. Friends Filter
       if (showFriendsOnly) {
-        // ... (friends logic looks mostly okay)
-        // [omitted for brevity, keep existing friends logic]
         const friendsArr = Array.from(friends);
-        const fetchedPlayers: any[] = [];
-        for (let i = 0; i < friendsArr.length; i += 10) {
-          const chunk = friendsArr.slice(i, i + 10);
-          const chunkQ = query(collection(db, "users"), where(documentId(), "in", chunk));
-          const snap = await getDocs(chunkQ);
-          snap.docs.forEach((doc: any) => fetchedPlayers.push({ ...doc.data(), uid: doc.id }));
-        }
+        const fetchedPlayers = await fetchUsersInChunks(db, friendsArr);
+        
         if (currentUser?.uid) {
           const meQ = await getDoc(doc(db, "users", currentUser.uid));
-          if (meQ.exists()) fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
+          if (meQ.exists() && !fetchedPlayers.some(p => p.uid === currentUser.uid)) {
+            fetchedPlayers.push({ ...meQ.data(), uid: currentUser.uid });
+          }
         }
         fetchedPlayers.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
         const uniqueMap = new Map();
@@ -217,10 +147,10 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         const searchTerm = searchQuery.trim();
         const lowSearch = searchTerm.toLowerCase();
         
-        // Optimización: Si el término está en nuestro cache (Top 1000), lo mostramos instantáneo
-        const localResults = allPlayersCache.current.filter(p => 
-          p.displayName?.toLowerCase().includes(lowSearch)
-        );
+        // Local Fuzzy Search Optimization
+        const localResults = allPlayersCache.current?.filter(p => 
+          (p.displayName || "").toLowerCase().includes(lowSearch)
+        ) || [];
 
         if (localResults.length > 0) {
            setPlayers(localResults.slice(0, 25));
@@ -231,7 +161,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
            return;
         }
 
-        // Si no está en el top 1000, buscamos en todo Firestore
         q = query(
           collection(db, "users"),
           where("displayName", ">=", searchTerm),
@@ -241,7 +170,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         setPage(0);
         setHasMore(false);
       } else {
-        // Full manual query paging if API failed
         if (dir === 'first' || dir === 'restore' || (dir === 'next' && cursors.length === 0)) {
            q = query(collection(db, "users"), orderBy('totalPoints', "desc"), limit(25));
            if (dir !== 'restore') setCursors([]);
@@ -266,7 +194,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
 
       if (q) {
         const snap = await getDocs(q);
-        const fetched = snap.docs.map((doc: any) => ({ ...doc.data(), uid: doc.id }));
+        const fetched = snap.docs.map((d: any) => ({ ...d.data(), uid: d.id }));
         setPlayers(fetched);
         
         if (!searchQuery && (dir === 'next' || dir === 'first' || dir === 'restore')) {
@@ -275,7 +203,6 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
             if (dir === 'next') {
               setCursors(prev => [...prev, last]);
             } else {
-              // first or restore (if it was p0)
               setCursors([last]);
             }
           }
@@ -290,17 +217,23 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
     }
   }, [searchQuery, page, showFriendsOnly, friends, currentUser, cursors, players.length]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Si ya tenemos datos iniciales, confiamos en ellos y evitamos el primer fetch
     if (initialData && initialData.length > 0) {
        setLoading(false);
        setHasMore(initialData.length > 25);
+       // Poblar el caché con los datos iniciales si no está poblado
+       if (allPlayersCache.current.length === 0) {
+         allPlayersCache.current = initialData;
+       }
     } else {
        fetchPage('restore');
     }
   }, []);
 
   const isFirstRender = useRef(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Evitamos ejecutar el fetch de filtros en el primer render si ya cargamos datos desde el server
     if (isFirstRender.current) {
@@ -409,7 +342,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
                               variant="ghost" 
                               size="sm" 
                               className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
-                              onClick={(e) => handleAddFriend(e, p.uid)}
+                              onClick={(e) => handleAddFriendAction(e, p.uid)}
                               title={t('profile.addFriend', 'Añadir amigo')}
                             >
                               <UserPlus className="w-5 h-5" />

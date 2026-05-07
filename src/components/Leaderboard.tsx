@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Trophy, Search, ChevronLeft, ChevronRight, User as UserIcon, Target, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import { useSocial } from "../hooks/useSocial";
 
 interface Player {
   uid: string;
@@ -27,6 +28,7 @@ const ITEMS_PER_PAGE = 50;
 
 export function Leaderboard({ title, players, currentUser, onUserClick, loading, onRemoveUser }: LeaderboardProps) {
   const { t } = useTranslation();
+  const { friends, sentRequests, addFriend } = useSocial(currentUser);
   const [currentPage, setCurrentPage] = useState(() => {
     try {
       const saved = sessionStorage.getItem(`leaderboardPage_${title}`);
@@ -36,40 +38,6 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
     }
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
-  const [friends, setFriends] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!currentUser?.uid) return;
-    const fetchData = async () => {
-      try {
-        const qReq = query(
-          collection(db, "friendRequests"),
-          where("fromUserId", "==", currentUser.uid),
-          where("status", "==", "pending")
-        );
-        const snapReq = await getDocs(qReq);
-        const pendingUids = new Set<string>();
-        snapReq.forEach((doc: any) => {
-          pendingUids.add(doc.data().toUserId);
-        });
-        setSentRequests(pendingUids);
-
-        // Fetch friendships
-        const qFriends1 = query(collection(db, "friendships"), where("user1Id", "==", currentUser.uid));
-        const qFriends2 = query(collection(db, "friendships"), where("user2Id", "==", currentUser.uid));
-        
-        const [snap1, snap2] = await Promise.all([getDocs(qFriends1), getDocs(qFriends2)]);
-        const friendsUids = new Set<string>();
-        snap1.forEach((doc: any) => friendsUids.add(doc.data().user2Id));
-        snap2.forEach((doc: any) => friendsUids.add(doc.data().user1Id));
-        setFriends(friendsUids);
-      } catch (err) {
-        console.error("Error fetching social data:", err);
-      }
-    };
-    fetchData();
-  }, [currentUser]);
 
   useEffect(() => {
     try {
@@ -77,35 +45,11 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
     } catch {}
   }, [currentPage, title]);
 
-  const handleAddFriend = async (e: React.MouseEvent, targetUserId: string, targetName: string) => {
+  const handleAddFriendAction = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
-    if (sentRequests.has(targetUserId)) return;
-
     try {
-      await addDoc(collection(db, "friendRequests"), {
-        fromUserId: currentUser.uid,
-        toUserId: targetUserId,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-      
-      await addDoc(collection(db, "notifications"), {
-        userId: targetUserId,
-        type: "friend_request",
-        title: "Nueva solicitud de amistad",
-        message: `${currentUser.displayName || "Un usuario"} quiere añadirte como amigo.`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionUrl: `/profile?tab=friends`
-      });
-
-      setSentRequests(prev => {
-        const next = new Set(prev);
-        next.add(targetUserId);
-        return next;
-      });
+      await addFriend(targetUserId);
     } catch (err) {
-      console.error("Error sending friend request", err);
       alert("Hubo un error al enviar la solicitud.");
     }
   };
@@ -283,7 +227,7 @@ export function Leaderboard({ title, players, currentUser, onUserClick, loading,
                               variant="ghost" 
                               size="sm" 
                               className="p-0.5 h-6 w-6 md:h-7 md:w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
-                              onClick={(e) => handleAddFriend(e, player.uid, player.displayName)}
+                              onClick={(e) => handleAddFriendAction(e, player.uid)}
                             >
                               <UserPlus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             </Button>
