@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query,
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
+import { computePoints, sanitizeGroups } from "../lib/points-calculation";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Save, Calculator, AlertCircle, CheckCircle2, Trash2, Users, MessageSquareWarning, Paperclip, Unlock } from "lucide-react";
@@ -361,17 +362,7 @@ export default function Admin() {
       }
       const actualData = resultsSnap.data();
       
-      // Sanitize actualG
-      const sanitizedActualG: Record<string, string[]> = {};
-      const savedActualG = actualData.groups || {};
-      for (const [groupLetter, currentTeams] of Object.entries(GROUPS)) {
-        const savedTeams = savedActualG[groupLetter] || [];
-        const validSavedTeams = (savedTeams as string[]).filter(t => currentTeams.includes(t));
-        const missingTeams = currentTeams.filter(t => !validSavedTeams.includes(t));
-        sanitizedActualG[groupLetter] = [...validSavedTeams, ...missingTeams];
-      }
-      
-      const actualG = sanitizedActualG;
+      const actualG = sanitizeGroups(actualData.groups ?? {});
       const actualS = actualData.specials || {};
       const actualK = actualData.knockouts || {};
       const actualM = actualData.matches || {};
@@ -409,63 +400,7 @@ export default function Admin() {
         for (const userDoc of usersSnapChunk.docs) {
           const uid = userDoc.id;
           const pred = predictionsMap.get(uid);
-          let totalPoints = 0;
-
-          if (pred) {
-            const pGroups = pred.groups || {};
-            const sanitizedPGroups: Record<string, string[]> = {};
-            for (const [groupLetter, currentTeams] of Object.entries(GROUPS)) {
-              const savedTeams = pGroups[groupLetter] || [];
-              const validSavedTeams = (savedTeams as string[]).filter(t => currentTeams.includes(t));
-              const missingTeams = currentTeams.filter(t => !validSavedTeams.includes(t));
-              sanitizedPGroups[groupLetter] = [...validSavedTeams, ...missingTeams];
-            }
-
-            const pSpecials = pred.specials || {};
-            const pMatches = pred.matches || {};
-
-            // Calculate Group Points
-            for (const [groupLetter, actualTeams] of Object.entries(actualG)) {
-              const predictedTeams = sanitizedPGroups[groupLetter];
-              if (!predictedTeams || !Array.isArray(actualTeams)) continue;
-              let exactMatches = 0;
-              for (let i = 0; i < 4; i++) {
-                if (actualTeams[i] && predictedTeams[i] === actualTeams[i]) {
-                  exactMatches++;
-                  totalPoints += 1;
-                }
-              }
-              if (exactMatches === 4) totalPoints += 3;
-            }
-
-            // Calculate Special Points
-            for (const [qId, actualAnswer] of Object.entries(actualS)) {
-              const predictedAnswer = pSpecials[qId];
-              if (predictedAnswer && actualAnswer && typeof actualAnswer === 'string' && typeof predictedAnswer === 'string') {
-                if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
-                  totalPoints += 10;
-                }
-              }
-            }
-
-            // Calculate Match Points
-            for (const [matchId, actualMatch] of Object.entries(actualM)) {
-              const predictedMatch = pMatches[matchId];
-              if (predictedMatch && actualMatch) {
-                const pMatch = predictedMatch as any;
-                const aMatch = actualMatch as any;
-                if (pMatch.outcome && aMatch.outcome && pMatch.outcome === aMatch.outcome) totalPoints += 1;
-                if (
-                  pMatch.teamA !== '' && pMatch.teamB !== '' &&
-                  aMatch.teamA !== '' && aMatch.teamB !== '' &&
-                  pMatch.teamA === aMatch.teamA &&
-                  pMatch.teamB === aMatch.teamB
-                ) {
-                  totalPoints += 1;
-                }
-              }
-            }
-          }
+          const { totalPoints } = computePoints(actualG, actualS, actualM, pred ?? {});
 
           // Update user document
           batch.set(doc(db, "users", uid), { totalPoints }, { merge: true });

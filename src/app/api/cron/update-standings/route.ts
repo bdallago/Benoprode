@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { GROUPS } from "../../../../data";
+import { computePoints, sanitizeGroups } from "@/lib/points-calculation";
 
 const TEAM_NAME_MAPPING: Record<string, string> = {
   "Korea Republic": "South Korea",
@@ -19,131 +20,65 @@ async function calculatePoints(database: any) {
   try {
     const resultsDoc = await database.collection("results").doc("actual").get();
     if (!resultsDoc.exists) return;
-    
+
     const actualData = resultsDoc.data();
-    const actualGroups = actualData.groups || {};
-    const actualSpecials = actualData.specials || {};
-    const actualMatches = actualData.matches || {};
-    const isGroupStageFinished = actualData.isGroupStageFinished || false;
+    const isGroupStageFinished: boolean = actualData.isGroupStageFinished || false;
+    const sanitizedActualG = sanitizeGroups(actualData.groups ?? {});
+    const actualSpecials: Record<string, string> = actualData.specials || {};
+    const actualMatches: Record<string, any> = actualData.matches || {};
 
-    // Fetch all users once to avoid loop querying
-    const usersSnap = await database.collection("users").get();
-    const userMap = new Map();
-    usersSnap.docs.forEach((doc: any) => userMap.set(doc.id, doc.data()));
-
-    // Fetch all leagues for badges
+    // Leagues fetched upfront — small collection, needed for badge context
     const leaguesSnap = await database.collection("leagues").get();
     const leagues = leaguesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
-    // Fetch all predictions
-    const predictionsSnap = await database.collection("predictions").get();
-    
     const userResults: any[] = [];
 
-    predictionsSnap.docs.forEach((predDoc: any) => {
-      const userId = predDoc.id;
-      const pred = predDoc.data();
-      const userData = userMap.get(userId);
-      if (!userData) return;
+    // Paginate users in chunks of 50 to avoid full-table memory load
+    let lastDoc: any = null;
+    let hasMore = true;
+    while (hasMore) {
+      let q = database.collection("users").orderBy("__name__").limit(50);
+      if (lastDoc) q = q.startAfter(lastDoc);
+      const chunk = await q.get();
+      if (chunk.empty) { hasMore = false; break; }
+      lastDoc = chunk.docs[chunk.docs.length - 1];
 
-      const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
-      const inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
-      const inPrivateLeague = userLeagues.length > 0;
-      
-      // Inject into userData to pass to the gamification lib
-      userData.inBenoliga = inBenoliga;
-      userData.inPrivateLeague = inPrivateLeague;
+      const uids: string[] = chunk.docs.map((d: any) => d.id);
+      const pSnap = await database.collection("predictions").where("__name__", "in", uids).get();
+      const predMap = new Map<string, any>(pSnap.docs.map((d: any) => [d.id, d.data()]));
 
-      let totalPoints = 0;
-      
-      // Gamification metrics
-      let exactMatchCount = 0;
-      let correctMatchCount = 0;
-      let groupsPerfectCount = 0;
-      let zeroZeroPredictionsCount = 0;
+      for (const userDoc of chunk.docs) {
+        const userId = userDoc.id;
+        const userData = userDoc.data();
 
-      // Group Points
-      const pGroups = pred.groups || {};
-      for (const [groupLetter, actualTeams] of Object.entries(actualGroups)) {
-        const predictedTeams = pGroups[groupLetter] || [];
-        let exactGroupMatches = 0;
-        for (let i = 0; i < 4; i++) {
-          if ((actualTeams as string[])[i] && predictedTeams[i] === (actualTeams as string[])[i]) {
-            totalPoints += 1;
-            exactGroupMatches++;
-          }
-        }
-        if (exactGroupMatches === 4) {
-          totalPoints += 2;
-          groupsPerfectCount++;
-        }
+        const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
+        userData.inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga');
+        userData.inPrivateLeague = userLeagues.length > 0;
+
+        const pred = predMap.get(userId) ?? {};
+        const scored = computePoints(sanitizedActualG, actualSpecials, actualMatches, pred);
+
+        userResults.push({
+          userId,
+          totalPoints: scored.totalPoints,
+          userData,
+          context: { ...scored, isGroupStageFinished, topPercentage: 100 }
+        });
       }
+    }
 
-      // Special Points
-      const pSpecials = pred.specials || {};
-      for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
-        const predictedAnswer = pSpecials[qId];
-        if (predictedAnswer && actualAnswer && typeof actualAnswer === "string" && typeof predictedAnswer === "string") {
-          if (predictedAnswer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) {
-            totalPoints += 10;
-          }
-        }
-      }
-
-      // Match Points
-      const pMatches = pred.matches || {};
-      for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
-        const predictedMatch = pMatches[matchId];
-        if (predictedMatch && actualMatch) {
-          if ((predictedMatch as any).outcome && (actualMatch as any).outcome && (predictedMatch as any).outcome === (actualMatch as any).outcome) {
-            totalPoints += 1;
-            correctMatchCount++;
-          }
-          if (
-            (predictedMatch as any).teamA !== '' && (predictedMatch as any).teamB !== '' &&
-            (actualMatch as any).teamA !== '' && (actualMatch as any).teamB !== '' &&
-            (predictedMatch as any).teamA === (actualMatch as any).teamA &&
-            (predictedMatch as any).teamB === (actualMatch as any).teamB
-          ) {
-            totalPoints += 1; // Double points for exact match
-            exactMatchCount++;
-            if (predictedMatch.teamA === 0 && predictedMatch.teamB === 0) {
-              zeroZeroPredictionsCount++;
-            }
-          }
-        }
-      }
-      
-      const context = {
-        exactMatchCount,
-        correctMatchCount,
-        groupsPerfectCount,
-        isGroupStageFinished,
-        zeroZeroPredictionsCount,
-        topPercentage: 100 // Updated below
-      };
-
-      userResults.push({
-        userId,
-        totalPoints,
-        pred,
-        userData,
-        context
-      });
-    });
-
-    // Sort by points to determine rankings for top 10% / top 30%
+    // Sort to determine rankings for badge topPercentage context
     userResults.sort((a, b) => b.totalPoints - a.totalPoints);
     const totalUsers = userResults.length;
 
     let currentRank = 1;
     let previousPoints = -1;
     for (let i = 0; i < totalUsers; i++) {
-       if (userResults[i].totalPoints !== previousPoints) {
-           currentRank = i + 1;
-           previousPoints = userResults[i].totalPoints;
-       }
-       userResults[i].context.topPercentage = (currentRank / totalUsers) * 100;
+      if (userResults[i].totalPoints !== previousPoints) {
+        currentRank = i + 1;
+        previousPoints = userResults[i].totalPoints;
+      }
+      userResults[i].context.topPercentage = (currentRank / totalUsers) * 100;
     }
 
     // Leaderboard Aggregation - Top 1000 in one doc
@@ -159,7 +94,7 @@ async function calculatePoints(database: any) {
       updatedAt: new Date().toISOString()
     });
 
-    // Batch write calculations to Firestore
+    // Batch write user points, badges, and badge notifications (450 per batch)
     const chunks: any[][] = [];
     let currentChunk: any[] = [];
     for (const res of userResults) {
@@ -173,18 +108,17 @@ async function calculatePoints(database: any) {
 
     for (const chunk of chunks) {
       const batch = database.batch();
-      
+
       for (const res of chunk) {
         const userRef = database.collection("users").doc(res.userId);
         const currentEarnedIds = res.userData.earnedBadges || [];
         const unlockedBadges = assignUserBadges(res.userData, res.totalPoints, currentEarnedIds, res.context);
 
-        batch.set(userRef, { 
-          totalPoints: res.totalPoints, 
+        batch.set(userRef, {
+          totalPoints: res.totalPoints,
           earnedBadges: unlockedBadges
         }, { merge: true });
 
-        // Add notifications for newly unlocked badges
         if (unlockedBadges.length > currentEarnedIds.length) {
           const newBadges = unlockedBadges.filter((b: string) => !currentEarnedIds.includes(b));
           for (const newBadge of newBadges) {
@@ -202,7 +136,7 @@ async function calculatePoints(database: any) {
           }
         }
       }
-      
+
       await batch.commit();
     }
   } catch (error) {

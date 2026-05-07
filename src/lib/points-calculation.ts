@@ -1,0 +1,91 @@
+import { GROUPS } from "../data";
+
+export interface PointsResult {
+  totalPoints: number;
+  exactMatchCount: number;
+  correctMatchCount: number;
+  groupsPerfectCount: number;
+  zeroZeroPredictionsCount: number;
+}
+
+export function sanitizeGroups(
+  raw: Record<string, any>,
+  validGroups: Record<string, string[]> = GROUPS
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const [letter, validTeams] of Object.entries(validGroups)) {
+    const saved = (raw[letter] || []) as string[];
+    const valid = saved.filter(t => validTeams.includes(t));
+    const missing = validTeams.filter(t => !valid.includes(t));
+    result[letter] = [...valid, ...missing];
+  }
+  return result;
+}
+
+// Scoring rules (canonical):
+//   Groups:   +1 per correct position, +3 bonus if all 4 exact
+//   Specials: +10 per exact answer (case-insensitive, trimmed)
+//   Matches:  +1 correct outcome, +1 exact score (max 2 per match)
+export function computePoints(
+  actualGroups: Record<string, string[]>,
+  actualSpecials: Record<string, string>,
+  actualMatches: Record<string, any>,
+  pred: { groups?: any; specials?: any; matches?: any }
+): PointsResult {
+  let totalPoints = 0;
+  let exactMatchCount = 0;
+  let correctMatchCount = 0;
+  let groupsPerfectCount = 0;
+  let zeroZeroPredictionsCount = 0;
+
+  const predGroups = sanitizeGroups(pred.groups ?? {});
+  const predSpecials = pred.specials ?? {};
+  const predMatches = pred.matches ?? {};
+
+  for (const [letter, actualTeams] of Object.entries(actualGroups)) {
+    const predictedTeams = predGroups[letter] ?? [];
+    let exact = 0;
+    for (let i = 0; i < 4; i++) {
+      if (actualTeams[i] && predictedTeams[i] === actualTeams[i]) {
+        totalPoints += 1;
+        exact++;
+      }
+    }
+    if (exact === 4) {
+      totalPoints += 3;
+      groupsPerfectCount++;
+    }
+  }
+
+  for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
+    const predicted = predSpecials[qId];
+    if (
+      predicted && actualAnswer &&
+      typeof predicted === "string" && typeof actualAnswer === "string" &&
+      predicted.trim().toLowerCase() === actualAnswer.trim().toLowerCase()
+    ) {
+      totalPoints += 10;
+    }
+  }
+
+  for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
+    const pm = predMatches[matchId];
+    if (!pm || !actualMatch) continue;
+    const am = actualMatch as any;
+    if (pm.outcome && am.outcome && pm.outcome === am.outcome) {
+      totalPoints += 1;
+      correctMatchCount++;
+    }
+    if (
+      pm.teamA !== "" && pm.teamB !== "" &&
+      am.teamA !== "" && am.teamB !== "" &&
+      pm.teamA === am.teamA && pm.teamB === am.teamB
+    ) {
+      totalPoints += 1;
+      exactMatchCount++;
+      if (pm.teamA === 0 && pm.teamB === 0) zeroZeroPredictionsCount++;
+    }
+  }
+
+  return { totalPoints, exactMatchCount, correctMatchCount, groupsPerfectCount, zeroZeroPredictionsCount };
+}
