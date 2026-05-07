@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import matchesData from '../lib/matches.json';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -19,13 +19,9 @@ export function UpcomingMatches({ user }: { user: User }) {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "predictions", user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setPredictions(data.matches || {});
-      }
+    getDoc(doc(db, "predictions", user.uid)).then((docSnap) => {
+      if (docSnap.exists()) setPredictions(docSnap.data().matches || {});
     });
-    return () => unsub();
   }, [user.uid]);
 
   // Find next 3 matches

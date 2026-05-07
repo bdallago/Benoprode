@@ -1,6 +1,6 @@
 import { Bell, Check, Trash2, Trophy, Users, ShieldAlert, Star, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc, writeBatch, getDocs, addDoc } from "firebase/firestore";
+import { useEffect, useState, useCallback } from "react";
+import { collection, query, where, updateDoc, doc, deleteDoc, writeBatch, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { User } from "firebase/auth";
 import Link from "next/link";
@@ -50,6 +50,7 @@ export function NotificationCenter({ user }: { user: User }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   // Ask for push notification permission on mount
   useEffect(() => {
@@ -60,34 +61,35 @@ export function NotificationCenter({ user }: { user: User }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      // Find newly added notifications in this snapshot
-      const newDocs = snapshot.docChanges().filter(change => change.type === 'added').map((change: any) => ({ id: change.doc.id, ...change.doc.data() } as Notification));
-      
-      const notifs = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Notification));
-      notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.uid) return [];
+    setLoadingNotifs(true);
+    try {
+      const snap = await getDocs(query(
+        collection(db, "notifications"),
+        where("userId", "==", user.uid)
+      ));
+      const notifs = snap.docs
+        .map((d: any) => ({ id: d.id, ...d.data() } as Notification))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setNotifications(notifs);
+      return notifs;
+    } finally {
+      setLoadingNotifs(false);
+    }
+  }, [user?.uid]);
 
-      // Web Push Notification Logic (Max 1 per day)
-      if (newDocs.length > 0 && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        const lastPushStr = localStorage.getItem("lastPushDate");
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        
-        if (lastPushStr !== today) {
-          const notifToPush = newDocs[0];
+  // Carga inicial: badge + push del browser (máx 1 por día)
+  useEffect(() => {
+    if (!user?.uid) return;
+    fetchNotifications().then((notifs) => {
+      if (!notifs?.length) return;
+      const unread = notifs.filter(n => !n.read);
+      if (unread.length > 0 && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        const today = new Date().toISOString().split('T')[0];
+        if (localStorage.getItem("lastPushDate") !== today) {
           try {
-            new Notification(notifToPush.title, {
-              body: notifToPush.message,
-              icon: '/icono.png',
-            });
+            new Notification(unread[0].title, { body: unread[0].message, icon: '/icono.png' });
             localStorage.setItem("lastPushDate", today);
           } catch (e) {
             console.error("Browser push notification failed", e);
@@ -95,9 +97,12 @@ export function NotificationCenter({ user }: { user: User }) {
         }
       }
     });
+  }, [user?.uid, fetchNotifications]);
 
-    return () => unsubscribe();
-  }, [user]);
+  // Recarga al abrir el panel para mostrar datos frescos
+  useEffect(() => {
+    if (isOpen) fetchNotifications();
+  }, [isOpen, fetchNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   // Maximum 3 items visible before having to scroll
@@ -243,9 +248,10 @@ export function NotificationCenter({ user }: { user: User }) {
             <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
               <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Bell className="h-4 w-4" /> {t('notifications.title', 'Notificaciones')}
+                {loadingNotifs && <span className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />}
               </h3>
               {unreadCount > 0 && (
-                <button 
+                <button
                   onClick={markAllAsRead}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                 >
