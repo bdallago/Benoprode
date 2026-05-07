@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, getCountFromServer } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, query, orderBy, where, limit, startAfter, getCountFromServer, QueryConstraint } from "firebase/firestore";
 import { db } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS, KNOCKOUT_STAGES, ALL_TEAMS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -58,15 +58,9 @@ export default function Admin() {
 
       while (hasMore) {
         // Query predictions in chunks of 100
-        const queryParts = [collection(db, "predictions"), orderBy("__name__"), limit(100)];
-        if (lastDoc) queryParts.push(startAfter(lastDoc));
-        
-        let q;
-        switch (queryParts.length) {
-          case 3: q = query(queryParts[0] as any, queryParts[1] as any, queryParts[2] as any); break;
-          case 4: q = query(queryParts[0] as any, queryParts[1] as any, queryParts[2] as any, queryParts[3] as any); break;
-          default: q = query(queryParts[0] as any);
-        }
+        const constraints: QueryConstraint[] = [orderBy("__name__"), limit(100)];
+        if (lastDoc) constraints.push(startAfter(lastDoc));
+        const q = query(collection(db, "predictions"), ...constraints);
 
         const predictionsSnap = await getDocs(q);
         
