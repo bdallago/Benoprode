@@ -14,6 +14,28 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "API_FOOTBALL_KEY no está configurada en .env" }, { status: 500 });
   }
 
+  const RATE_LIMIT_MS = 30_000;
+  const rateLimitRef = db.collection("system_stats").doc("sync_rate_limit");
+  try {
+    const snap = await rateLimitRef.get();
+    if (snap.exists) {
+      const lastCalledAt: string | undefined = snap.data()?.lastCalledAt;
+      if (lastCalledAt) {
+        const elapsed = Date.now() - new Date(lastCalledAt).getTime();
+        if (elapsed < RATE_LIMIT_MS) {
+          const retryAfterSeconds = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000);
+          return NextResponse.json(
+            { error: "Rate limited", retryAfterSeconds },
+            { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+          );
+        }
+      }
+    }
+    await rateLimitRef.set({ lastCalledAt: new Date().toISOString() }, { merge: true });
+  } catch (e) {
+    console.warn("Rate limit check failed, proceeding:", e);
+  }
+
   try {
     // Si estamos en modo de prueba, buscamos partidos en vivo (cualquier liga) para testear
     // Si no, buscamos los del mundial 2026
