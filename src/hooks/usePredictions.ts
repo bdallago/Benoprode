@@ -27,6 +27,8 @@ export function usePredictions(userId: string) {
 
   // previousMatchOutcomes tracks what's persisted in Firestore so we can diff on outcome change
   const previousMatchOutcomes = useRef<Record<string, MatchOutcome>>({});
+  // Guard: only true once fetchPredictions completes — prevents save-on-unmount from overwriting with empty state
+  const dataLoaded = useRef(false);
 
   useEffect(() => {
     const fetchPredictions = async () => {
@@ -65,6 +67,7 @@ export function usePredictions(userId: string) {
         } else {
           setGroupPredictions(GROUPS);
         }
+        dataLoaded.current = true;
       } catch (error) {
         console.error("Error fetching predictions:", error);
       } finally {
@@ -147,6 +150,7 @@ export function usePredictions(userId: string) {
   };
 
   const savePredictions = async (lock: boolean = false, silent: boolean = false) => {
+    if (!dataLoaded.current) return;
     if (!silent) setSaving(true);
     if (!silent) setMessage(null);
 
