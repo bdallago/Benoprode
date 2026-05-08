@@ -1,17 +1,70 @@
 import { NextResponse } from "next/server";
 import matchesData from "../../../lib/matches.json";
 
+const FLAGS: Record<string, string> = {
+  "Alemania": "🇩🇪",
+  "Arabia Saudita": "🇸🇦",
+  "Argelia": "🇩🇿",
+  "Argentina": "🇦🇷",
+  "Australia": "🇦🇺",
+  "Austria": "🇦🇹",
+  "Bosnia y Herzegovina": "🇧🇦",
+  "Brasil": "🇧🇷",
+  "Bélgica": "🇧🇪",
+  "Cabo Verde": "🇨🇻",
+  "Canadá": "🇨🇦",
+  "Colombia": "🇨🇴",
+  "Corea del Sur": "🇰🇷",
+  "Costa de Marfil": "🇨🇮",
+  "Croacia": "🇭🇷",
+  "Curazao": "🇨🇼",
+  "Ecuador": "🇪🇨",
+  "Egipto": "🇪🇬",
+  "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "España": "🇪🇸",
+  "Estados Unidos": "🇺🇸",
+  "Francia": "🇫🇷",
+  "Ghana": "🇬🇭",
+  "Haití": "🇭🇹",
+  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Irak": "🇮🇶",
+  "Irán": "🇮🇷",
+  "Japón": "🇯🇵",
+  "Jordania": "🇯🇴",
+  "Marruecos": "🇲🇦",
+  "México": "🇲🇽",
+  "Noruega": "🇳🇴",
+  "Nueva Zelanda": "🇳🇿",
+  "Panamá": "🇵🇦",
+  "Paraguay": "🇵🇾",
+  "Países Bajos": "🇳🇱",
+  "Portugal": "🇵🇹",
+  "Qatar": "🇶🇦",
+  "República Checa": "🇨🇿",
+  "República Democrática del Congo": "🇨🇩",
+  "Senegal": "🇸🇳",
+  "Sudáfrica": "🇿🇦",
+  "Suecia": "🇸🇪",
+  "Suiza": "🇨🇭",
+  "Turquía": "🇹🇷",
+  "Túnez": "🇹🇳",
+  "Uruguay": "🇺🇾",
+  "Uzbekistán": "🇺🇿",
+};
+
+function flag(team: string): string {
+  return FLAGS[team] ?? "";
+}
+
 function formatICSDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 }
 
-// ICS spec RFC 5545: escape TEXT values and fold lines >75 octets
 function escapeText(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 }
 
 function foldLine(line: string): string {
-  // Fold at 75 bytes (character-approximate; safe for mostly-ASCII + accented chars)
   if (line.length <= 75) return line;
   const parts: string[] = [];
   let remaining = line;
@@ -43,8 +96,10 @@ function generateICS(): string {
   for (const match of matchesData as Array<{ id: string; teamA: string; teamB: string; date: string }>) {
     const start = new Date(match.date);
     const end = new Date(start.getTime() + 120 * 60 * 1000);
-    const summary = `${match.teamA} vs ${match.teamB} - Mundial 2026`;
-    const description = `Copa Mundial de Futbol 2026 | ${match.teamA} vs ${match.teamB}`;
+    const fA = flag(match.teamA);
+    const fB = flag(match.teamB);
+    const summary = `${fA} ${match.teamA} vs ${fB} ${match.teamB}`;
+    const description = `Copa Mundial de Futbol 2026 | ${fA} ${match.teamA} vs ${fB} ${match.teamB}`;
 
     out.push(
       "BEGIN:VEVENT",
@@ -58,7 +113,7 @@ function generateICS(): string {
       "BEGIN:VALARM",
       "TRIGGER:-PT60M",
       "ACTION:DISPLAY",
-      prop("DESCRIPTION", `En 1 hora: ${match.teamA} vs ${match.teamB}`),
+      prop("DESCRIPTION", `En 1 hora: ${fA} ${match.teamA} vs ${fB} ${match.teamB}`),
       "END:VALARM",
       "END:VEVENT"
     );

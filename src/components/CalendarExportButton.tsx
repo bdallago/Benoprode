@@ -7,17 +7,52 @@ import matchesData from '../lib/matches.json';
 
 const CALENDAR_URL = 'https://www.elprodedebeno.com.ar/api/calendar';
 
+const FLAGS: Record<string, string> = {
+  "Alemania": "🇩🇪", "Arabia Saudita": "🇸🇦", "Argelia": "🇩🇿", "Argentina": "🇦🇷",
+  "Australia": "🇦🇺", "Austria": "🇦🇹", "Bosnia y Herzegovina": "🇧🇦", "Brasil": "🇧🇷",
+  "Bélgica": "🇧🇪", "Cabo Verde": "🇨🇻", "Canadá": "🇨🇦", "Colombia": "🇨🇴",
+  "Corea del Sur": "🇰🇷", "Costa de Marfil": "🇨🇮", "Croacia": "🇭🇷", "Curazao": "🇨🇼",
+  "Ecuador": "🇪🇨", "Egipto": "🇪🇬", "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "España": "🇪🇸",
+  "Estados Unidos": "🇺🇸", "Francia": "🇫🇷", "Ghana": "🇬🇭", "Haití": "🇭🇹",
+  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Irak": "🇮🇶", "Irán": "🇮🇷", "Japón": "🇯🇵",
+  "Jordania": "🇯🇴", "Marruecos": "🇲🇦", "México": "🇲🇽", "Noruega": "🇳🇴",
+  "Nueva Zelanda": "🇳🇿", "Panamá": "🇵🇦", "Paraguay": "🇵🇾", "Países Bajos": "🇳🇱",
+  "Portugal": "🇵🇹", "Qatar": "🇶🇦", "República Checa": "🇨🇿",
+  "República Democrática del Congo": "🇨🇩", "Senegal": "🇸🇳", "Sudáfrica": "🇿🇦",
+  "Suecia": "🇸🇪", "Suiza": "🇨🇭", "Turquía": "🇹🇷", "Túnez": "🇹🇳",
+  "Uruguay": "🇺🇾", "Uzbekistán": "🇺🇿",
+};
+
+function flag(team: string): string { return FLAGS[team] ?? ''; }
+
 function formatICSDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+function escapeText(str: string): string {
+  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function foldLine(line: string): string {
+  if (line.length <= 75) return line;
+  const parts: string[] = [];
+  let remaining = line;
+  let first = true;
+  while (remaining.length > 0) {
+    const limit = first ? 75 : 74;
+    parts.push((first ? '' : ' ') + remaining.slice(0, limit));
+    remaining = remaining.slice(limit);
+    first = false;
+  }
+  return parts.join('\r\n');
 }
 
 function downloadICS() {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//El Prode de Beno//Mundial 2026//EN',
+    'PRODID:-//El Prode de Beno//Mundial 2026//ES',
     'X-WR-CALNAME:Mundial 2026 - El Prode de Beno',
-    'X-WR-TIMEZONE:UTC',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
   ];
@@ -25,17 +60,22 @@ function downloadICS() {
   for (const match of matchesData) {
     const start = new Date(match.date);
     const end = new Date(start.getTime() + 120 * 60 * 1000);
+    const fA = flag(match.teamA);
+    const fB = flag(match.teamB);
+    const summary = `${fA} ${match.teamA} vs ${fB} ${match.teamB}`;
     lines.push(
       'BEGIN:VEVENT',
       `UID:${match.id}@elprodedebeno.com.ar`,
       `DTSTART:${formatICSDate(start)}`,
       `DTEND:${formatICSDate(end)}`,
-      `SUMMARY:${match.teamA} vs ${match.teamB} | Mundial 2026`,
-      `DESCRIPTION:Copa Mundial de Fútbol 2026 — ${match.teamA} vs ${match.teamB}`,
+      foldLine(`SUMMARY:${escapeText(summary)}`),
+      foldLine(`DESCRIPTION:${escapeText(`Copa Mundial de Futbol 2026 | ${summary}`)}`),
+      'STATUS:CONFIRMED',
+      'SEQUENCE:0',
       'BEGIN:VALARM',
       'TRIGGER:-PT60M',
       'ACTION:DISPLAY',
-      `DESCRIPTION:En 1 hora: ${match.teamA} vs ${match.teamB}`,
+      foldLine(`DESCRIPTION:${escapeText(`En 1 hora: ${fA} ${match.teamA} vs ${fB} ${match.teamB}`)}`),
       'END:VALARM',
       'END:VEVENT'
     );
