@@ -96,7 +96,10 @@ export function AdminAnalytics({ onMessage }: Props) {
         method: "POST",
         headers: { Authorization: `Bearer ${idToken}` },
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(body.error ?? res.statusText);
+      }
       const data = await res.json();
       // Update timestamp immediately from API response — onSnapshot may lag with long polling
       setAnalyticsUpdatedAt(data.actualizadoEn);

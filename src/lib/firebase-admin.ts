@@ -23,9 +23,10 @@ export function getAdminDb() {
 
   if (getApps().length === 0) {
     let credential;
-    if (process.env.FIREBASE_ADMIN_KEY) {
+    const adminKeyRaw = process.env.FIREBASE_ADMIN_KEY || process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (adminKeyRaw) {
       try {
-        let rawKey = process.env.FIREBASE_ADMIN_KEY.trim();
+        let rawKey = adminKeyRaw.trim();
         
         // Log basic info for debugging (not the key itself)
         console.log(`Firebase Admin: Key length=${rawKey.length}, startsWith=${rawKey.substring(0, 10).replace(/\n/g, "\\n")}...`);
@@ -74,7 +75,7 @@ export function getAdminDb() {
         return null;
       }
     } else {
-      console.warn("Firebase Admin Warning: FIREBASE_ADMIN_KEY not found, using applicationDefault. This might cause PERMISSION_DENIED for non-default databases.");
+      console.warn("Firebase Admin Warning: FIREBASE_ADMIN_KEY / FIREBASE_SERVICE_ACCOUNT_KEY not found, using applicationDefault.");
       credential = applicationDefault();
     }
     

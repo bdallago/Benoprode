@@ -60,10 +60,9 @@ export async function POST(req: Request) {
       db.collection("users").where("lastLogin", ">=", d7).count().get().then(n),
       db.collection("users").where("lastLogin", ">=", d30).count().get().then(n),
       db.collection("users").where("lastLogin", "<", d14).count().get().then(n),
-      db.collection("users").where("referredBy", "!=", null).count().get().then(n),
-      // loginCount >= 2: volvieron al menos una vez después del registro
+      // referredBy es string uid o null — ">" filtra sólo los strings non-empty (invitados)
+      db.collection("users").where("referredBy", ">", "").count().get().then(n),
       db.collection("users").where("loginCount", ">=", 2).count().get().then(n),
-      // loginCount >= 3: volvieron múltiples veces
       db.collection("users").where("loginCount", ">=", 3).count().get().then(n),
       db.collection("leagues").count().get().then(n),
       db.collection("leagues").where("isPublic", "==", false).count().get().then(n),
@@ -71,8 +70,8 @@ export async function POST(req: Request) {
       db.collection("duels_v2").count().get().then(n),
       db.collection("duels_v2").where("status", "==", "accepted").count().get().then(n),
       db.collection("predictions").where("hasSavedPredictions", "==", true).count().get().then(n),
-      // Proxy: respondió al menos la primera pregunta especial
-      db.collection("predictions").where("specials.topScorer", "!=", "").count().get().then(n),
+      // ">" en campo anidado evita el índice compuesto que requiere "!="
+      db.collection("predictions").where("specials.topScorer", ">", "").count().get().then(n),
       db.collection("predictions").where("isLocked", "==", true).count().get().then(n),
     ]);
 

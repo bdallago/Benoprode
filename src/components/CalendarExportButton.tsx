@@ -63,13 +63,14 @@ function downloadICS() {
     const fA = flag(match.teamA);
     const fB = flag(match.teamB);
     const summary = `${fA} ${match.teamA} vs ${fB} ${match.teamB}`;
+    const description = `Copa Mundial de Futbol 2026 | ${fA} ${match.teamA} vs ${fB} ${match.teamB}`;
     lines.push(
       'BEGIN:VEVENT',
       `UID:${match.id}@elprodedebeno.com.ar`,
       `DTSTART:${formatICSDate(start)}`,
       `DTEND:${formatICSDate(end)}`,
       foldLine(`SUMMARY:${escapeText(summary)}`),
-      foldLine(`DESCRIPTION:${escapeText(`Copa Mundial de Futbol 2026 | ${summary}`)}`),
+      foldLine(`DESCRIPTION:${escapeText(description)}`),
       'STATUS:CONFIRMED',
       'SEQUENCE:0',
       'BEGIN:VALARM',

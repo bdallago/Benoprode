@@ -8,8 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { checkBadWords } from '../lib/badwords';
 import matchesData from '../lib/matches.json';
 
-const RATE_LIMIT_MS = 8000;
+const RATE_LIMIT_MS = 5000;
 const MATCH_DURATION_MS = 120 * 60 * 1000;
+// Chat se abre cuando arranca el primer partido: 11/06 a las 16:00 ARG = 19:00 UTC
+const CHAT_OPEN_TIMESTAMP = new Date('2026-06-11T19:00:00.000Z').getTime();
 
 function getCurrentOrNextMatch() {
   const now = Date.now();
@@ -76,8 +78,9 @@ export function LiveChat() {
     return () => unsubscribe();
   }, [user]);
 
+  const chatIsOpen = Date.now() >= CHAT_OPEN_TIMESTAMP;
   const cooldownRemaining = Math.max(0, RATE_LIMIT_MS - (Date.now() - lastSentAt));
-  const canSend = !isBanned && !!user && newMessage.trim().length > 0 && cooldownRemaining === 0;
+  const canSend = chatIsOpen && !isBanned && !!user && newMessage.trim().length > 0 && cooldownRemaining === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +208,11 @@ export function LiveChat() {
 
       {/* Input */}
       <div className="p-3 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-        {!user ? (
+        {!chatIsOpen ? (
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-1">
+            El chat se abre el 11 de junio con el primer partido ⚽
+          </p>
+        ) : !user ? (
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-1">
             {t('liveChat.loginRequired', 'Iniciá sesión para participar en el chat')}
           </p>
