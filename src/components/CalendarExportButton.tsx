@@ -56,7 +56,8 @@ export function CalendarExportButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleGoogleCalendar = () => {
-    const encoded = encodeURIComponent(CALENDAR_URL);
+    const webcalUrl = CALENDAR_URL.replace('https://', 'webcal://');
+    const encoded = encodeURIComponent(webcalUrl);
     window.open(
       `https://calendar.google.com/calendar/render?cid=${encoded}`,
       '_blank',

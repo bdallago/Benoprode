@@ -45,7 +45,6 @@ export async function GET() {
   return new NextResponse(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="Mundial2026_ProdeBeno.ics"',
       "Cache-Control": "public, max-age=3600",
     },
   });
