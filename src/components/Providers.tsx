@@ -10,7 +10,7 @@ import {
   onSnapshot,
   collection,
   query,
-  where,
+  orderBy,
   limit,
   startAfter,
   updateDoc,
@@ -289,7 +289,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     // Scoped listener: only the user's own leagues (first 20), no unbounded collection read
     const unsubscribeLeagues = onSnapshot(
-      query(collection(db, "leagues"), where("members", "array-contains", user.uid), limit(20)),
+      query(collection(db, "leagues"), orderBy("createdAt", "desc"), limit(20)),
       (snapshot) => {
         lastLeagueDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
         setHasMoreLeagues(snapshot.docs.length === 20);
@@ -432,7 +432,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     if (!user || !lastLeagueDocRef.current) return;
     try {
       const snap = await getDocs(
-        query(collection(db, "leagues"), where("members", "array-contains", user.uid), startAfter(lastLeagueDocRef.current), limit(20))
+        query(collection(db, "leagues"), orderBy("createdAt", "desc"), startAfter(lastLeagueDocRef.current), limit(20))
       );
       lastLeagueDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
       setHasMoreLeagues(snap.docs.length === 20);
