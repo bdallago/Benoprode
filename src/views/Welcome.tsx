@@ -14,40 +14,38 @@ import matchesData from "../lib/matches.json";
 
 import { GuidedTour } from "../components/GuidedTour";
 
-const WORLD_CUP_START = new Date('2026-06-11T00:00:00').getTime();
-const DEADLINE = new Date('2026-06-08T00:00:00').getTime();
+const DEADLINE = new Date('2026-06-11T00:00:00-03:00').getTime();
 
-function ClockBanner({ type }: { type: 'worldcup' | 'predictions' }) {
+function ClockBanner() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [mounted, setMounted] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
-    const targetDate = type === 'worldcup' ? WORLD_CUP_START : DEADLINE;
-    setTimeLeft(targetDate - Date.now());
+    setTimeLeft(DEADLINE - Date.now());
     const interval = setInterval(() => {
-      setTimeLeft(targetDate - Date.now());
+      setTimeLeft(DEADLINE - Date.now());
     }, 1000);
     return () => clearInterval(interval);
-  }, [type]);
+  }, []);
 
-  if (!mounted) return <div className="w-full h-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg mb-4"></div>;
+  if (!mounted) return <div className="w-full h-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg"></div>;
 
   const isTimeUp = timeLeft <= 0;
 
   const formatTime = (ms: number) => {
-    if (ms <= 0) return `00 Días 00h 00m 00s`;
+    if (ms <= 0) return `00 ${t('countdown.days')} 00h 00m 00s`;
     const days = Math.floor(ms / (1000 * 60 * 60 * 24));
     const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-    return `${days} Días ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+    return `${days} ${t('countdown.days')} ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
   };
 
-  if (isTimeUp && type === 'predictions') {
+  if (isTimeUp) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 mb-4 transition-colors duration-200 w-full">
+      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 transition-colors duration-200 w-full">
         <Lock className="w-6 h-6 text-red-600 dark:text-red-400" />
         <div className="text-left">
           <h3 className="font-bold">{t('countdown.timeUp')}</h3>
@@ -57,24 +55,16 @@ function ClockBanner({ type }: { type: 'worldcup' | 'predictions' }) {
     );
   }
 
-  if (isTimeUp && type === 'worldcup') {
-    return null;
-  }
-
-  // Use explicit translations
-  const title = type === 'worldcup' ? t('countdown.worldcupTitle', 'Tiempo restante para el Mundial') : t('countdown.predictionsTitle', 'Tiempo restante para fijar predicciones');
-  const desc = type === 'worldcup' ? t('countdown.worldcupDesc', 'El 11 de Junio de 2026 comienza la copa del mundo.') : t('countdown.predictionsDesc', 'El 7 de Junio de 2026 es el último día para fijar elecciones.');
-
   return (
-    <div className="bg-blue-900 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center gap-3 border-t-4 border-blue-400 w-full h-full">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <Clock className="w-6 h-6 text-blue-300" />
+    <div className="bg-blue-900 text-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border-t-4 border-blue-400 w-full">
+      <div className="flex items-center gap-3 text-center sm:text-left">
+        <Clock className="w-6 h-6 text-blue-300 shrink-0" />
         <div>
-          <h3 className="font-bold text-lg leading-tight">{title}</h3>
-          <p className="text-blue-200 text-xs mt-1">{desc}</p>
+          <h3 className="font-bold text-lg leading-tight">{t('countdown.timeLeft')}</h3>
+          <p className="text-blue-200 text-xs mt-1">{t('countdown.deadline')}</p>
         </div>
       </div>
-      <div className="text-xl sm:text-2xl font-mono font-bold bg-blue-950 px-4 py-2 rounded-md border border-blue-800 text-center w-full">
+      <div className="text-xl sm:text-2xl font-mono font-bold bg-blue-950 px-4 py-2 rounded-md border border-blue-800 text-center shrink-0">
         {formatTime(timeLeft)}
       </div>
     </div>
@@ -278,9 +268,8 @@ export default function Welcome() {
             <h1 className="sr-only">Bienvenido a El Prode de Beno</h1>
             <p className="sr-only">Pronóstico deportivo del Mundial de fútbol 2026</p>
           </div>
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ClockBanner type="worldcup" />
-            <ClockBanner type="predictions" />
+          <div className="w-full">
+            <ClockBanner />
           </div>
         </div>
         

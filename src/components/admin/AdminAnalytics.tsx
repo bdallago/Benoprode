@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../firebase";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -70,12 +70,21 @@ export function AdminAnalytics({ onMessage }: Props) {
   const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
-    getDoc(doc(db, "estadisticas_globales", "actual")).then((snap) => {
-      if (snap.exists()) {
-        setAnalytics(mapDocToAnalytics(snap.data()));
-        setAnalyticsUpdatedAt(snap.data().actualizadoEn ?? null);
+    const unsub = onSnapshot(
+      doc(db, "estadisticas_globales", "actual"),
+      (snap) => {
+        if (snap.exists()) {
+          setAnalytics(mapDocToAnalytics(snap.data()));
+          setAnalyticsUpdatedAt(snap.data().actualizadoEn ?? null);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        console.warn("AdminAnalytics: listener error:", err);
+        setLoading(false);
       }
-    }).catch(e => console.warn("AdminAnalytics: failed to fetch stats:", e)).finally(() => setLoading(false));
+    );
+    return unsub;
   }, []);
 
   const recalcularEstadisticas = async () => {
@@ -89,11 +98,8 @@ export function AdminAnalytics({ onMessage }: Props) {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      const statsSnap = await getDoc(doc(db, "estadisticas_globales", "actual"));
-      if (statsSnap.exists()) {
-        setAnalytics(mapDocToAnalytics(statsSnap.data()));
-        setAnalyticsUpdatedAt(statsSnap.data().actualizadoEn ?? null);
-      }
+      // Update timestamp immediately from API response — onSnapshot may lag with long polling
+      setAnalyticsUpdatedAt(data.actualizadoEn);
       onMessage({ type: "success", text: `Estadísticas recalculadas. Actualizado: ${new Date(data.actualizadoEn).toLocaleString()}` });
     } catch (err: any) {
       onMessage({ type: "error", text: `Error al recalcular: ${err.message}` });
@@ -116,11 +122,15 @@ export function AdminAnalytics({ onMessage }: Props) {
           <Calculator className="w-6 h-6" /> {t("admin.analytics.title")}
         </h2>
         <div className="flex items-center gap-3">
-          {analyticsUpdatedAt && (
-            <span className="text-xs text-gray-400">
-              Actualizado: {new Date(analyticsUpdatedAt).toLocaleString()}
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="flex items-center gap-1 text-green-500 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+              En vivo
             </span>
-          )}
+            {analyticsUpdatedAt && (
+              <>· Últ. cálculo: {new Date(analyticsUpdatedAt).toLocaleString()}</>
+            )}
+          </span>
           <Button
             variant="outline"
             size="sm"

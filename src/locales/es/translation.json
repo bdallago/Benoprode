@@ -544,8 +544,8 @@
     "days": "Días",
     "timeUp": "¡Tiempo Agotado!",
     "timeUpDesc": "La fecha límite ha pasado. Todas las predicciones han sido fijadas automáticamente.",
-    "timeLeft": "Tiempo restante para fijar predicciones",
-    "deadline": "El 7 de Junio de 2026 es el último día para fijar elecciones."
+    "timeLeft": "Tiempo restante para el Mundial",
+    "deadline": "Tenés hasta el 10 de Junio inclusive para hacer tus predicciones"
   },
   "footer": {
     "developedBy": "desarrollado por",

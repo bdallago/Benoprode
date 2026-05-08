@@ -34,5 +34,6 @@ jobs:
     steps:
       - name: Call Update API
         run: |
-          curl -X GET https://www.elprodedebeno.com.ar/api/cron/update-standings
+          curl -X GET https://www.elprodedebeno.com.ar/api/cron/update-standings \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
           echo "Triggered update API"

@@ -2,76 +2,142 @@
 
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import { Calendar, ExternalLink, Download, X } from 'lucide-react';
 import matchesData from '../lib/matches.json';
-import { useTranslation } from 'react-i18next';
+
+const CALENDAR_URL = 'https://www.elprodedebeno.com.ar/api/calendar';
+
+function formatICSDate(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+function downloadICS() {
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//El Prode de Beno//Mundial 2026//EN',
+    'X-WR-CALNAME:Mundial 2026 - El Prode de Beno',
+    'X-WR-TIMEZONE:UTC',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  for (const match of matchesData) {
+    const start = new Date(match.date);
+    const end = new Date(start.getTime() + 120 * 60 * 1000);
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${match.id}@elprodedebeno.com.ar`,
+      `DTSTART:${formatICSDate(start)}`,
+      `DTEND:${formatICSDate(end)}`,
+      `SUMMARY:${match.teamA} vs ${match.teamB} | Mundial 2026`,
+      `DESCRIPTION:Copa Mundial de Fútbol 2026 — ${match.teamA} vs ${match.teamB}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT60M',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:En 1 hora: ${match.teamA} vs ${match.teamB}`,
+      'END:VALARM',
+      'END:VEVENT'
+    );
+  }
+  lines.push('END:VCALENDAR');
+
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'Mundial2026_ProdeBeno.ics';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
 
 export function CalendarExportButton() {
-  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
 
-  const exportToGoogle = () => {
-    // Google Calendar permite enlaces directos, pero para múltiples eventos
-    // lo ideal es generar un archivo .ics que todos los calendarios entienden.
-    // Para simplificar y cumplir con "Google Calendar", generaremos un .ics
-    // que al abrirse en Android/Desktop agrega todo.
-    generateICS();
+  const handleGoogleCalendar = () => {
+    const encoded = encodeURIComponent(CALENDAR_URL);
+    window.open(
+      `https://calendar.google.com/calendar/render?cid=${encoded}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
     setIsOpen(false);
-    setIsSuccess(true);
-    setTimeout(() => setIsSuccess(false), 3000);
   };
 
-  const generateICS = () => {
-    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//El Prode de Beno//NONSGML v1.0//EN\n";
-    
-    matchesData.forEach((match: any) => {
-      const matchDate = new Date(match.date);
-      // Restar 1 hora y 15 minutos (75 minutos)
-      const warningDate = new Date(matchDate.getTime() - (75 * 60 * 1000));
-      const endDate = new Date(warningDate.getTime() + (30 * 60 * 1000)); // 30 min de duración
-
-      const formatDate = (date: Date) => {
-        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
-      };
-
-      icsContent += "BEGIN:VEVENT\n";
-      icsContent += `SUMMARY:📝 Predicción: ${match.teamA} vs ${match.teamB}\n`;
-      icsContent += `DTSTART:${formatDate(warningDate)}\n`;
-      icsContent += `DTEND:${formatDate(endDate)}\n`;
-      icsContent += `DESCRIPTION:¡Faltan 15 minutos para que cierre la predicción de este partido! Entrá al Prode de Beno ahora.\n`;
-      icsContent += `LOCATION:El Prode de Beno App\n`;
-      icsContent += "END:VEVENT\n";
-    });
-
-    icsContent += "END:VCALENDAR";
-
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', 'Mundial2026_ProdeBeno.ics');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = () => {
+    downloadICS();
+    setIsOpen(false);
   };
 
   return (
     <>
-      <Button 
-        disabled
-        className="bg-gray-400 dark:bg-gray-700 text-white flex items-center gap-2 opacity-70 cursor-not-allowed cursor-not-allowed pointer-events-none"
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
       >
         <Calendar className="w-5 h-5" />
-        {t('calendar.comingSoon', 'Agendar Mundial (Próximamente)')}
+        Agendar Mundial
       </Button>
+
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col gap-1">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-500" />
+                Agregar al calendario
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Los 72 partidos del Mundial 2026 con recordatorio 1 hora antes.
+              </p>
+            </div>
+
+            <button
+              onClick={handleGoogleCalendar}
+              className="flex items-center justify-between gap-3 w-full rounded-xl border-2 border-blue-500 bg-blue-50 dark:bg-blue-950 px-4 py-3 text-left hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+            >
+              <div className="flex flex-col">
+                <span className="font-semibold text-blue-700 dark:text-blue-300 text-sm">
+                  Google Calendar
+                </span>
+                <span className="text-xs text-blue-500 dark:text-blue-400">
+                  Suscribirse — se actualiza automáticamente
+                </span>
+              </div>
+              <ExternalLink className="w-4 h-4 text-blue-500 shrink-0" />
+            </button>
+
+            <button
+              onClick={handleDownload}
+              className="flex items-center justify-between gap-3 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex flex-col">
+                <span className="font-semibold text-gray-700 dark:text-gray-200 text-sm">
+                  Descargar archivo .ics
+                </span>
+                <span className="text-xs text-gray-400">
+                  Outlook, Apple Calendar u otros
+                </span>
+              </div>
+              <Download className="w-4 h-4 text-gray-400 shrink-0" />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

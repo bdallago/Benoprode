@@ -24,7 +24,7 @@ interface Props {
   onMessage: (msg: { type: "success" | "error"; text: string } | null) => void;
 }
 
-const DEADLINE_GROUP_STAGE = new Date("2026-06-08T00:00:00").getTime();
+const DEADLINE_GROUP_STAGE = new Date("2026-06-11T00:00:00-03:00").getTime();
 
 export function AdminUsers({ onMessage }: Props) {
   const { t } = useTranslation();

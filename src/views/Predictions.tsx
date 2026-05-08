@@ -53,8 +53,18 @@ export default function Predictions({ user }: { user: User }) {
     setSpecialPredictions,
     matchPredictions,
     setMatchPredictions,
+    handleMatchChange,
     savePredictions
   } = usePredictions(user.uid);
+
+  // Keep a ref to savePredictions so the unmount cleanup always calls the latest version
+  const savePredictionsRef = useRef(savePredictions);
+  useEffect(() => { savePredictionsRef.current = savePredictions; });
+
+  // Save on unmount so navigating away never loses unsaved changes
+  useEffect(() => {
+    return () => { savePredictionsRef.current(false, true); };
+  }, []);
 
   // Auto-save logic for matches
   useEffect(() => {
@@ -104,32 +114,6 @@ export default function Predictions({ user }: { user: User }) {
   const handleSpecialChange = (id: string, value: string) => {
     if (effectiveIsLocked) return;
     setSpecialPredictions((prev: any) => ({ ...prev, [id]: value }));
-  };
-
-  const handleMatchChange = (matchId: string, field: 'teamA' | 'teamB' | 'outcome', value: any) => {
-    setMatchPredictions((prev: any) => {
-      const current = prev[matchId] || { teamA: '', teamB: '', outcome: '' };
-      
-      const updated = { ...current, [field]: value };
-      
-      // Auto-calculate outcome based on goals ONLY if both are numbers
-      if (field === 'teamA' || field === 'teamB') {
-        if (typeof updated.teamA === 'number' && typeof updated.teamB === 'number') {
-          if (updated.teamA > updated.teamB) {
-            updated.outcome = 'A';
-          } else if (updated.teamA < updated.teamB) {
-            updated.outcome = 'B';
-          } else {
-            updated.outcome = 'DRAW';
-          }
-        }
-      }
-      
-      return {
-        ...prev,
-        [matchId]: updated
-      };
-    });
   };
 
   if (loading) {
@@ -215,7 +199,7 @@ export default function Predictions({ user }: { user: User }) {
               {t('predictions.sign1Title')}
             </div>
             
-            {new Date() > new Date('2026-06-08T00:00:00') || effectiveIsLocked ? (
+            {new Date() > new Date('2026-06-11T00:00:00-03:00') || effectiveIsLocked ? (
               <>
                 <div className="text-left text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-snug pr-4">
                   {t('predictions.closedAndLocked')}
