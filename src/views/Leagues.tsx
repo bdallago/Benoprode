@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock } from "lucide-react";
+import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock, MessageSquare } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { CountdownBanner } from "../components/CountdownBanner";
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,9 @@ import { Leaderboard } from "../components/Leaderboard";
 import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { LiveChat } from "../components/LiveChat";
+import { LeagueChat } from "../components/LeagueChat";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function Leagues({ user }: { user: User }) {
   const { isAdmin } = useAuth();
@@ -41,6 +44,41 @@ export default function Leagues({ user }: { user: User }) {
   const [userToRemoveFromLeague, setUserToRemoveFromLeague] = useState<{leagueId: string, userId: string, userName: string} | null>(null);
   const [copiedLeagueId, setCopiedLeagueId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<{uid: string, name: string} | null>(null);
+  const [activeChatLeague, setActiveChatLeague] = useState<any>(null);
+  const [unreadLeagues, setUnreadLeagues] = useState<Set<string>>(new Set());
+
+  // Compute unread badges from leagues data using lastMessageAt vs localStorage
+  useEffect(() => {
+    if (!leagues.length) return;
+    const unread = new Set<string>();
+    for (const league of leagues) {
+      if (!league.members.includes(user.uid)) continue;
+      const lastMsg = (league as any).lastMessageAt as string | undefined;
+      const lastMsgUserId = (league as any).lastMessageUserId as string | undefined;
+      if (!lastMsg) continue;
+      if (lastMsgUserId === user.uid) continue; // propio mensaje, no marcar
+      const lastRead = localStorage.getItem(`lastRead_${league.id}`);
+      if (!lastRead || lastMsg > lastRead) {
+        unread.add(league.id);
+      }
+    }
+    setUnreadLeagues(unread);
+  }, [leagues, user.uid]);
+
+  const openChat = (league: any) => {
+    setActiveChatLeague(league);
+    setUnreadLeagues(prev => { const next = new Set(prev); next.delete(league.id); return next; });
+  };
+
+  const sendWelcomeMessage = async (leagueId: string) => {
+    await addDoc(collection(db, 'leagues', leagueId, 'messages'), {
+      text: `${user.displayName || 'Alguien'} se unió a la liga 🎉`,
+      userId: user.uid,
+      userName: user.displayName || 'Jugador',
+      createdAt: new Date().toISOString(),
+      isSystem: true,
+    }).catch(() => {});
+  };
 
   const handleCreateClick = () => {
     if (!newLeagueName.trim()) return;
@@ -100,6 +138,7 @@ export default function Leagues({ user }: { user: User }) {
     if (!pendingInvitation) return;
     try {
       await joinLeague(pendingInvitation.league.id);
+      await sendWelcomeMessage(pendingInvitation.league.id);
       window.history.replaceState({}, document.title, window.location.pathname);
       setSelectedLeague(pendingInvitation.league);
       setPendingInvitation(null);
@@ -186,15 +225,25 @@ export default function Leagues({ user }: { user: User }) {
                         {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
                       </Button>
                       {benoliga.members.includes(user.uid) ? (
-                        <Button variant="outline" size="sm" onClick={() => inviteToLeague(benoliga)}>
-                          {copiedLeagueId === benoliga.id ? (
-                            <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
-                          ) : (
-                            <><Share2 className="w-4 h-4 mr-2"/> {t('leagues.invite')}</>
-                          )}
-                        </Button>
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => inviteToLeague(benoliga)}>
+                            {copiedLeagueId === benoliga.id ? (
+                              <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
+                            ) : (
+                              <><Share2 className="w-4 h-4 mr-2"/> {t('leagues.invite')}</>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={unreadLeagues.has(benoliga.id) ? "default" : "outline"}
+                            className={unreadLeagues.has(benoliga.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : ""}
+                            onClick={() => openChat(benoliga)}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" /> Chat
+                          </Button>
+                        </>
                       ) : (
-                        <Button size="sm" className="font-bold" onClick={() => joinLeague(benoliga.id)}>
+                        <Button size="sm" className="font-bold" onClick={async () => { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); }}>
                           <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinChallenge', 'Unirse al Desafío')}
                         </Button>
                       )}
@@ -271,13 +320,21 @@ export default function Leagues({ user }: { user: User }) {
                           </svg>
                           WhatsApp
                         </Button>
+                        <Button
+                          size="sm"
+                          variant={unreadLeagues.has(league.id) ? "default" : "outline"}
+                          className={unreadLeagues.has(league.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : ""}
+                          onClick={() => openChat(league)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" /> Chat
+                        </Button>
                         <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setLeagueToLeave(league)}>
                           <LogOut className="w-4 h-4 mr-2"/> {t('leagues.leave')}
                         </Button>
                       </>
                     ) : (
                       league.isPublic ? (
-                        <Button size="sm" onClick={() => joinLeague(league.id)} className="w-full">
+                        <Button size="sm" onClick={async () => { await joinLeague(league.id); await sendWelcomeMessage(league.id); }} className="w-full">
                           <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinLeague')}
                         </Button>
                       ) : (
@@ -424,10 +481,21 @@ export default function Leagues({ user }: { user: User }) {
       )}
 
       {selectedUser && (
-        <UserPredictionsModal 
-          userId={selectedUser.uid} 
-          userName={selectedUser.name} 
-          onClose={() => setSelectedUser(null)} 
+        <UserPredictionsModal
+          userId={selectedUser.uid}
+          userName={selectedUser.name}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
+
+      {activeChatLeague && (
+        <LeagueChat
+          leagueId={activeChatLeague.id}
+          leagueName={activeChatLeague.name}
+          isPublic={activeChatLeague.isPublic}
+          isMember={activeChatLeague.members.includes(user.uid)}
+          currentUser={user}
+          onClose={() => setActiveChatLeague(null)}
         />
       )}
 

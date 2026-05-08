@@ -187,17 +187,53 @@ service cloud.firestore {
                     request.resource.data.createdAt is string &&
                     request.resource.data.isPublic is bool;
                     
-      // Any authenticated user can update a league (to join/leave)
-      allow update: if isAuthenticated() &&
-                    hasOnlyAllowedFields(['name', 'createdBy', 'members', 'createdAt', 'isPublic']) &&
+      // Any authenticated user can update a league (to join/leave or update lastMessageAt)
+      allow update: if isAuthenticated() && (
+                    // Join / leave: only members/createdBy fields may change
+                    (hasOnlyAllowedFields(['name', 'createdBy', 'members', 'createdAt', 'isPublic', 'lastMessageAt']) &&
                     request.resource.data.name == resource.data.name &&
                     request.resource.data.createdBy == resource.data.createdBy &&
                     request.resource.data.createdAt == resource.data.createdAt &&
                     (!('isPublic' in request.resource.data) || request.resource.data.isPublic == resource.data.isPublic) &&
-                    request.resource.data.members is list && request.resource.data.members.size() <= 1000;
+                    request.resource.data.members is list && request.resource.data.members.size() <= 1000) ||
+                    // Members can update lastMessageAt/lastMessageUserId for unread tracking
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessageAt', 'lastMessageUserId']) &&
+                    request.auth.uid in resource.data.members &&
+                    request.resource.data.lastMessageAt is string &&
+                    request.resource.data.lastMessageUserId == request.auth.uid)
+                    );
                     
       // Only admin can delete, or the last member leaving
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.members.size() == 1 && resource.data.members[0] == request.auth.uid);
+
+      // -------------------------------------------------------
+      // Subcollection: messages (league chat)
+      // -------------------------------------------------------
+      match /messages/{messageId} {
+        // Only members can read
+        allow read: if isAuthenticated() &&
+                    request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members;
+
+        // Only members can write new messages (no update/delete except admin)
+        allow create: if isAuthenticated() &&
+                      request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members &&
+                      hasOnlyAllowedFields(['text', 'userId', 'userName', 'photoURL', 'createdAt', 'isSystem']) &&
+                      request.resource.data.createdAt is string &&
+                      (
+                        // System messages (welcome, etc.)
+                        ('isSystem' in request.resource.data && request.resource.data.isSystem == true &&
+                         request.resource.data.userId == request.auth.uid) ||
+                        // Regular messages
+                        (request.resource.data.userId == request.auth.uid &&
+                         request.resource.data.text is string &&
+                         request.resource.data.text.size() > 0 &&
+                         request.resource.data.text.size() <= 500 &&
+                         request.resource.data.userName is string &&
+                         request.resource.data.userName.size() > 0)
+                      );
+
+        allow update, delete: if isAdmin();
+      }
     }
     // ===============================================================
     // Collection: reports
