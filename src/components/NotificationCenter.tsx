@@ -1,6 +1,6 @@
 import { Bell, Check, Trash2, Trophy, Users, ShieldAlert, Star, X } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { collection, query, where, updateDoc, doc, deleteDoc, writeBatch, getDocs, addDoc } from "firebase/firestore";
+import { collection, query, where, updateDoc, doc, writeBatch, onSnapshot, addDoc, getDoc, getDocs, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import { User } from "firebase/auth";
 import Link from "next/link";
@@ -50,7 +50,6 @@ export function NotificationCenter({ user }: { user: User }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   // Ask for push notification permission on mount
   useEffect(() => {
@@ -61,48 +60,35 @@ export function NotificationCenter({ user }: { user: User }) {
     }
   }, []);
 
-  const fetchNotifications = useCallback(async () => {
-    if (!user?.uid) return [];
-    setLoadingNotifs(true);
-    try {
-      const snap = await getDocs(query(
-        collection(db, "notifications"),
-        where("userId", "==", user.uid)
-      ));
-      const notifs = snap.docs
-        .map((d: any) => ({ id: d.id, ...d.data() } as Notification))
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setNotifications(notifs);
-      return notifs;
-    } finally {
-      setLoadingNotifs(false);
-    }
-  }, [user?.uid]);
-
-  // Carga inicial: badge + push del browser (máx 1 por día)
+  // Realtime notifications subscription
   useEffect(() => {
     if (!user?.uid) return;
-    fetchNotifications().then((notifs) => {
-      if (!notifs?.length) return;
-      const unread = notifs.filter(n => !n.read);
-      if (unread.length > 0 && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        const today = new Date().toISOString().split('T')[0];
-        if (localStorage.getItem(`lastPushDate_${user.uid}`) !== today) {
-          try {
-            new Notification(unread[0].title, { body: unread[0].message, icon: '/icono.png' });
-            localStorage.setItem(`lastPushDate_${user.uid}`, today);
-          } catch (e) {
-            console.error("Browser push notification failed", e);
+    let isFirstLoad = true;
+    const q = query(collection(db, "notifications"), where("userId", "==", user.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      const notifs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as Notification))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setNotifications(notifs);
+
+      if (isFirstLoad) {
+        isFirstLoad = false;
+        const unread = notifs.filter(n => !n.read);
+        if (unread.length > 0 && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          const today = new Date().toISOString().split('T')[0];
+          if (localStorage.getItem(`lastPushDate_${user.uid}`) !== today) {
+            try {
+              new Notification(unread[0].title, { body: unread[0].message, icon: '/icono.png' });
+              localStorage.setItem(`lastPushDate_${user.uid}`, today);
+            } catch (e) {
+              console.error("Browser push notification failed", e);
+            }
           }
         }
       }
     });
-  }, [user?.uid, fetchNotifications]);
-
-  // Recarga al abrir el panel para mostrar datos frescos
-  useEffect(() => {
-    if (isOpen) fetchNotifications();
-  }, [isOpen, fetchNotifications]);
+    return () => unsub();
+  }, [user?.uid]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   // Maximum 3 items visible before having to scroll
@@ -129,7 +115,6 @@ export function NotificationCenter({ user }: { user: User }) {
     setProcessingId(notif.id);
     
     try {
-      const { getDoc, arrayUnion } = await import('firebase/firestore');
       const leagueRef = doc(db, 'leagues', notif.leagueId);
       const leagueSnap = await getDoc(leagueRef);
       
@@ -248,7 +233,6 @@ export function NotificationCenter({ user }: { user: User }) {
             <div className="p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
               <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Bell className="h-4 w-4" /> {t('notifications.title', 'Notificaciones')}
-                {loadingNotifs && <span className="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />}
               </h3>
               {unreadCount > 0 && (
                 <button

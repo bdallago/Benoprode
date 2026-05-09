@@ -53,6 +53,20 @@ interface ProfileProps {
   profileId?: string; // If provided, viewing someone else's profile
 }
 
+function computeStreak(activeDays: string[] | undefined): number {
+  if (!activeDays?.length) return 0;
+  const unique = [...new Set(activeDays.map(d => d.slice(0, 10)))].sort().reverse();
+  const today = new Date().toISOString().slice(0, 10);
+  let streak = 0;
+  let cursor = today;
+  for (const day of unique) {
+    const diff = Math.round((new Date(cursor).getTime() - new Date(day).getTime()) / 86400000);
+    if (diff === 0 || diff === 1) { streak++; cursor = day; }
+    else break;
+  }
+  return streak;
+}
+
 export default function Profile({ user, profileId }: ProfileProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -111,6 +125,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [predictionCount, setPredictionCount] = useState<number | null>(null);
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Live search effect
@@ -531,7 +546,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   <Swords className="w-4 h-4" /> {t("profile.headToHead")}
                 </h3>
 
-                <div className="flex items-center justify-center gap-12 md:gap-24 relative z-10 w-full mb-2">
+                <div className="flex items-center justify-center gap-8 md:gap-16 relative z-10 w-full mb-2">
                   <div className="flex flex-col items-center">
                     <span className="text-4xl md:text-6xl font-black text-white">
                       {h2hStats.targetWins}
@@ -541,7 +556,12 @@ export default function Profile({ user, profileId }: ProfileProps) {
                     </span>
                   </div>
 
-                  <div className="flex flex-col items-center relative">
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl font-black text-blue-200">{h2hStats.ties}</span>
+                    <span className="text-blue-300 text-[10px] font-bold uppercase mt-1">Empates</span>
+                  </div>
+
+                  <div className="flex flex-col items-center">
                     <span className="text-4xl md:text-6xl font-black text-white">
                       {h2hStats.userWins}
                     </span>
@@ -589,6 +609,36 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 </Link>
               </div>
             </div>
+
+            {/* Advanced stats toggle */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowAdvancedStats(v => !v)}
+                className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                {showAdvancedStats ? '▲ Ocultar estadísticas' : '▼ Ver estadísticas avanzadas'}
+              </button>
+            </div>
+
+            {showAdvancedStats && (() => {
+              const myLeagueCount = (globalLeagues || []).filter((l: any) => l.members?.includes(targetUserId)).length;
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in slide-in-from-top-2 duration-200">
+                  {[
+                    { label: 'Racha', value: `${computeStreak(profileData?.activeDays)}d`, icon: '🔥', color: 'text-orange-600 dark:text-orange-400' },
+                    { label: 'Inicios de sesión', value: profileData?.loginCount ?? 0, icon: '🔑', color: 'text-purple-600 dark:text-purple-400' },
+                    { label: 'Referidos', value: profileData?.referralsCount ?? 0, icon: '👥', color: 'text-green-600 dark:text-green-400' },
+                    { label: 'Ligas', value: myLeagueCount, icon: '🏆', color: 'text-blue-600 dark:text-blue-400' },
+                  ].map(stat => (
+                    <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
+                      <span className="text-2xl">{stat.icon}</span>
+                      <span className={`text-2xl font-black ${stat.color}`}>{stat.value}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{stat.label}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm mt-8 rounded-2xl overflow-hidden">
               <CardHeader className="bg-yellow-50/50 dark:bg-yellow-900/10 border-b border-gray-100 dark:border-gray-700/50 pb-4">
@@ -935,6 +985,45 @@ export default function Profile({ user, profileId }: ProfileProps) {
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
               {t("profile.duelHistory")}
             </h3>
+
+            {/* Head-to-head history when viewing another user */}
+            {!isOwnProfile && (() => {
+              const h2hDuels = duelsList.filter(d =>
+                (d.challengerId === user.uid && d.challengedId === profileId) ||
+                (d.challengerId === profileId && d.challengedId === user.uid)
+              );
+              if (h2hDuels.length === 0) return null;
+              return (
+                <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Swords className="w-4 h-4 text-blue-500" />
+                    Partidas entre vos y {profileData?.displayName?.split(' ')[0] || 'este jugador'}
+                  </h4>
+                  <div className="space-y-2">
+                    {h2hDuels.map(duel => {
+                      const isWinner = duel.status === 'completed' && duel.winnerId === user.uid;
+                      const isLoser = duel.status === 'completed' && duel.winnerId && duel.winnerId !== user.uid && duel.winnerId !== 'tie';
+                      const isTie = duel.status === 'completed' && duel.winnerId === 'tie';
+                      return (
+                        <div key={duel.id} className="flex items-center justify-between text-sm bg-white dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-100 dark:border-gray-700">
+                          <span className="text-gray-600 dark:text-gray-300 text-xs truncate max-w-[60%]">
+                            {duel.matchId?.replace(/_/g, ' ')}
+                          </span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            isWinner ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : isLoser ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : isTie ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {isWinner ? '✓ Ganaste' : isLoser ? '✗ Perdiste' : isTie ? 'Empate' : 'En curso'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {duelsList.length > 0 && (
               <div className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">

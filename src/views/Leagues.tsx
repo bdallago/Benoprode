@@ -11,6 +11,7 @@ import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { LeagueChat } from "../components/LeagueChat";
 import { LeagueActivity } from "../components/LeagueActivity";
+import { LeagueStats } from "../components/LeagueStats";
 import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useFocusTrap } from "../hooks/useFocusTrap";
@@ -287,6 +288,7 @@ export default function Leagues({ user }: { user: User }) {
                       loading={loading}
                       onRemoveUser={isAdmin || benoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: benoliga.id, userId: u.uid, userName: u.name}) : undefined}
                     />
+                    <LeagueStats members={players.filter(p => benoliga.members.includes(p.uid))} />
                     <LeagueActivity leagueId={benoliga.id} />
                   </div>
                )}
@@ -383,6 +385,7 @@ export default function Leagues({ user }: { user: User }) {
                       loading={loading}
                       onRemoveUser={isAdmin || league.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: league.id, userId: u.uid, userName: u.name}) : undefined}
                     />
+                    <LeagueStats members={players.filter(p => league.members.includes(p.uid))} />
                     <LeagueActivity leagueId={league.id} />
                   </div>
                 )}

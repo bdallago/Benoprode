@@ -6,7 +6,7 @@ import {
   addDoc, getDocs, startAfter, QueryDocumentSnapshot, doc, updateDoc, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { X, Send, ChevronUp, Shield } from 'lucide-react';
+import { X, Send, Shield } from 'lucide-react';
 import { checkBadWords } from '../lib/badwords';
 
 const MESSAGES_PER_PAGE = 50;
@@ -75,7 +75,11 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
   const [pickerMsgId, setPickerMsgId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const loadMoreFnRef = useRef<() => Promise<void>>(async () => {});
 
   // Mark as read on open
   useEffect(() => {
@@ -87,6 +91,9 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     setLoading(true);
     setLastDoc(null);
     setMessages([]);
+    hasMoreRef.current = true;
+    setHasMore(true);
+
     const q = query(
       collection(db, 'leagues', leagueId, 'messages'),
       orderBy('createdAt', 'desc'),
@@ -96,7 +103,9 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     const unsub = onSnapshot(q, (snap) => {
       const docs = snap.docs;
       if (docs.length > 0) setLastDoc(docs[docs.length - 1]);
-      setHasMore(docs.length === MESSAGES_PER_PAGE);
+      const newHasMore = docs.length === MESSAGES_PER_PAGE;
+      hasMoreRef.current = newHasMore;
+      setHasMore(newHasMore);
       const msgs = docs.map(d => ({ id: d.id, ...d.data() } as Message)).reverse();
       setMessages(msgs);
       setLoading(false);
@@ -110,30 +119,52 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     return () => unsub();
   }, [leagueId]);
 
-  const loadMore = async () => {
-    if (!lastDoc || loadingMore) return;
+  const loadMore = useCallback(async () => {
+    if (!lastDoc || loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
-    const q = query(
-      collection(db, 'leagues', leagueId, 'messages'),
-      orderBy('createdAt', 'desc'),
-      startAfter(lastDoc),
-      limit(MESSAGES_PER_PAGE)
+    try {
+      const q = query(
+        collection(db, 'leagues', leagueId, 'messages'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc),
+        limit(MESSAGES_PER_PAGE)
+      );
+      const snap = await getDocs(q);
+      const docs = snap.docs;
+      const newHasMore = docs.length === MESSAGES_PER_PAGE;
+      hasMoreRef.current = newHasMore;
+      if (docs.length > 0) setLastDoc(docs[docs.length - 1]);
+      setHasMore(newHasMore);
+      const older = docs.map(d => ({ id: d.id, ...d.data() } as Message)).reverse();
+      const prevScrollHeight = containerRef.current?.scrollHeight ?? 0;
+      setMessages(prev => [...older, ...prev]);
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight - prevScrollHeight;
+        }
+      });
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [lastDoc, leagueId]);
+
+  // Keep ref fresh so IntersectionObserver always calls the latest loadMore
+  useEffect(() => { loadMoreFnRef.current = loadMore; }, [loadMore]);
+
+  // Auto-load when user scrolls to top (infinite scroll)
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const container = containerRef.current;
+    if (!sentinel || !container) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMoreFnRef.current(); },
+      { root: container, threshold: 0 }
     );
-    const snap = await getDocs(q);
-    const docs = snap.docs;
-    if (docs.length > 0) setLastDoc(docs[docs.length - 1]);
-    setHasMore(docs.length === MESSAGES_PER_PAGE);
-    const older = docs.map(d => ({ id: d.id, ...d.data() } as Message)).reverse();
-    const prevScrollHeight = containerRef.current?.scrollHeight ?? 0;
-    setMessages(prev => [...older, ...prev]);
-    setLoadingMore(false);
-    // Restore scroll position so new messages load above
-    requestAnimationFrame(() => {
-      if (containerRef.current) {
-        containerRef.current.scrollTop = containerRef.current.scrollHeight - prevScrollHeight;
-      }
-    });
-  };
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [leagueId]);
 
   const sendMessage = useCallback(async () => {
     const text = newMessage.trim();
@@ -332,16 +363,10 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
 
         {/* Messages */}
         <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
-          {hasMore && (
+          <div ref={topSentinelRef} className="h-px" />
+          {loadingMore && (
             <div className="flex justify-center pt-2 pb-1">
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 disabled:opacity-50"
-              >
-                <ChevronUp className="w-4 h-4" />
-                {loadingMore ? 'Cargando...' : 'Ver mensajes anteriores'}
-              </button>
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
           {loading ? (
