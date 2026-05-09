@@ -1,38 +1,32 @@
 "use client";
 
-'use client';
-
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../../firebase';
+import { useAuth } from '../../../components/Providers';
 import Profile from '../../../views/Profile';
 
 export default function OtherUserProfilePage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const profileId = params.id as string;
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        router.push('/');
-      }
-      setLoading(false);
-    });
+    if (!loading && !user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
 
-    return () => unsubscribe();
-  }, [router]);
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    );
   }
 
-  if (!currentUser) return null;
-
-  return <Profile user={currentUser} profileId={profileId} />;
+  return <Profile user={user} profileId={profileId} />;
 }

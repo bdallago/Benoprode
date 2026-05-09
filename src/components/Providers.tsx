@@ -44,14 +44,45 @@ import { LiveChat } from "./LiveChat";
 import { useTheme } from "./ThemeProvider";
 import { TooltipProvider } from "./ui/tooltip";
 
+export interface League {
+  id: string;
+  name: string;
+  createdBy: string;
+  members: string[];
+  createdAt: string;
+  isPublic: boolean;
+  lastMessageAt?: string;
+  lastMessageUserId?: string;
+}
+
+export interface UserStats {
+  uid?: string;
+  displayName?: string;
+  photoURL?: string;
+  email?: string;
+  role?: string;
+  totalPoints?: number;
+  earnedBadges?: string[];
+  activeDays?: string[];
+  rank?: number;
+  inBenoliga?: boolean;
+  inPrivateLeague?: boolean;
+  referralsCount?: number;
+  hasSavedPredictions?: boolean;
+  lockedEarly?: boolean;
+  loginCount?: number;
+  lastLogin?: string;
+  [key: string]: unknown;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
-  globalLeagues: any[];
+  globalLeagues: League[];
   hasMoreLeagues: boolean;
   loadMoreLeagues: () => Promise<void>;
-  userStats: any;
+  userStats: UserStats;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -72,11 +103,11 @@ function GlobalBadgeListener({
   userStats,
 }: {
   user: User;
-  globalLeagues: any[];
-  userStats: any;
+  globalLeagues: League[];
+  userStats: UserStats;
 }) {
-  const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
-  const [currentBadge, setCurrentBadge] = useState<any | null>(null);
+  const [badgeQueue, setBadgeQueue] = useState<{ id: string; name: string; icon: string; description: string }[]>([]);
+  const [currentBadge, setCurrentBadge] = useState<{ id: string; name: string; icon: string; description: string } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Refs so the stable subscription always reads fresh values without recreating
   const globalLeaguesRef = useRef(globalLeagues);
@@ -138,16 +169,14 @@ function GlobalBadgeListener({
 
       const storedBadges = stats.earnedBadges || [];
       const newEarnedBadges = userBadgesFull.filter(
-        (b: any) => b && !storedBadges.includes(b.id),
-      );
+        (b) => b && !storedBadges.includes(b.id),
+      ) as { id: string; name: string; icon: string; description: string }[];
 
       if (newEarnedBadges.length > 0) {
-        setBadgeQueue((prev: any[]) => {
+        setBadgeQueue((prev) => {
           const existingIds = prev.map((p) => p.id);
-          const toAdd = newEarnedBadges.filter(
-            (b) => b && !existingIds.includes(b.id),
-          );
-          return [...prev, ...(toAdd as any[])];
+          const toAdd = newEarnedBadges.filter((b) => !existingIds.includes(b.id));
+          return [...prev, ...toAdd];
         });
         const newBadgesList = Array.from(
           new Set([...storedBadges, ...userBadgeIds]),
@@ -233,7 +262,7 @@ function GlobalBadgeListener({
 
       const timer = setTimeout(() => {
         setCurrentBadge(null);
-        setBadgeQueue((prev: any[]) => prev.slice(1));
+        setBadgeQueue((prev) => prev.slice(1));
       }, 5000);
 
       return () => clearTimeout(timer);
@@ -251,7 +280,7 @@ function GlobalBadgeListener({
         <button
           onClick={() => {
             setCurrentBadge(null);
-            setBadgeQueue((prev: any[]) => prev.slice(1));
+            setBadgeQueue((prev) => prev.slice(1));
           }}
           className="absolute top-2 right-2 text-sky-200 hover:text-white transition-colors"
           title="Cerrar"
@@ -332,10 +361,10 @@ function LiveChatFAB({ user }: { user: User }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [userStats, setUserStats] = useState<any>({});
+  const [userStats, setUserStats] = useState<UserStats>({});
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [globalLeagues, setGlobalLeagues] = useState<any[]>([]);
+  const [globalLeagues, setGlobalLeagues] = useState<League[]>([]);
   const [hasMoreLeagues, setHasMoreLeagues] = useState(false);
   const lastLeagueDocRef = useRef<DocumentSnapshot | null>(null);
 
@@ -371,7 +400,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       (snapshot) => {
         lastLeagueDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
         setHasMoreLeagues(snapshot.docs.length === 20);
-        setGlobalLeagues(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setGlobalLeagues(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as League)));
       },
       (err) => {
         console.warn("Leagues snapshot error (idle/cancel):", err);
@@ -455,7 +484,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             setIsAdmin(isAdminEmail || currentRole === "admin");
 
             const todayStr = new Date().toISOString().split("T")[0];
-            const updates: any = {
+            const updates: Record<string, unknown> = {
               lastLogin: new Date().toISOString(),
               loginCount: increment(1),
               activeDays: arrayUnion(todayStr),
@@ -514,7 +543,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       );
       lastLeagueDocRef.current = snap.docs[snap.docs.length - 1] ?? null;
       setHasMoreLeagues(snap.docs.length === 20);
-      setGlobalLeagues((prev) => [...prev, ...snap.docs.map((d) => ({ id: d.id, ...d.data() }))]);
+      setGlobalLeagues((prev) => [...prev, ...snap.docs.map((d) => ({ id: d.id, ...d.data() } as League))]);
     } catch (e) {
       console.warn("loadMoreLeagues failed:", e);
     }
