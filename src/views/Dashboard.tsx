@@ -42,6 +42,8 @@ import { Button } from "../components/ui/button";
 import { GlobalLeaderboard } from "../components/GlobalLeaderboard";
 import { CalendarExportButton } from "../components/CalendarExportButton";
 import { useAuth } from "../components/Providers";
+import { MatchReminder } from "../components/MatchReminder";
+import { CommunityPredictions } from "../components/CommunityPredictions";
 
 interface Player {
   uid: string;
@@ -223,96 +225,6 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
     });
   }
 
-  const [communityStats, setCommunityStats] = useState<Record<string, any>>({});
-
-  useEffect(() => {
-    // Fetch global community stats dynamically and in real time
-    const unsubscribe = onSnapshot(
-      doc(db, "statistics", "matches"),
-      (statsSnap) => {
-        if (statsSnap.exists()) {
-          setCommunityStats(statsSnap.data());
-        }
-      },
-      (err) => {
-        console.error("Error fetching community stats", err);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const COMMUNITY_FACTS = useMemo(() => {
-    const now = new Date();
-    const upcomingMatches = matchesData
-      .filter((m) => new Date(m.date) > now)
-      .slice(0, 3);
-
-    if (upcomingMatches.length === 0)
-      return [
-        {
-          text: t(
-            "dashboard.facts.noMatches",
-            "El 88% de la comunidad predice que no jugará nadie hoy. ¡Se viene pronto!",
-          ),
-          link: "/predictions",
-        },
-      ];
-
-    const facts: { text: string; link: string }[] = [];
-
-    upcomingMatches.forEach((match) => {
-      const matchStat = communityStats[match.id];
-      if (!matchStat || matchStat.total === 0) {
-        facts.push({
-          text: `La comunidad está súper dividida con ${match.teamA} vs ${match.teamB}. ¡Hacé tu predicción y marcá la diferencia!`,
-          link: "/predictions",
-        });
-        return;
-      }
-
-      const total = matchStat.total;
-      const pctA = Math.round(((matchStat.A || 0) / total) * 100);
-      const pctDRAW = Math.round(((matchStat.DRAW || 0) / total) * 100);
-      const pctB = Math.round(((matchStat.B || 0) / total) * 100);
-
-      if (pctA >= 50) {
-        facts.push({
-          text: `El ${pctA}% de la comunidad confía en que gana ${match.teamA} contra ${match.teamB}, ¿vas a ir en contra?`,
-          link: "/predictions",
-        });
-      } else if (pctB >= 50) {
-        facts.push({
-          text: `El ${pctB}% de la comunidad confía en la victoria de ${match.teamB} frente a ${match.teamA}. ¿Te sumás a la minoría?`,
-          link: "/predictions",
-        });
-      } else if (pctDRAW >= 50) {
-        facts.push({
-          text: `Fuerte tendencia al CAUTELOSO: El ${pctDRAW}% votó que hay empate entre ${match.teamA} y ${match.teamB}.`,
-          link: "/predictions",
-        });
-      } else {
-        facts.push({
-          text: `Nadie está seguro hoy: La comunidad no se decide (${pctA}% ${match.teamA}, ${pctB}% ${match.teamB}). ¡Tu voto desempata!`,
-          link: "/predictions",
-        });
-      }
-    });
-
-    return facts;
-  }, [communityStats]);
-
-  const [currentFact, setCurrentFact] = useState(0);
-
-  useEffect(() => { setCurrentFact(0); }, [COMMUNITY_FACTS.length]);
-
-  useEffect(() => {
-    if (!COMMUNITY_FACTS.length) return;
-    const interval = setInterval(() => {
-      setCurrentFact((prev) => (prev + 1) % COMMUNITY_FACTS.length);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [COMMUNITY_FACTS.length]);
 
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
@@ -323,33 +235,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
         </div>
       </div>
 
-      <motion.div
-        key={`fact-${currentFact}`}
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 5 }}
-        transition={{ duration: 0.5 }}
-        className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200 dark:border-orange-900/50 rounded-xl px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between text-left shadow-sm gap-3 sm:gap-4"
-      >
-        <p className="text-sm font-semibold text-orange-900 dark:text-orange-200 flex-1">
-          {COMMUNITY_FACTS[currentFact % COMMUNITY_FACTS.length]?.text}
-        </p>
-        <Link
-          href={
-            COMMUNITY_FACTS[currentFact % COMMUNITY_FACTS.length]?.link ||
-            "/predictions"
-          }
-          className="w-full sm:w-auto"
-        >
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white border-transparent shadow-sm h-9 text-xs font-bold whitespace-nowrap"
-          >
-            Ir a Predicciones
-          </Button>
-        </Link>
-      </motion.div>
+      <MatchReminder />
 
       <motion.div
         key={`tip-${currentTip}`}
@@ -441,14 +327,23 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
         </motion.div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-        className="flex"
-      >
-        <UpcomingMatches user={user} />
-      </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="flex"
+        >
+          <UpcomingMatches user={user} />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <CommunityPredictions />
+        </motion.div>
+      </div>
 
       <div className="space-y-4 leaderboard-container">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
