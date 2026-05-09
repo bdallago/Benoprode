@@ -181,8 +181,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
 
   const myData = userStats;
   const myPoints = myData?.totalPoints || 0;
-  // If exactRank isn't loaded, fake it to 0 or 1
-  const myRank = exactRank > 0 ? exactRank : 1;
+  const myRank = exactRank;
   const userLevel = getUserLevel(myPoints);
 
   const userBadgeIds = myData?.earnedBadges || userStats?.earnedBadges || [];
@@ -201,6 +200,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
   const [currentTip, setCurrentTip] = useState(0);
 
   useEffect(() => {
+    if (!TIPS.length) return;
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % TIPS.length);
     }, 8000);
@@ -208,7 +208,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
   }, []);
 
   // Top 10% / Top 30% Logic
-  const percentile = totalPlayers > 1 ? (myRank / totalPlayers) * 100 : 100;
+  const percentile = myRank > 0 && totalPlayers > 1 ? (myRank / totalPlayers) * 100 : 100;
 
   const rankBadges = [];
   if (percentile <= 10 && myPoints > 0) {
@@ -304,12 +304,15 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
 
   const [currentFact, setCurrentFact] = useState(0);
 
+  useEffect(() => { setCurrentFact(0); }, [COMMUNITY_FACTS.length]);
+
   useEffect(() => {
+    if (!COMMUNITY_FACTS.length) return;
     const interval = setInterval(() => {
       setCurrentFact((prev) => (prev + 1) % COMMUNITY_FACTS.length);
     }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [COMMUNITY_FACTS.length]);
 
   return (
     <div id="tutorial-ranking-board" className="max-w-6xl mx-auto space-y-6">
@@ -405,7 +408,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
                     {t("dashboard.globalRank")}
                   </p>
                   <h2 className="text-6xl font-black tracking-tighter">
-                    #{myRank || "-"}
+                    {loading || !myRank ? '…' : `#${myRank}`}
                   </h2>
                 </div>
                 <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">

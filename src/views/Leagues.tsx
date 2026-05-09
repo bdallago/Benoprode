@@ -11,8 +11,9 @@ import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { LeagueChat } from "../components/LeagueChat";
 import { LeagueActivity } from "../components/LeagueActivity";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 export default function Leagues({ user }: { user: User }) {
   const { isAdmin } = useAuth();
@@ -70,6 +71,13 @@ export default function Leagues({ user }: { user: User }) {
     setUnreadLeagues(prev => { const next = new Set(prev); next.delete(league.id); return next; });
   };
 
+  // Focus traps for each modal (hook must be called unconditionally)
+  const createModalRef = useFocusTrap(showCreateModal);
+  const deleteModalRef = useFocusTrap(!!leagueToDelete);
+  const leaveModalRef = useFocusTrap(!!leagueToLeave);
+  const removeModalRef = useFocusTrap(!!userToRemoveFromLeague);
+  const inviteModalRef = useFocusTrap(!!pendingInvitation);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -84,7 +92,8 @@ export default function Leagues({ user }: { user: User }) {
   }, [showCreateModal, leagueToDelete, leagueToLeave, userToRemoveFromLeague, pendingInvitation]);
 
   const sendWelcomeMessage = async (leagueId: string) => {
-    await addDoc(collection(db, 'leagues', leagueId, 'messages'), {
+    // Fixed doc ID makes this idempotent — double-joins never produce duplicate welcome messages
+    await setDoc(doc(db, 'leagues', leagueId, 'messages', `welcome_${user.uid}`), {
       text: `${user.displayName || 'Alguien'} se unió a la liga 🎉`,
       userId: user.uid,
       userName: user.displayName || 'Jugador',
@@ -391,7 +400,7 @@ export default function Leagues({ user }: { user: User }) {
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="dialog-create-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div ref={createModalRef} role="dialog" aria-modal="true" aria-labelledby="dialog-create-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             {!isConfirmingCreate ? (
               <>
                 <h3 id="dialog-create-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('leagues.createNewLeague')}</h3>
@@ -450,7 +459,7 @@ export default function Leagues({ user }: { user: User }) {
 
       {leagueToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="dialog-delete-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div ref={deleteModalRef} role="dialog" aria-modal="true" aria-labelledby="dialog-delete-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 id="dialog-delete-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.deleteLeagueTitle', 'Eliminar Liga')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.deleteLeagueConfirm', '¿Estás seguro de que querés eliminar "{{name}}"? Esta acción es irreversible.', { name: leagueToDelete.name })}</p>
             <div className="flex justify-end gap-3">
@@ -463,7 +472,7 @@ export default function Leagues({ user }: { user: User }) {
 
       {leagueToLeave && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="dialog-leave-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div ref={leaveModalRef} role="dialog" aria-modal="true" aria-labelledby="dialog-leave-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 id="dialog-leave-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.leaveLeagueTitle', 'Salir de la Liga')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.leaveLeagueConfirm', '¿Estás seguro de que querés salir de "{{name}}"?', { name: leagueToLeave.name })}</p>
             <div className="flex justify-end gap-3">
@@ -476,7 +485,7 @@ export default function Leagues({ user }: { user: User }) {
 
       {userToRemoveFromLeague && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="dialog-remove-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div ref={removeModalRef} role="dialog" aria-modal="true" aria-labelledby="dialog-remove-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 id="dialog-remove-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.removePlayerTitle', 'Eliminar Jugador')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.removePlayerConfirm', '¿Borrar a {{name}}?', { name: userToRemoveFromLeague.userName })}</p>
             <div className="flex justify-end gap-3">
@@ -489,7 +498,7 @@ export default function Leagues({ user }: { user: User }) {
 
       {pendingInvitation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="dialog-invite-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl text-center">
+          <div ref={inviteModalRef} role="dialog" aria-modal="true" aria-labelledby="dialog-invite-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl text-center">
             <Trophy className="h-10 w-10 text-blue-600 mx-auto mb-4" />
             <h3 id="dialog-invite-title" className="text-xl font-bold mb-2">{t('leagues.inviteTitle', '¡Invitación a Liga!')}</h3>
             <p className="text-gray-600 mb-6">{t('leagues.inviteText', '{{inviter}} te invita a unirte a "{{league}}".', { inviter: pendingInvitation.inviter, league: pendingInvitation.league.name })}</p>

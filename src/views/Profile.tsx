@@ -204,68 +204,38 @@ export default function Profile({ user, profileId }: ProfileProps) {
   }, [targetUserId, globalLeagues]);
 
   useEffect(() => {
-    // Fetch friends list
-    const qFriends1 = query(
-      collection(db, "friendships"),
-      where("user1Id", "==", targetUserId),
-    );
-    const qFriends2 = query(
-      collection(db, "friendships"),
-      where("user2Id", "==", targetUserId),
-    );
-
-    const handleFriendsSnap = async (snap1: any, snap2: any) => {
+    // Friends: one combined fetch instead of two cross-firing onSnapshot+getDocs
+    const fetchFriends = async () => {
+      const [snap1, snap2] = await Promise.all([
+        getDocs(query(collection(db, "friendships"), where("user1Id", "==", targetUserId))),
+        getDocs(query(collection(db, "friendships"), where("user2Id", "==", targetUserId))),
+      ]);
       const friendIds = new Set<string>();
-      snap1.docs.forEach((d: any) => friendIds.add(d.data().user2Id));
-      snap2.docs.forEach((d: any) => friendIds.add(d.data().user1Id));
-
-      const uidsArray = Array.from(friendIds);
-      const fetchedPlayers = await fetchUsersInChunks(db, uidsArray);
-      
-      const friendsData = fetchedPlayers.map(f => ({ ...f, id: f.uid }));
-      setFriendsList(friendsData);
+      snap1.docs.forEach((d) => friendIds.add(d.data().user2Id));
+      snap2.docs.forEach((d) => friendIds.add(d.data().user1Id));
+      const fetched = await fetchUsersInChunks(db, Array.from(friendIds));
+      setFriendsList(fetched.map((f) => ({ ...f, id: f.uid })));
     };
+    fetchFriends().catch(() => {});
 
-    const unsubF1 = onSnapshot(qFriends1, (snap1) => {
-      getDocs(qFriends2).then((snap2) => handleFriendsSnap(snap1, snap2));
-    });
-    const unsubF2 = onSnapshot(qFriends2, (snap2) => {
-      getDocs(qFriends1).then((snap1) => handleFriendsSnap(snap1, snap2));
-    });
-
-    // Fetch duels
-    const qDuels1 = query(
-      collection(db, "duels_v2"),
-      where("challengerId", "==", targetUserId),
-    );
-    const qDuels2 = query(
-      collection(db, "duels_v2"),
-      where("challengedId", "==", targetUserId),
-    );
-
-    const handleDuelsSnap = (snap1: any, snap2: any) => {
-      const allDuels = new Map();
-      snap1.docs.forEach((d: any) =>
-        allDuels.set(d.id, { id: d.id, ...d.data() }),
-      );
-      snap2.docs.forEach((d: any) =>
-        allDuels.set(d.id, { id: d.id, ...d.data() }),
-      );
+    // Duels: same — one combined fetch, no cross-firing
+    const fetchDuels = async () => {
+      const [snap1, snap2] = await Promise.all([
+        getDocs(query(collection(db, "duels_v2"), where("challengerId", "==", targetUserId))),
+        getDocs(query(collection(db, "duels_v2"), where("challengedId", "==", targetUserId))),
+      ]);
+      const allDuels = new Map<string, any>();
+      snap1.docs.forEach((d) => allDuels.set(d.id, { id: d.id, ...d.data() }));
+      snap2.docs.forEach((d) => allDuels.set(d.id, { id: d.id, ...d.data() }));
       setDuelsList(
         Array.from(allDuels.values()).sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ),
       );
     };
+    fetchDuels().catch(() => {});
 
-    const unsubD1 = onSnapshot(qDuels1, (snap1) => {
-      getDocs(qDuels2).then((snap2) => handleDuelsSnap(snap1, snap2));
-    });
-    const unsubD2 = onSnapshot(qDuels2, (snap2) => {
-      getDocs(qDuels1).then((snap1) => handleDuelsSnap(snap1, snap2));
-    });
-
+    // Pending friend requests: onSnapshot is appropriate here (need real-time badge)
     let unsubReqs = () => {};
     if (isOwnProfile) {
       unsubReqs = onSnapshot(
@@ -275,35 +245,23 @@ export default function Profile({ user, profileId }: ProfileProps) {
           where("status", "==", "pending"),
         ),
         async (snap) => {
-          if (snap.empty) {
-            setPendingRequestsList([]);
-            return;
-          }
-          const reqs = snap.docs.map(d => ({ reqId: d.id, ...d.data() }));
+          if (snap.empty) { setPendingRequestsList([]); return; }
+          const reqs = snap.docs.map((d) => ({ reqId: d.id, ...d.data() }));
           const uids = reqs.map((r: any) => r.fromUserId);
           const fetchedUsers = await fetchUsersInChunks(db, uids);
-          
-          const p = reqs.map((req: any) => {
-            const u = fetchedUsers.find(user => user.uid === req.fromUserId);
-            return {
+          setPendingRequestsList(
+            reqs.map((req: any) => ({
               id: req.reqId,
               fromUserId: req.fromUserId,
-              ...u
-            };
-          });
-          setPendingRequestsList(p);
+              ...fetchedUsers.find((u) => u.uid === req.fromUserId),
+            })),
+          );
         },
       );
     }
 
-    return () => {
-      unsubF1();
-      unsubF2();
-      unsubD1();
-      unsubD2();
-      unsubReqs();
-    };
-  }, [targetUserId, isOwnProfile, user]);
+    return () => { unsubReqs(); };
+  }, [targetUserId, isOwnProfile, user.uid]);
 
   const [h2hStats, setH2hStats] = useState({
     userWins: 0,

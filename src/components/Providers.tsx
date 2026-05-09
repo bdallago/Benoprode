@@ -124,9 +124,7 @@ function GlobalBadgeListener({
   }, [user, userStats?.totalPoints, userStats?.earnedBadges?.length, globalLeagues?.length]);
 
   useEffect(() => {
-    audioRef.current = new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-    );
+    audioRef.current = new Audio("/badge-sound.mp3");
     audioRef.current.volume = 0.5;
   }, []);
 
