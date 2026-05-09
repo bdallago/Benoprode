@@ -38,6 +38,8 @@ import {
   Medal,
   CheckCircle2,
   ArrowRight,
+  Globe,
+  Lock,
 } from "lucide-react";
 import { getUserLevel, getUserBadges, BADGES } from "../lib/gamification";
 import matchesData from "../lib/matches.json";
@@ -67,18 +69,18 @@ export default function Profile({ user, profileId }: ProfileProps) {
   } = useSocial(user);
   
   const initialTab =
-    (searchParams.get("tab") as "stats" | "friends" | "duels") || "stats";
+    (searchParams.get("tab") as "stats" | "friends" | "duels" | "torneos") || "stats";
 
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"stats" | "friends" | "duels">(
+  const [activeTab, setActiveTab] = useState<"stats" | "friends" | "duels" | "torneos">(
     initialTab,
   );
   const [isAllBadgesModalOpen, setIsAllBadgesModalOpen] = useState(false);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "stats" || tab === "friends" || tab === "duels") {
+    if (tab === "stats" || tab === "friends" || tab === "duels" || tab === "torneos") {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -531,6 +533,14 @@ export default function Profile({ user, profileId }: ProfileProps) {
         >
           {t("profile.duels")}
         </button>
+        {isOwnProfile && (
+          <button
+            onClick={() => setActiveTab("torneos")}
+            className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === "torneos" ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300"}`}
+          >
+            Torneos
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
@@ -1171,6 +1181,69 @@ export default function Profile({ user, profileId }: ProfileProps) {
             )}
           </div>
         )}
+
+        {activeTab === "torneos" && isOwnProfile && (() => {
+          const myLeagues = (globalLeagues || []).filter((l: any) => l.members?.includes(user.uid));
+          const isBenoliga = (l: any) => l.name?.toLowerCase().includes('beno') || l.id === 'benoliga';
+          const sorted = [
+            ...myLeagues.filter(isBenoliga),
+            ...myLeagues.filter((l: any) => !isBenoliga(l)),
+          ];
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-blue-500" /> Mis Torneos
+                </h3>
+                <Link href="/leagues" className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                  Ver todos <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+              {sorted.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
+                  <Trophy className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">No estás en ningún torneo todavía.</p>
+                  <Link href="/leagues" className="mt-3 inline-block text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                    Explorar torneos
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {sorted.map((league: any) => (
+                    <Link
+                      key={league.id}
+                      href={`/leagues?league=${league.id}`}
+                      className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors flex flex-col gap-2 group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                          {league.name}
+                        </span>
+                        {league.isPublic ? (
+                          <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-normal shrink-0">
+                            <Globe className="w-3 h-3" /> Pública
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full font-normal shrink-0">
+                            <Lock className="w-3 h-3" /> Privada
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> {league.members?.length || 0} miembros
+                        </span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Ver ranking <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {isPredictionsModalOpen && profileData && (

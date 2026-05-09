@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, addDoc, limit, doc, getDoc, updateDoc, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Button } from './ui/button';
-import { Send, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Send, AlertTriangle, MessageCircle, X } from 'lucide-react';
 import { TeamFlag } from './Fixture';
 import { useTranslation } from 'react-i18next';
 import { checkBadWords } from '../lib/badwords';
@@ -32,7 +32,7 @@ function formatMatchDate(isoDate: string) {
   return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
 }
 
-export function LiveChat() {
+export function LiveChat({ onClose }: { onClose?: () => void }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -128,11 +128,18 @@ export function LiveChat() {
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="bg-blue-900 text-white p-4 flex flex-col items-center justify-center relative gap-2">
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs font-bold animate-pulse">
-          <span className="w-2 h-2 bg-white rounded-full inline-block" /> {t('liveChat.live')}
+        <div className="absolute top-2 right-2 flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs font-bold animate-pulse">
+            <span className="w-2 h-2 bg-white rounded-full inline-block" /> {t('liveChat.live')}
+          </div>
+          {onClose && (
+            <button onClick={onClose} className="text-blue-200 hover:text-white transition-colors" title="Cerrar">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {liveMatch ? (

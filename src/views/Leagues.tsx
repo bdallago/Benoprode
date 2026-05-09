@@ -9,7 +9,6 @@ import { useAuth } from "../components/Providers";
 import { Leaderboard } from "../components/Leaderboard";
 import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
-import { LiveChat } from "../components/LiveChat";
 import { LeagueChat } from "../components/LeagueChat";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../firebase";
@@ -163,8 +162,13 @@ export default function Leagues({ user }: { user: User }) {
   };
 
   // Benoliga logic
-  const benoliga = leagues.find((l: any) => l.name.toLowerCase().includes('beno') || l.id === 'benoliga');
-  const otherLeagues = leagues.filter((l: any) => !(l.name.toLowerCase().includes('beno') || l.id === 'benoliga'));
+  const isBenoliga = (l: any) => l.name.toLowerCase().includes('beno') || l.id === 'benoliga';
+  const benoliga = leagues.find(isBenoliga);
+  const myLeagues = leagues.filter((l: any) => !isBenoliga(l) && l.members.includes(user.uid));
+  const notMyLeagues = leagues.filter((l: any) => !isBenoliga(l) && !l.members.includes(user.uid));
+  const MAX_TOTAL = 20;
+  const extraSlots = Math.max(0, MAX_TOTAL - (benoliga ? 1 : 0) - myLeagues.length);
+  const otherLeagues = [...myLeagues, ...notMyLeagues.slice(0, extraSlots)];
 
   if (loading) {
     return (
@@ -499,10 +503,6 @@ export default function Leagues({ user }: { user: User }) {
         />
       )}
 
-      <div className="mt-12">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('leagues.liveChat', 'Chat en vivo')}</h3>
-        <LiveChat />
-      </div>
     </div>
   );
 }

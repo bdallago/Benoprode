@@ -23,6 +23,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
   const currentLang = i18n.language || 'es-AR';
   
   const [matchStats, setMatchStats] = useState<Record<string, { A: number, B: number, DRAW: number, total: number }>>({});
+  const [commentActivity, setCommentActivity] = useState<Record<string, string>>({});
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -63,7 +64,9 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
     const statsDoc = doc(db, "statistics", "matches");
     const unsubscribe = onSnapshot(statsDoc, (snapshot) => {
       if (snapshot.exists()) {
-        setMatchStats(snapshot.data());
+        const data = snapshot.data();
+        setMatchStats(data as any);
+        setCommentActivity(data._comments || {});
       }
     });
     
@@ -292,7 +295,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                           )}
                         </div>
                       </div>
-                      <MatchComments matchId={match.id} />
+                      <MatchComments matchId={match.id} lastCommentAt={commentActivity[match.id]} />
                     </CardContent>
                   </Card>
                 );

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { Button } from '../ui/button';
 import { MessageCircle, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { checkBadWords, filterBadWords } from '../../lib/badwords';
+import { filterBadWords } from '../../lib/badwords';
 
 interface MatchCommentsProps {
   matchId: string;
+  lastCommentAt?: string;
 }
 
-export function MatchComments({ matchId }: MatchCommentsProps) {
+export function MatchComments({ matchId, lastCommentAt }: MatchCommentsProps) {
   const { t } = useTranslation();
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -18,7 +19,14 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isUnread, setIsUnread] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!lastCommentAt) return;
+    const lastRead = localStorage.getItem(`lastReadComments_${matchId}`) ?? '';
+    setIsUnread(lastCommentAt > lastRead);
+  }, [matchId, lastCommentAt]);
 
   useEffect(() => {
     const hasSeenCommentsTooltip = localStorage.getItem('hasSeenCommentsTooltip');
@@ -61,8 +69,8 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
     e.preventDefault();
     if (!newComment.trim() || !auth.currentUser) return;
 
-    // Use filtered comment text
     const filteredText = filterBadWords(newComment.trim());
+    const now = new Date().toISOString();
 
     setIsSubmitting(true);
     try {
@@ -70,8 +78,14 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
         text: filteredText,
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Usuario',
-        createdAt: new Date().toISOString()
+        createdAt: now,
       });
+      // Notify other users via statistics/matches
+      updateDoc(doc(db, 'statistics', 'matches'), {
+        [`_comments.${matchId}`]: now,
+      }).catch(() => {});
+      // Mark as read for myself since I just wrote
+      localStorage.setItem(`lastReadComments_${matchId}`, now);
       setNewComment('');
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -82,12 +96,30 @@ export function MatchComments({ matchId }: MatchCommentsProps) {
 
   return (
     <div ref={containerRef} className="mt-4 border-t dark:border-gray-700 pt-3 flex flex-col items-center relative">
-      <button 
-        onClick={() => { if (!hasLoaded) setHasLoaded(true); setIsExpanded(p => !p); setShowTooltip(false); }}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 dark:text-gray-200 dark:hover:text-blue-400 font-medium transition-colors w-full justify-center relative z-10"
+      <button
+        onClick={() => {
+          if (!hasLoaded) setHasLoaded(true);
+          setIsExpanded(p => !p);
+          setShowTooltip(false);
+          if (isUnread) {
+            localStorage.setItem(`lastReadComments_${matchId}`, new Date().toISOString());
+            setIsUnread(false);
+          }
+        }}
+        className="flex items-center gap-2 text-sm font-medium transition-colors w-full justify-center relative z-10 group"
       >
-        <MessageCircle className="w-4 h-4" />
-        {isExpanded ? t('predictions.hideComments', 'Ocultar comentarios') : `${t('predictions.viewCommentsCount', 'Ver comentarios')} ${comments.length > 0 ? `(${comments.length})` : ''}`}
+        <span className="relative flex items-center gap-2 text-gray-500 group-hover:text-blue-600 dark:text-gray-200 dark:group-hover:text-blue-400">
+          <span className="relative">
+            <MessageCircle className="w-4 h-4" />
+            {isUnread && !isExpanded && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+          </span>
+          {isExpanded ? t('predictions.hideComments', 'Ocultar comentarios') : `${t('predictions.viewCommentsCount', 'Ver comentarios')} ${comments.length > 0 ? `(${comments.length})` : ''}`}
+          {isUnread && !isExpanded && (
+            <span className="text-xs text-red-500 font-bold">nuevo</span>
+          )}
+        </span>
       </button>
 
       {showTooltip && (
