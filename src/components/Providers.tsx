@@ -78,6 +78,11 @@ function GlobalBadgeListener({
   const [badgeQueue, setBadgeQueue] = useState<any[]>([]);
   const [currentBadge, setCurrentBadge] = useState<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Refs so the stable subscription always reads fresh values without recreating
+  const globalLeaguesRef = useRef(globalLeagues);
+  const userStatsRef = useRef(userStats);
+  useEffect(() => { globalLeaguesRef.current = globalLeagues; });
+  useEffect(() => { userStatsRef.current = userStats; });
 
   useEffect(() => {
     audioRef.current = new Audio(
@@ -87,15 +92,19 @@ function GlobalBadgeListener({
   }, []);
 
   useEffect(() => {
-    if (!user || !userStats) return;
-
-    let myPoints = userStats.totalPoints || 0;
-    let hasInvitedFriends = (userStats.referralsCount || 0) > 0;
-    let hasSavedPredictions = !!userStats.hasSavedPredictions;
-    let lockedEarly = !!userStats.lockedEarly;
+    if (!user) return;
 
     const checkBadges = () => {
-      const userLeagues = globalLeagues.filter(
+      const stats = userStatsRef.current;
+      const leagues = globalLeaguesRef.current;
+      if (!stats) return;
+
+      const myPoints = stats.totalPoints || 0;
+      const hasInvitedFriends = (stats.referralsCount || 0) > 0;
+      const hasSavedPredictions = !!stats.hasSavedPredictions;
+      const lockedEarly = !!stats.lockedEarly;
+
+      const userLeagues = leagues.filter(
         (l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid,
       );
       const inBenoliga = userLeagues.some(
@@ -106,8 +115,8 @@ function GlobalBadgeListener({
 
       const badgeCriteria = {
         referralsCount: hasInvitedFriends ? 1 : 0,
-        inBenoliga: inBenoliga,
-        inPrivateLeague: inPrivateLeague,
+        inBenoliga,
+        inPrivateLeague,
         hasSavedPredictions,
         lockedEarly,
       };
@@ -119,7 +128,7 @@ function GlobalBadgeListener({
         .map((id) => BADGES.find((b) => b.id === id))
         .filter(Boolean);
 
-      const storedBadges = userStats.earnedBadges || [];
+      const storedBadges = stats.earnedBadges || [];
       const newEarnedBadges = userBadgesFull.filter(
         (b: any) => b && !storedBadges.includes(b.id),
       );
@@ -132,7 +141,6 @@ function GlobalBadgeListener({
           );
           return [...prev, ...(toAdd as any[])];
         });
-
         const newBadgesList = Array.from(
           new Set([...storedBadges, ...userBadgeIds]),
         );
@@ -153,12 +161,12 @@ function GlobalBadgeListener({
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const stats = userStatsRef.current;
           let changed = false;
+          let nextSavedPredictions = !!stats.hasSavedPredictions;
+          let nextLockedEarly = !!stats.lockedEarly;
 
-          let nextSavedPredictions = hasSavedPredictions;
-          let nextLockedEarly = lockedEarly;
-
-          if (!userStats.hasSavedPredictions) {
+          if (!stats.hasSavedPredictions) {
             nextSavedPredictions = true;
             changed = true;
           }
@@ -166,7 +174,7 @@ function GlobalBadgeListener({
           if (data.isLocked && data.updatedAt) {
             const lockedDate = new Date(data.updatedAt);
             const deadline = new Date("2026-06-01T00:00:00Z");
-            if (lockedDate < deadline && !userStats.lockedEarly) {
+            if (lockedDate < deadline && !stats.lockedEarly) {
               nextLockedEarly = true;
               changed = true;
             }
@@ -179,6 +187,7 @@ function GlobalBadgeListener({
             }).catch(e => console.warn('Could not update prediction flags:', e));
           }
         }
+        checkBadges();
       },
       (err) => {
         console.warn("Predictions snapshot error (idle/cancel):", err);
@@ -188,7 +197,7 @@ function GlobalBadgeListener({
     return () => {
       unsubscribePredictions();
     };
-  }, [user, globalLeagues, userStats]);
+  }, [user]); // Only recreate when user changes — globalLeagues/userStats are read via refs
 
   // Effect 1: Process the queue
   useEffect(() => {
@@ -265,16 +274,19 @@ function LiveChatFAB({ user }: { user: User }) {
       if (last.userId === user.uid) { setHasUnread(false); return; }
       const createdAt = last.createdAt;
       const lastTime = createdAt?.toDate ? createdAt.toDate().toISOString() : '';
-      if (isOpen) {
-        localStorage.setItem('lastReadLiveChat', new Date().toISOString());
-        setHasUnread(false);
-      } else {
-        const lastRead = localStorage.getItem('lastReadLiveChat') ?? '';
-        setHasUnread(!!lastTime && lastTime > lastRead);
-      }
+      const lastRead = localStorage.getItem('lastReadLiveChat') ?? '';
+      setHasUnread(!!lastTime && lastTime > lastRead);
     }, () => {});
     return () => unsubscribe();
-  }, [user.uid, isOpen]);
+  }, [user.uid]); // Stable — no isOpen dep to avoid teardown on every open/close
+
+  // Separate effect: mark as read whenever the panel opens
+  useEffect(() => {
+    if (isOpen) {
+      setHasUnread(false);
+      localStorage.setItem('lastReadLiveChat', new Date().toISOString());
+    }
+  }, [isOpen]);
 
   const openChat = () => {
     setIsOpen(true);
