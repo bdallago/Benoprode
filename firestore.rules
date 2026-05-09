@@ -415,7 +415,7 @@ service cloud.firestore {
     match /statistics/{statsId} {
       allow read: if isAuthenticated();
       allow create: if isAdmin();
-      allow update: if isAuthenticated() && (isAdmin() || statsId == 'matches');
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
   }

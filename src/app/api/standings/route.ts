@@ -13,6 +13,7 @@ export async function GET() {
     });
     return NextResponse.json(response.data);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Standings fetch error:", error.message);
+    return NextResponse.json({ error: "Service unavailable" }, { status: 500 });
   }
 }

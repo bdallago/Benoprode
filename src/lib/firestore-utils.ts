@@ -25,8 +25,7 @@ export async function fetchUsersInChunks(db: Firestore, uids: string[]): Promise
       where(documentId(), "in", chunk)
     );
     const snap = await getDocs(q);
-    const playersChunk = snap.docs.map(d => ({ ...d.data(), uid: d.id }));
-    fetchedPlayers = [...fetchedPlayers, ...playersChunk];
+    fetchedPlayers.push(...snap.docs.map(d => ({ ...d.data(), uid: d.id })));
   }
   
   return fetchedPlayers;

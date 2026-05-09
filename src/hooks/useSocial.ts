@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 
@@ -133,8 +133,6 @@ export function useSocial(currentUser: User | null): SocialState {
     const requestId = requestIds.get(fromUid);
     if (!requestId) return;
 
-    const { doc, updateDoc, addDoc, collection } = await import('firebase/firestore');
-    
     await updateDoc(doc(db, "friendRequests", requestId), {
       status: "accepted"
     });
@@ -159,7 +157,6 @@ export function useSocial(currentUser: User | null): SocialState {
   const rejectRequest = useCallback(async (fromUid: string) => {
     const requestId = requestIds.get(fromUid);
     if (!requestId) return;
-    const { doc, updateDoc } = await import('firebase/firestore');
     await updateDoc(doc(db, "friendRequests", requestId), {
       status: "rejected"
     });
@@ -167,7 +164,6 @@ export function useSocial(currentUser: User | null): SocialState {
 
   const unfriend = useCallback(async (targetUid: string) => {
     if (!currentUser?.uid) return;
-    const { getDocs, query, collection, where, deleteDoc } = await import('firebase/firestore');
     const q1 = query(collection(db, "friendships"), where("user1Id", "==", currentUser.uid), where("user2Id", "==", targetUid));
     const q2 = query(collection(db, "friendships"), where("user1Id", "==", targetUid), where("user2Id", "==", currentUser.uid));
     const [s1, s2] = await Promise.all([getDocs(q1), getDocs(q2)]);

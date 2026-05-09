@@ -85,6 +85,8 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
   // Real-time subscription to last 50 messages
   useEffect(() => {
     setLoading(true);
+    setLastDoc(null);
+    setMessages([]);
     const q = query(
       collection(db, 'leagues', leagueId, 'messages'),
       orderBy('createdAt', 'desc'),

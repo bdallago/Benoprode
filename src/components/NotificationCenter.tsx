@@ -87,10 +87,10 @@ export function NotificationCenter({ user }: { user: User }) {
       const unread = notifs.filter(n => !n.read);
       if (unread.length > 0 && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         const today = new Date().toISOString().split('T')[0];
-        if (localStorage.getItem("lastPushDate") !== today) {
+        if (localStorage.getItem(`lastPushDate_${user.uid}`) !== today) {
           try {
             new Notification(unread[0].title, { body: unread[0].message, icon: '/icono.png' });
-            localStorage.setItem("lastPushDate", today);
+            localStorage.setItem(`lastPushDate_${user.uid}`, today);
           } catch (e) {
             console.error("Browser push notification failed", e);
           }
