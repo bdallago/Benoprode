@@ -232,7 +232,12 @@ service cloud.firestore {
                          request.resource.data.userName.size() > 0)
                       );
 
-        allow update, delete: if isAdmin();
+        // Members can toggle their own reaction (only reactions field)
+        allow update: if isAdmin() ||
+                      (isAuthenticated() &&
+                       request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
+        allow delete: if isAdmin();
       }
     }
     // ===============================================================

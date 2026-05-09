@@ -104,6 +104,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [isPredictionsModalOpen, setIsPredictionsModalOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [predictionCount, setPredictionCount] = useState<number | null>(null);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Live search effect
@@ -165,6 +166,17 @@ export default function Profile({ user, profileId }: ProfileProps) {
     };
 
     fetchProfile();
+  }, [targetUserId]);
+
+  useEffect(() => {
+    getDoc(doc(db, 'predictions', targetUserId)).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setPredictionCount(Object.keys(data.matches || {}).length);
+      } else {
+        setPredictionCount(0);
+      }
+    }).catch(() => setPredictionCount(0));
   }, [targetUserId]);
 
   useEffect(() => {
@@ -576,6 +588,22 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 </div>
               </div>
             )}
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Puntos', value: profileData?.totalPoints ?? 0, icon: '⭐', color: 'text-yellow-600 dark:text-yellow-400' },
+                { label: 'Predicciones', value: predictionCount ?? '…', icon: '🎯', color: 'text-blue-600 dark:text-blue-400' },
+                { label: 'Días activo', value: profileData?.activeDays?.length ?? 0, icon: '📅', color: 'text-green-600 dark:text-green-400' },
+                { label: 'Medallas', value: badges.length, icon: '🏅', color: 'text-orange-600 dark:text-orange-400' },
+              ].map(stat => (
+                <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
+                  <span className="text-2xl">{stat.icon}</span>
+                  <span className={`text-2xl font-black ${stat.color}`}>{stat.value}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{stat.label}</span>
+                </div>
+              ))}
+            </div>
 
             <div className="grid grid-cols-1 gap-4">
               <div className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/50 flex flex-col items-center justify-center text-center relative overflow-hidden group hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all shadow-sm">

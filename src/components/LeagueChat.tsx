@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   collection, query, orderBy, limit, onSnapshot,
-  addDoc, getDocs, startAfter, QueryDocumentSnapshot, doc, updateDoc
+  addDoc, getDocs, startAfter, QueryDocumentSnapshot, doc, updateDoc, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { X, Send, ChevronUp, Shield } from 'lucide-react';
@@ -19,7 +19,10 @@ interface Message {
   photoURL?: string;
   createdAt: string;
   isSystem?: boolean;
+  reactions?: Record<string, string[]>;
 }
+
+const EMOJI_SET = ['👍', '❤️', '😂', '😮', '🔥', '😢'];
 
 interface Props {
   leagueId: string;
@@ -69,6 +72,7 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [badWordWarning, setBadWordWarning] = useState(false);
+  const [pickerMsgId, setPickerMsgId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +161,17 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     localStorage.setItem(`lastRead_${leagueId}`, msgData.createdAt);
   }, [newMessage, isMember, isPublic, currentUser, leagueId]);
 
+  const toggleReaction = useCallback(async (msgId: string, emoji: string) => {
+    if (!isMember) return;
+    const ref = doc(db, 'leagues', leagueId, 'messages', msgId);
+    const msg = messages.find(m => m.id === msgId);
+    const hasReacted = msg?.reactions?.[emoji]?.includes(currentUser.uid) ?? false;
+    await updateDoc(ref, {
+      [`reactions.${emoji}`]: hasReacted ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
+    }).catch(() => {});
+    setPickerMsgId(null);
+  }, [messages, leagueId, currentUser.uid, isMember]);
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -201,23 +216,56 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
       continue;
     }
 
+    const reactionEntries = Object.entries(msg.reactions || {}).filter(([, uids]) => uids.length > 0);
+
     if (isOwn) {
       rendered.push(
-        <div key={msg.id} className={`flex flex-col items-end ${grouped ? 'mt-0.5' : 'mt-3'}`}>
+        <div key={msg.id} className={`flex flex-col items-end ${grouped ? 'mt-0.5' : 'mt-3'} group/msg`}>
           {!grouped && (
             <span className="text-xs text-gray-400 dark:text-gray-500 mr-1 mb-1">{msg.userName}</span>
           )}
           <div className="flex items-end gap-1">
+            {/* Reaction picker trigger */}
+            <div className="relative">
+              <button
+                onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                className="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 text-xs opacity-0 group-hover/msg:opacity-100 transition-opacity mb-1 px-1"
+              >
+                +😊
+              </button>
+              {pickerMsgId === msg.id && (
+                <div className="absolute right-0 bottom-7 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-2 py-1 shadow-lg flex gap-1 whitespace-nowrap">
+                  {EMOJI_SET.map(emoji => (
+                    <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)} className="text-base hover:scale-125 transition-transform">{emoji}</button>
+                  ))}
+                </div>
+              )}
+            </div>
             <span className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">{formatTime(msg.createdAt)}</span>
             <div className="max-w-[75%] bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-br-sm text-sm break-words">
               {msg.text}
             </div>
           </div>
+          {reactionEntries.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1 justify-end">
+              {reactionEntries.map(([emoji, uids]) => (
+                <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)}
+                  className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-0.5 transition-colors ${
+                    uids.includes(currentUser.uid)
+                      ? 'bg-blue-100 border-blue-300 dark:bg-blue-900/40 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                      : 'bg-gray-100 border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {emoji} <span className="font-medium">{uids.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       );
     } else {
       rendered.push(
-        <div key={msg.id} className={`flex items-end gap-2 ${grouped ? 'mt-0.5 pl-10' : 'mt-3'}`}>
+        <div key={msg.id} className={`flex items-end gap-2 ${grouped ? 'mt-0.5 pl-10' : 'mt-3'} group/msg`}>
           {!grouped && <Avatar photoURL={msg.photoURL} name={msg.userName} />}
           <div className="flex flex-col max-w-[75%]">
             {!grouped && (
@@ -228,7 +276,38 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
                 {msg.text}
               </div>
               <span className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">{formatTime(msg.createdAt)}</span>
+              {/* Reaction picker trigger */}
+              <div className="relative">
+                <button
+                  onClick={() => setPickerMsgId(pickerMsgId === msg.id ? null : msg.id)}
+                  className="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 text-xs opacity-0 group-hover/msg:opacity-100 transition-opacity mb-1 px-1"
+                >
+                  +😊
+                </button>
+                {pickerMsgId === msg.id && (
+                  <div className="absolute left-0 bottom-7 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-2 py-1 shadow-lg flex gap-1 whitespace-nowrap">
+                    {EMOJI_SET.map(emoji => (
+                      <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)} className="text-base hover:scale-125 transition-transform">{emoji}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+            {reactionEntries.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {reactionEntries.map(([emoji, uids]) => (
+                  <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)}
+                    className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-0.5 transition-colors ${
+                      uids.includes(currentUser.uid)
+                        ? 'bg-blue-100 border-blue-300 dark:bg-blue-900/40 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                        : 'bg-gray-100 border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {emoji} <span className="font-medium">{uids.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       );

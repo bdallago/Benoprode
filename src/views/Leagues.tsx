@@ -10,6 +10,7 @@ import { Leaderboard } from "../components/Leaderboard";
 import { useLeagues } from "../hooks/useLeagues";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { LeagueChat } from "../components/LeagueChat";
+import { LeagueActivity } from "../components/LeagueActivity";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -255,15 +256,16 @@ export default function Leagues({ user }: { user: User }) {
                   </CardContent>
                </Card>
                {selectedLeague?.id === benoliga.id && (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                    <Leaderboard 
-                      title={`${t('leagues.ranking')}: ${benoliga.name}`} 
-                      players={players.filter(p => benoliga.members.includes(p.uid))} 
-                      currentUser={user} 
-                      onUserClick={(u) => setSelectedUser({uid: u.uid, name: u.name})} 
+                  <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                    <Leaderboard
+                      title={`${t('leagues.ranking')}: ${benoliga.name}`}
+                      players={players.filter(p => benoliga.members.includes(p.uid))}
+                      currentUser={user}
+                      onUserClick={(u) => setSelectedUser({uid: u.uid, name: u.name})}
                       loading={loading}
                       onRemoveUser={isAdmin || benoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: benoliga.id, userId: u.uid, userName: u.name}) : undefined}
                     />
+                    <LeagueActivity leagueId={benoliga.id} />
                   </div>
                )}
             </div>
@@ -350,15 +352,16 @@ export default function Leagues({ user }: { user: User }) {
                   </CardContent>
                 </Card>
                 {isSelected && (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                    <Leaderboard 
-                      title={`${t('leagues.ranking')}: ${league.name}`} 
-                      players={players.filter(p => league.members.includes(p.uid))} 
-                      currentUser={user} 
-                      onUserClick={(u) => setSelectedUser({uid: u.uid, name: u.name})} 
+                  <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                    <Leaderboard
+                      title={`${t('leagues.ranking')}: ${league.name}`}
+                      players={players.filter(p => league.members.includes(p.uid))}
+                      currentUser={user}
+                      onUserClick={(u) => setSelectedUser({uid: u.uid, name: u.name})}
                       loading={loading}
                       onRemoveUser={isAdmin || league.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: league.id, userId: u.uid, userName: u.name}) : undefined}
                     />
+                    <LeagueActivity leagueId={league.id} />
                   </div>
                 )}
               </div>
