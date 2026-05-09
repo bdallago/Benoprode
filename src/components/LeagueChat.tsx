@@ -157,7 +157,7 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     await updateDoc(doc(db, 'leagues', leagueId), {
       lastMessageAt: msgData.createdAt,
       lastMessageUserId: currentUser.uid,
-    }).catch(() => {});
+    }).catch((e) => console.warn('lastMessageAt update failed', e));
     localStorage.setItem(`lastRead_${leagueId}`, msgData.createdAt);
   }, [newMessage, isMember, isPublic, currentUser, leagueId]);
 
@@ -168,7 +168,7 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     const hasReacted = msg?.reactions?.[emoji]?.includes(currentUser.uid) ?? false;
     await updateDoc(ref, {
       [`reactions.${emoji}`]: hasReacted ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
-    }).catch(() => {});
+    }).catch((e) => console.warn('reaction update failed', e));
     setPickerMsgId(null);
   }, [messages, leagueId, currentUser.uid, isMember]);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { User } from "firebase/auth";
 import {
   doc,
@@ -55,6 +55,7 @@ interface ProfileProps {
 
 export default function Profile({ user, profileId }: ProfileProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const isOwnProfile = !profileId || profileId === user.uid;
   const targetUserId = profileId || user.uid;
   const searchParams = useSearchParams();
@@ -84,6 +85,11 @@ export default function Profile({ user, profileId }: ProfileProps) {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  const switchTab = (tab: "stats" | "friends" | "duels" | "torneos") => {
+    setActiveTab(tab);
+    router.replace(`${pathname}?tab=${tab}`, { scroll: false });
+  };
 
   // Friendship state - Derived from useSocial
   const friendStatus = friends.has(targetUserId) 
@@ -521,13 +527,13 @@ export default function Profile({ user, profileId }: ProfileProps) {
       {/* Tabs */}
       <div className="flex border-b dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-xl sticky top-2 z-10 shadow-sm mt-4">
         <button
-          onClick={() => setActiveTab("stats")}
+          onClick={() => switchTab("stats")}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === "stats" ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300"}`}
         >
           {t("profile.summary")}
         </button>
         <button
-          onClick={() => setActiveTab("friends")}
+          onClick={() => switchTab("friends")}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === "friends" ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300"}`}
         >
           <div className="flex items-center justify-center gap-2">
@@ -540,14 +546,14 @@ export default function Profile({ user, profileId }: ProfileProps) {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("duels")}
+          onClick={() => switchTab("duels")}
           className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === "duels" ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300"}`}
         >
           {t("profile.duels")}
         </button>
         {isOwnProfile && (
           <button
-            onClick={() => setActiveTab("torneos")}
+            onClick={() => switchTab("torneos")}
             className={`flex-1 py-4 text-sm font-bold border-b-[3px] transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${activeTab === "torneos" ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300"}`}
           >
             Torneos
@@ -1199,7 +1205,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 </p>
                 {isOwnProfile && (
                   <Button
-                    onClick={() => setActiveTab("friends")}
+                    onClick={() => switchTab("friends")}
                     className="bg-blue-600 hover:bg-blue-700 font-bold shadow-sm"
                   >
                     Crear duelo con un amigo

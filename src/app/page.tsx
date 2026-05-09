@@ -21,8 +21,12 @@ export default function HomePage() {
       if (user) {
         const search = window.location.search;
         const hash = window.location.hash;
-        if (search.includes('league=') || hash.includes('league=')) {
-          router.push("/leagues" + search + hash);
+        if (search.includes('league=')) {
+          router.push("/leagues" + search);
+        } else if (hash.includes('league=')) {
+          // Legacy hash-based invite links → convert to query params
+          const hashParams = new URLSearchParams(hash.replace('#', ''));
+          router.push(`/leagues?${hashParams.toString()}`);
         } else {
            router.push("/inicio");
         }

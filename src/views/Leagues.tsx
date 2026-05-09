@@ -70,6 +70,19 @@ export default function Leagues({ user }: { user: User }) {
     setUnreadLeagues(prev => { const next = new Set(prev); next.delete(league.id); return next; });
   };
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showCreateModal) { setShowCreateModal(false); setIsConfirmingCreate(false); return; }
+      if (leagueToDelete) { setLeagueToDelete(null); return; }
+      if (leagueToLeave) { setLeagueToLeave(null); return; }
+      if (userToRemoveFromLeague) { setUserToRemoveFromLeague(null); return; }
+      if (pendingInvitation) { window.history.replaceState({}, document.title, window.location.pathname); setPendingInvitation(null); return; }
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showCreateModal, leagueToDelete, leagueToLeave, userToRemoveFromLeague, pendingInvitation]);
+
   const sendWelcomeMessage = async (leagueId: string) => {
     await addDoc(collection(db, 'leagues', leagueId, 'messages'), {
       text: `${user.displayName || 'Alguien'} se unió a la liga 🎉`,
@@ -113,9 +126,9 @@ export default function Leagues({ user }: { user: User }) {
   };
 
   const inviteToLeague = (league: any) => {
-    const origin = "https://www.elprodedebeno.com.ar";
+    const origin = window.location.origin;
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
-    const url = `${origin}/#league=${league.id}&inviter=${inviterName}`;
+    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}`;
     
     navigator.clipboard.writeText(t('leagues.inviteMessage', { name: league.name, url }));
     
@@ -124,9 +137,9 @@ export default function Leagues({ user }: { user: User }) {
   };
 
   const inviteViaWhatsApp = (league: any) => {
-    const origin = "https://www.elprodedebeno.com.ar";
+    const origin = window.location.origin;
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
-    const url = `${origin}/#league=${league.id}&inviter=${inviterName}`;
+    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}`;
     
     const message = `¡Ey! Armé una liga en El Prode de Beno para que compitamos: "${league.name}"\n\nSumate a jugar, es gratis y nos divertimos un rato.\n\nEntrá acá para unirte:\n${url}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -378,13 +391,14 @@ export default function Leagues({ user }: { user: User }) {
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="dialog-create-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             {!isConfirmingCreate ? (
               <>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('leagues.createNewLeague')}</h3>
+                <h3 id="dialog-create-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('leagues.createNewLeague')}</h3>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('leagues.leagueName')}</label>
+                  <label htmlFor="league-name-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('leagues.leagueName')}</label>
                   <input
+                    id="league-name-input"
                     type="text"
                     className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder={t('leagues.leagueNamePlaceholder')}
@@ -419,7 +433,7 @@ export default function Leagues({ user }: { user: User }) {
               </>
             ) : (
               <>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.confirmLeague')}</h3>
+                <h3 id="dialog-create-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.confirmLeague')}</h3>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6">
                   <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">{t('leagues.attention')}</p>
                   <p className="text-blue-700 dark:text-blue-300 text-sm">{t('leagues.creatingLigaDesc', 'Vas a crear "{{name}}" como una liga {{type}}.', { name: newLeagueName, type: isPublic ? t('leagues.publicPrivacy', 'Pública') : t('leagues.privatePrivacy', 'Privada') })}</p>
@@ -436,8 +450,8 @@ export default function Leagues({ user }: { user: User }) {
 
       {leagueToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.deleteLeagueTitle', 'Eliminar Liga')}</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="dialog-delete-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 id="dialog-delete-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.deleteLeagueTitle', 'Eliminar Liga')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.deleteLeagueConfirm', '¿Estás seguro de que querés eliminar "{{name}}"? Esta acción es irreversible.', { name: leagueToDelete.name })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setLeagueToDelete(null)}>{t('leagues.cancel')}</Button>
@@ -449,8 +463,8 @@ export default function Leagues({ user }: { user: User }) {
 
       {leagueToLeave && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.leaveLeagueTitle', 'Salir de la Liga')}</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="dialog-leave-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 id="dialog-leave-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.leaveLeagueTitle', 'Salir de la Liga')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.leaveLeagueConfirm', '¿Estás seguro de que querés salir de "{{name}}"?', { name: leagueToLeave.name })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setLeagueToLeave(null)}>{t('leagues.cancel')}</Button>
@@ -462,8 +476,8 @@ export default function Leagues({ user }: { user: User }) {
 
       {userToRemoveFromLeague && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.removePlayerTitle', 'Eliminar Jugador')}</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="dialog-remove-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 id="dialog-remove-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('leagues.removePlayerTitle', 'Eliminar Jugador')}</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">{t('leagues.removePlayerConfirm', '¿Borrar a {{name}}?', { name: userToRemoveFromLeague.userName })}</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setUserToRemoveFromLeague(null)}>{t('leagues.cancel')}</Button>
@@ -475,9 +489,9 @@ export default function Leagues({ user }: { user: User }) {
 
       {pendingInvitation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl text-center">
+          <div role="dialog" aria-modal="true" aria-labelledby="dialog-invite-title" className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl text-center">
             <Trophy className="h-10 w-10 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">{t('leagues.inviteTitle', '¡Invitación a Liga!')}</h3>
+            <h3 id="dialog-invite-title" className="text-xl font-bold mb-2">{t('leagues.inviteTitle', '¡Invitación a Liga!')}</h3>
             <p className="text-gray-600 mb-6">{t('leagues.inviteText', '{{inviter}} te invita a unirte a "{{league}}".', { inviter: pendingInvitation.inviter, league: pendingInvitation.league.name })}</p>
             <div className="flex gap-4">
               <Button variant="outline" className="w-full" onClick={handleRejectInvitation}>{t('leagues.reject', 'Rechazar')}</Button>
