@@ -202,7 +202,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                               type="button"
                               disabled={locked}
                               onClick={() => {
-                                const current = typeof pred.teamA === 'number' ? pred.teamA : -1;
+                                const current = typeof pred.teamA === 'number' ? pred.teamA : 0;
                                 handleMatchChange(match.id, 'teamA', Math.min(20, current + 1));
                               }}
                               className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"
@@ -237,7 +237,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                               type="button"
                               disabled={locked}
                               onClick={() => {
-                                const current = typeof pred.teamB === 'number' ? pred.teamB : -1;
+                                const current = typeof pred.teamB === 'number' ? pred.teamB : 0;
                                 handleMatchChange(match.id, 'teamB', Math.min(20, current + 1));
                               }}
                               className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:translate-y-[2px]"

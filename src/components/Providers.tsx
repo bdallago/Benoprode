@@ -81,8 +81,16 @@ function GlobalBadgeListener({
   // Refs so the stable subscription always reads fresh values without recreating
   const globalLeaguesRef = useRef(globalLeagues);
   const userStatsRef = useRef(userStats);
+  const checkBadgesRef = useRef<(() => void) | null>(null);
   useEffect(() => { globalLeaguesRef.current = globalLeagues; });
   useEffect(() => { userStatsRef.current = userStats; });
+
+  // Re-run badge check when userStats or globalLeagues change (no subscription involved)
+  useEffect(() => {
+    if (user && userStats && Object.keys(userStats).length > 0) {
+      checkBadgesRef.current?.();
+    }
+  }, [user, userStats?.totalPoints, userStats?.earnedBadges?.length, globalLeagues?.length]);
 
   useEffect(() => {
     audioRef.current = new Audio(
@@ -154,6 +162,7 @@ function GlobalBadgeListener({
       }
     };
 
+    checkBadgesRef.current = checkBadges;
     checkBadges();
 
     const unsubscribePredictions = onSnapshot(

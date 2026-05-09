@@ -25,6 +25,16 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   }, []);
 
   const handleLogout = async () => {
+    for (const key of Object.keys(localStorage)) {
+      if (
+        key.startsWith('lastRead_') ||
+        key.startsWith('lastReadComments_') ||
+        key === 'lastReadLiveChat' ||
+        key === 'hasSeenCommentsTooltip'
+      ) {
+        localStorage.removeItem(key);
+      }
+    }
     await signOut(auth);
     router.push("/");
   };

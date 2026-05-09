@@ -71,7 +71,7 @@ export function useLeagues(userId: string) {
     };
     
     fetchLeagueMembers();
-  }, [JSON.stringify(selectedLeague?.members)]); 
+  }, [selectedLeague?.id, selectedLeague?.members?.join(',')]);
 
   useEffect(() => {
     if (!userId || !globalLeagues) return;
