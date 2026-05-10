@@ -13,4 +13,24 @@
     from { height: var(--radix-accordion-content-height) }
     to { height: 0 }
   }
+
+  /* Grises remplazados por slate (azul-gris) para armonía con acentos azules en dark mode */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+
+  /* Blues ajustados: tono más suave para dark mode */
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a6e;
 }

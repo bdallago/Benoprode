@@ -1346,7 +1346,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
       )}
 
       {isAllBadgesModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm sm:backdrop-blur-none flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full shadow-xl max-h-[90vh] flex flex-col overflow-hidden transition-colors duration-200">
             <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700 shrink-0">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
