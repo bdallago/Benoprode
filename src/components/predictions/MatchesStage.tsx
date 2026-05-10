@@ -148,14 +148,31 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
           return acc;
         }, {} as Record<string, typeof matchesData>)).map(([day, dayMatches]) => (
           <div key={day} className="space-y-4" ref={(el) => { dayRefs.current[day] = el; }}>
-            <div className={`flex items-center justify-between border-b dark:border-gray-700 pb-2 cursor-pointer select-none group ${day === todayCapitalized ? 'border-b-2 border-blue-500' : ''}`} onClick={() => setCollapsedDays(prev => ({...prev, [day]: !prev[day]}))}>
+            <div
+              className={`sticky top-16 z-10 flex items-center justify-between cursor-pointer select-none group transition-colors duration-200 rounded-r-lg pl-4 pr-3 py-2.5 border-l-4 backdrop-blur-sm ${
+                day === todayCapitalized
+                  ? 'border-l-blue-500 bg-blue-50/95 dark:bg-gray-900/95'
+                  : 'border-l-gray-300 dark:border-l-gray-600 bg-white/95 dark:bg-gray-900/95'
+              }`}
+              onClick={() => setCollapsedDays(prev => ({...prev, [day]: !prev[day]}))}
+            >
+              <div className="flex items-center gap-2.5">
+                <h3 className={`text-lg font-bold leading-none ${day === todayCapitalized ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                  {day}
+                </h3>
+                {day === todayCapitalized && (
+                  <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-semibold leading-none">
+                    {t('predictions.today', 'Hoy')}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
-                 <div className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                   {collapsedDays[day] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                 </div>
-                 <h3 className={`text-xl font-bold ${day === todayCapitalized ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                    {day} {day === todayCapitalized && <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">{t('predictions.today', 'Hoy')}</span>}
-                 </h3>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+                  {dayMatches.length} {dayMatches.length === 1 ? 'partido' : 'partidos'}
+                </span>
+                <div className={`p-1 rounded-md transition-colors ${day === todayCapitalized ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'} group-hover:opacity-70`}>
+                  {collapsedDays[day] ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                </div>
               </div>
             </div>
             {!collapsedDays[day] && (

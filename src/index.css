@@ -34,3 +34,19 @@
   --color-blue-800: #1e40af;
   --color-blue-900: #1e3a6e;
 }
+
+@layer base {
+  /* Light mode: grays para texto → near-black */
+  :root {
+    --color-gray-500: #1e293b;
+    --color-gray-600: #0f172a;
+  }
+
+  /* Dark mode: grays claros para texto → white/near-white */
+  .dark {
+    --color-gray-100: #ffffff;
+    --color-gray-200: #ffffff;
+    --color-gray-300: #f8fafc;
+    --color-gray-400: #f1f5f9;
+  }
+}
