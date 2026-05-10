@@ -147,8 +147,21 @@ export function usePredictions(userId: string) {
 
   const savePredictions = async (lock: boolean = false, silent: boolean = false) => {
     if (!dataLoaded.current) return;
-    if (!silent) setSaving(true);
     if (!silent) setMessage(null);
+
+    // Optimistic UI: show success + confetti immediately before Firebase responds
+    if (!silent) {
+      setMessage({ type: 'success', text: lock ? t('predictions.lockSuccess') : t('predictions.saveSuccess') });
+      import('canvas-confetti').then((confetti) => {
+        confetti.default({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
+        });
+      });
+      setTimeout(() => setMessage(null), 5000);
+    }
 
     try {
       const now = Date.now();
@@ -170,30 +183,17 @@ export function usePredictions(userId: string) {
       }, { merge: true });
 
       if (lock || effectiveIsLocked) setIsLocked(true);
-
-      if (!silent) {
-        setMessage({ type: 'success', text: lock ? t('predictions.lockSuccess') : t('predictions.saveSuccess') });
-        import('canvas-confetti').then((confetti) => {
-          confetti.default({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#3b82f6', '#1d4ed8', '#60a5fa', '#ffffff']
-          });
-        });
-      }
     } catch (error: any) {
       console.error("Error saving predictions:", error);
+      // Rollback optimistic success with error message
       if (!silent) {
         if (error.code === 'permission-denied' || error.message?.includes('permission')) {
           setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
         } else {
           setMessage({ type: 'error', text: t('predictions.saveError') });
         }
+        setTimeout(() => setMessage(null), 5000);
       }
-    } finally {
-      if (!silent) setSaving(false);
-      if (!silent) setTimeout(() => setMessage(null), 5000);
     }
   };
 
