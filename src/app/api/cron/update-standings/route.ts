@@ -118,7 +118,10 @@ async function calculatePoints(database: any) {
 
         batch.set(userRef, {
           totalPoints: res.totalPoints,
-          earnedBadges: unlockedBadges
+          earnedBadges: unlockedBadges,
+          exactMatchCount: res.context.exactMatchCount ?? 0,
+          correctMatchCount: res.context.correctMatchCount ?? 0,
+          groupsPerfectCount: res.context.groupsPerfectCount ?? 0,
         }, { merge: true });
 
         if (unlockedBadges.length > currentEarnedIds.length) {

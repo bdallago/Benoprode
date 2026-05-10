@@ -139,7 +139,7 @@ export default function Leagues({ user }: { user: User }) {
   const inviteToLeague = (league: any) => {
     const origin = window.location.origin;
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
-    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}`;
+    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}&ref=${user.uid}`;
     
     navigator.clipboard.writeText(t('leagues.inviteMessage', { name: league.name, url }));
     
@@ -150,7 +150,7 @@ export default function Leagues({ user }: { user: User }) {
   const inviteViaWhatsApp = (league: any) => {
     const origin = window.location.origin;
     const inviterName = encodeURIComponent(user.displayName || t('leagues.aPlayer'));
-    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}`;
+    const url = `${origin}/leagues?league=${league.id}&inviter=${inviterName}&ref=${user.uid}`;
     
     const message = `¡Ey! Armé una liga en El Prode de Beno para que compitamos: "${league.name}"\n\nSumate a jugar, es gratis y nos divertimos un rato.\n\nEntrá acá para unirte:\n${url}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;

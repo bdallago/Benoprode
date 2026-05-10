@@ -74,6 +74,47 @@ export const BADGES = [
   { id: 'hare_10_veces', name: 'Haré 10 veces más si es necesario. Ellos no están preparados', description: 'Finalizaste en segundo puesto luego de la fase de grupos', icon: '🥈', isSecret: true },
 ];
 
+export interface BadgeProgressItem {
+  badgeId: string;
+  current: number;
+  target: number;
+  label: string;
+}
+
+export function getBadgesWithProgress(stats: {
+  referralsCount: number;
+  duelsWon: number;
+  exactMatchCount?: number;
+  correctMatchCount?: number;
+  groupsPerfectCount?: number;
+  // maxStreak and differentDaysWithPoints are not yet computed/stored — omitted intentionally
+}): BadgeProgressItem[] {
+  const ref = stats.referralsCount;
+  const duels = stats.duelsWon;
+  const exact = stats.exactMatchCount ?? 0;
+  const correct = stats.correctMatchCount ?? 0;
+  const groups = stats.groupsPerfectCount ?? 0;
+  return [
+    { badgeId: 'sociable', current: ref, target: 1, label: 'referidos' },
+    { badgeId: 'influencer', current: ref, target: 5, label: 'referidos' },
+    { badgeId: 'embajador', current: ref, target: 10, label: 'referidos' },
+    { badgeId: 'ojo_halcon', current: exact, target: 1, label: 'resultados exactos' },
+    { badgeId: 'francotirador', current: exact, target: 5, label: 'resultados exactos' },
+    { badgeId: 'cirujano', current: exact, target: 10, label: 'resultados exactos' },
+    { badgeId: 'nostradamus', current: exact, target: 20, label: 'resultados exactos' },
+    { badgeId: 'suma_sigue', current: correct, target: 10, label: 'resultados acertados' },
+    { badgeId: 'hormiga', current: correct, target: 20, label: 'resultados acertados' },
+    { badgeId: 'calculadora', current: correct, target: 30, label: 'resultados acertados' },
+    { badgeId: 'visionario', current: groups, target: 1, label: 'grupos perfectos' },
+    { badgeId: 'oraculo', current: groups, target: 3, label: 'grupos perfectos' },
+    { badgeId: 'viajero_tiempo', current: groups, target: 6, label: 'grupos perfectos' },
+    { badgeId: 'primera_sangre', current: duels, target: 1, label: 'duelos ganados' },
+    { badgeId: 'duelista', current: duels, target: 3, label: 'duelos ganados' },
+    { badgeId: 'gladiador', current: duels, target: 5, label: 'duelos ganados' },
+    { badgeId: 'invencible', current: duels, target: 10, label: 'duelos ganados' },
+  ];
+}
+
 export function getUserLevel(points: number) {
   // Find the highest level where the user's points are greater than or equal to the minPoints
   const level = [...LEVELS].reverse().find((l: any) => points >= l.minPoints);

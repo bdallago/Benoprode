@@ -42,7 +42,7 @@ import {
   Globe,
   Lock,
 } from "lucide-react";
-import { getUserLevel, getUserBadges, BADGES } from "../lib/gamification";
+import { getUserLevel, getUserBadges, BADGES, getBadgesWithProgress } from "../lib/gamification";
 import matchesData from "../lib/matches.json";
 import { UserPredictionsModal } from "../components/UserPredictionsModal";
 import { useTranslation } from "react-i18next";
@@ -380,6 +380,20 @@ export default function Profile({ user, profileId }: ProfileProps) {
     .map((id: string) => BADGES.find((b) => b.id === id))
     .filter(Boolean);
 
+  const streak = computeStreak(profileData?.activeDays);
+  const totalDuelsWon = duelsList.filter((d: any) => d.status === 'completed' && d.winnerId === targetUserId).length;
+  const allBadgeProgress = getBadgesWithProgress({
+    referralsCount: profileData?.referralsCount ?? 0,
+    duelsWon: totalDuelsWon,
+    exactMatchCount: profileData?.exactMatchCount ?? 0,
+    correctMatchCount: profileData?.correctMatchCount ?? 0,
+    groupsPerfectCount: profileData?.groupsPerfectCount ?? 0,
+  });
+  const closestBadges = allBadgeProgress
+    .filter(item => !badgeIds.includes(item.badgeId))
+    .sort((a, b) => (b.current / b.target) - (a.current / a.target))
+    .slice(0, 3);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -626,20 +640,36 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
             {showAdvancedStats && (() => {
               const myLeagueCount = (globalLeagues || []).filter((l: any) => l.members?.includes(targetUserId)).length;
+              const referrals = profileData?.referralsCount ?? 0;
+              const nextMilestone = referrals < 1
+                ? { target: 1, name: 'Sociable' }
+                : referrals < 5
+                  ? { target: 5, name: 'Influencer' }
+                  : referrals < 10
+                    ? { target: 10, name: 'Embajador' }
+                    : null;
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in slide-in-from-top-2 duration-200">
-                  {[
-                    { label: 'Racha', value: `${computeStreak(profileData?.activeDays)}d`, icon: '🔥', color: 'text-orange-600 dark:text-orange-400' },
-                    { label: 'Inicios de sesión', value: profileData?.loginCount ?? 0, icon: '🔑', color: 'text-purple-600 dark:text-purple-400' },
-                    { label: 'Referidos', value: profileData?.referralsCount ?? 0, icon: '👥', color: 'text-green-600 dark:text-green-400' },
-                    { label: 'Ligas', value: myLeagueCount, icon: '🏆', color: 'text-blue-600 dark:text-blue-400' },
-                  ].map(stat => (
-                    <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
-                      <span className="text-2xl">{stat.icon}</span>
-                      <span className={`text-2xl font-black ${stat.color}`}>{stat.value}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{stat.label}</span>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-3 gap-3 animate-in slide-in-from-top-2 duration-200">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
+                    <span className="text-2xl">🔥</span>
+                    <span className="text-2xl font-black text-orange-600 dark:text-orange-400">{streak}d</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Racha</span>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
+                    <span className="text-2xl">👥</span>
+                    <span className="text-2xl font-black text-green-600 dark:text-green-400">{referrals}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Referidos</span>
+                    {nextMilestone ? (
+                      <span className="text-xs text-green-500 dark:text-green-400 font-medium">{referrals}/{nextMilestone.target} → {nextMilestone.name}</span>
+                    ) : (
+                      <span className="text-xs text-yellow-500 font-medium">¡Embajador! 🌍</span>
+                    )}
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-1">
+                    <span className="text-2xl">🏆</span>
+                    <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{myLeagueCount}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">Ligas</span>
+                  </div>
                 </div>
               );
             })()}
@@ -733,7 +763,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   <div className="w-full md:w-80 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center items-start gap-2 mb-4">
                       <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                        {t("dashboard.allMedals", "Todas las Medallas")}
+                        Más cerca de obtener
                       </h3>
                       <button
                         onClick={() => setIsAllBadgesModalOpen(true)}
@@ -742,55 +772,30 @@ export default function Profile({ user, profileId }: ProfileProps) {
                         {t("dashboard.viewAllMedals", "Ver todas las medallas")}
                       </button>
                     </div>
-                    <div
-                      className="space-y-4 cursor-pointer"
-                      onClick={() => setIsAllBadgesModalOpen(true)}
-                    >
-                      {BADGES.filter((b) => !badgeIds.includes(b.id))
-                        .slice(0, 4)
-                        .map((badge) => {
-                          const isSecret = badge.isSecret;
-                          return (
-                            <div
-                              key={badge.id}
-                              className="flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity"
-                            >
-                              <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-2xl grayscale">
-                                {isSecret ? (
-                                  <span className="text-gray-500 font-bold">
-                                    ?
-                                  </span>
-                                ) : (
-                                  badge.icon
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">
-                                  {isSecret
-                                    ? (t(
-                                        "dashboard.mysteryMedal",
-                                        "Medalla misteriosa",
-                                      ) as string)
-                                    : (t(
-                                        `gamification.badges.${badge.id}.name`,
-                                        badge.name,
-                                      ) as string)}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-200 line-clamp-2">
-                                  {isSecret
-                                    ? (t(
-                                        "dashboard.mysteryMedalDesc",
-                                        "Sabrás su contenido cuando la obtengas",
-                                      ) as string)
-                                    : (t(
-                                        `gamification.badges.${badge.id}.description`,
-                                        badge.description,
-                                      ) as string)}
-                                </p>
+                    <div className="space-y-4">
+                      {closestBadges.length > 0 ? closestBadges.map((item) => {
+                        const badge = BADGES.find(b => b.id === item.badgeId);
+                        if (!badge) return null;
+                        const pct = Math.min(100, Math.round((item.current / item.target) * 100));
+                        return (
+                          <div key={item.badgeId} className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-2xl grayscale shrink-0">
+                              {badge.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">{badge.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{item.current}/{item.target} {item.label}</p>
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        );
+                      }) : (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 italic text-center py-2">
+                          ¡Todas las medallas medibles están desbloqueadas!
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1360,6 +1365,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
                 {BADGES.map((badge) => {
                   const isEarned = badgeIds.includes(badge.id);
                   const isSecretAndNotEarned = badge.isSecret && !isEarned;
+                  const progressItem = !isEarned ? allBadgeProgress.find(p => p.badgeId === badge.id) : undefined;
+                  const pct = progressItem ? Math.min(100, Math.round((progressItem.current / progressItem.target) * 100)) : null;
 
                   const displayIcon = isSecretAndNotEarned ? (
                     <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-2xl font-bold shrink-0">
@@ -1374,39 +1381,36 @@ export default function Profile({ user, profileId }: ProfileProps) {
                   );
 
                   const displayName = isSecretAndNotEarned
-                    ? (t(
-                        "dashboard.mysteryMedal",
-                        "Medalla misteriosa",
-                      ) as string)
-                    : (t(
-                        `gamification.badges.${badge.id}.name`,
-                        badge.name,
-                      ) as string);
+                    ? (t("dashboard.mysteryMedal", "Medalla misteriosa") as string)
+                    : (t(`gamification.badges.${badge.id}.name`, badge.name) as string);
                   const displayDesc = isSecretAndNotEarned
-                    ? (t(
-                        "dashboard.mysteryMedalDesc",
-                        "Sabrás su contenido cuando la obtengas",
-                      ) as string)
-                    : (t(
-                        `gamification.badges.${badge.id}.description`,
-                        badge.description,
-                      ) as string);
+                    ? (t("dashboard.mysteryMedalDesc", "Sabrás su contenido cuando la obtengas") as string)
+                    : (t(`gamification.badges.${badge.id}.description`, badge.description) as string);
 
                   return (
                     <div
                       key={badge.id}
-                      className={`flex items-start gap-4 p-5 min-h-[140px] rounded-xl border ${isEarned ? "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70"}`}
+                      className={`flex items-start gap-4 p-5 rounded-xl border ${isEarned ? "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-70"}`}
                     >
                       {displayIcon}
                       <div className="flex-1 min-w-0">
-                        <h4
-                          className={`font-bold text-base ${isEarned ? "text-blue-900 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"}`}
-                        >
+                        <h4 className={`font-bold text-base ${isEarned ? "text-blue-900 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"}`}>
                           {displayName}
                         </h4>
                         <p className="text-sm text-gray-500 dark:text-gray-200 mt-1 line-clamp-3">
                           {displayDesc}
                         </p>
+                        {!isEarned && pct !== null && (
+                          <div className="mt-2">
+                            <div className="flex justify-between text-xs text-gray-400 mb-1">
+                              <span>{progressItem!.current}/{progressItem!.target} {progressItem!.label}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                              <div className="bg-blue-400 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

@@ -90,17 +90,21 @@ export function useLeagues(userId: string) {
     // Handle auto-join via URL or Hash
     let leagueId = searchParams?.get('league');
     let inviter = searchParams?.get('inviter') || t('leagues.aPlayer');
-    
+    let refUid = searchParams?.get('ref');
+
     if (!leagueId && typeof window !== 'undefined' && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
       leagueId = hashParams.get('league');
       if (hashParams.has('inviter')) {
         inviter = hashParams.get('inviter') || t('leagues.aPlayer');
       }
+      if (hashParams.has('ref')) {
+        refUid = hashParams.get('ref');
+      }
     }
 
-    if (inviter && inviter !== t('leagues.aPlayer') && typeof window !== 'undefined') {
-      localStorage.setItem('referralId', inviter);
+    if (refUid && typeof window !== 'undefined') {
+      localStorage.setItem('referralId', refUid);
     }
 
     if (leagueId) {

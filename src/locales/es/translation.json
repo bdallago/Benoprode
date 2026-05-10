@@ -286,7 +286,7 @@
     "points": "Sistema de Puntuación",
     "medals": "Medallas y Logros",
     "friendsAndDuels": "Amigos y Duelos",
-    "leagues": "Torneos Privados",
+    "leagues": "Torneos",
     "groupStageLabel": "Fase de Grupos",
     "groupStageDesc1": "Ordená los equipos del 1º al 4º puesto. Los 2 primeros y los 8 mejores terceros avanzan a la siguiente ronda.",
     "indivMatchesLabel": "Partidos Individuales",
@@ -313,9 +313,9 @@
     "friendsLi3": "Si los retás por un Grupo Completo (todas las posiciones juntas), ¡te llevás 3 victorias!",
     "friendsLi4": "Recompensa:",
     "friendsLi5": "Cada 3 victorias de duelo acumuladas, obtenés +1 punto en el Ranking Global.",
-    "leagueDesc1": "Jugá entre el trabajo, el club o tu grupo.",
+    "leagueDesc1": "Jugá en el trabajo, el club o con tus amigos.",
     "leagueDesc2": "Además del ranking global, podés ir a la sección \"Torneos\" y crear torneos privados.",
-    "leagueDesc3": "Ponele nombre y foto, e invitá a tus amigos pasándoles el enlace exclusivo. Ser miembro de un torneo genera una tabla de posiciones exclusiva entre las personas que forman parte de la misma."
+    "leagueDesc3": "Ponele nombre e invitá a tus amigos pasándoles el enlace. Ser miembro de un torneo genera una tabla de posiciones exclusiva entre las personas que forman parte de la misma."
   },
   "fixture": {
     "title": "FIXTURE MUNDIAL",
