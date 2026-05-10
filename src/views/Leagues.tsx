@@ -289,7 +289,7 @@ export default function Leagues({ user }: { user: User }) {
                       onRemoveUser={isAdmin || benoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: benoliga.id, userId: u.uid, userName: u.name}) : undefined}
                     />
                     <LeagueStats members={players.filter(p => benoliga.members.includes(p.uid))} />
-                    <LeagueActivity leagueId={benoliga.id} />
+                    {benoliga.members.includes(user.uid) && <LeagueActivity leagueId={benoliga.id} />}
                   </div>
                )}
             </div>
@@ -386,7 +386,7 @@ export default function Leagues({ user }: { user: User }) {
                       onRemoveUser={isAdmin || league.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: league.id, userId: u.uid, userName: u.name}) : undefined}
                     />
                     <LeagueStats members={players.filter(p => league.members.includes(p.uid))} />
-                    <LeagueActivity leagueId={league.id} />
+                    {isMember && <LeagueActivity leagueId={league.id} />}
                   </div>
                 )}
               </div>
