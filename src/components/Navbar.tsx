@@ -79,12 +79,12 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
       >
         <div className="absolute inset-0 bg-black/10 dark:bg-black/30"></div>
         <div className="container mx-auto px-4 relative z-10">
-          <div className="flex items-center justify-between h-16">
-            {/* Invisible clickable logo area */}
-            <Link href="/" className="hidden md:flex items-center gap-2 font-bold text-xl md:w-1/4 h-12 w-48 shrink-0" aria-label="Inicio">
+          <div className="flex items-center h-16">
+            {/* Left column (desktop): balances the right so center nav is truly centered */}
+            <Link href="/" className="hidden md:flex flex-1" aria-label="Inicio">
             </Link>
-            
-            <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 flex-1 px-1">
+
+            <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2 xl:gap-3 shrink-0 px-1">
               <Link href="/inicio" className={getLinkStyle("/inicio", "bg-red-500 border-red-700", "bg-red-600")}>
                 <Home className="h-4 w-4 shrink-0" /> <span>{t('navbar.dashboard', 'Inicio')}</span>
               </Link>
@@ -110,7 +110,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
               )}
             </div>
               
-            <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-2 flex-1 relative">
+            <div className="flex items-center justify-between w-full md:justify-end gap-2 flex-1 relative">
               {/* Left Side: Theme */}
               <div className="flex items-center justify-start gap-2 md:gap-3">
                 <Button 
