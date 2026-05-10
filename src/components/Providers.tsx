@@ -344,14 +344,20 @@ function LiveChatFAB({ user }: { user: User }) {
         )}
       </button>
 
-      {/* Panel — mobile: nearly full-width, above FAB; desktop: right-anchored 384px panel */}
+      {/* Backdrop + Panel */}
       {isOpen && (
-        <div
-          className="fixed inset-x-4 bottom-48 md:inset-x-auto md:right-8 md:bottom-24 md:w-96 z-[60] shadow-2xl rounded-xl overflow-hidden"
-          style={{ height: 'min(520px, calc(100dvh - 14rem))' }}
-        >
-          <LiveChat onClose={() => setIsOpen(false)} />
-        </div>
+        <>
+          <div
+            className="fixed inset-0 z-[59] bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="fixed inset-x-4 bottom-48 md:inset-x-auto md:right-8 md:bottom-24 md:w-96 z-[60] shadow-2xl rounded-xl overflow-hidden"
+            style={{ height: 'min(520px, calc(100dvh - 14rem))' }}
+          >
+            <LiveChat onClose={() => setIsOpen(false)} />
+          </div>
+        </>
       )}
     </>
   );

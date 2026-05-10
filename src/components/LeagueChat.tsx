@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   collection, query, orderBy, limit, onSnapshot,
-  addDoc, getDocs, startAfter, QueryDocumentSnapshot, doc, updateDoc, arrayUnion, arrayRemove
+  addDoc, getDocs, startAfter, QueryDocumentSnapshot, doc, updateDoc, arrayUnion, arrayRemove,
+  setDoc, deleteDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { X, Send, Shield } from 'lucide-react';
@@ -80,11 +81,39 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
   const loadingMoreRef = useRef(false);
   const hasMoreRef = useRef(true);
   const loadMoreFnRef = useRef<() => Promise<void>>(async () => {});
+  const [typingUsers, setTypingUsers] = useState<{ id: string; userName: string }[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Mark as read on open
   useEffect(() => {
     localStorage.setItem(`lastRead_${leagueId}`, new Date().toISOString());
   }, [leagueId]);
+
+  // Subscribe to typing subcollection (members only)
+  useEffect(() => {
+    if (!isMember) return;
+    const unsub = onSnapshot(
+      collection(db, 'leagues', leagueId, 'typing'),
+      (snap) => {
+        const now = Date.now();
+        setTypingUsers(
+          snap.docs
+            .filter(d => d.id !== currentUser.uid && now - new Date(d.data().updatedAt).getTime() < 5000)
+            .map(d => ({ id: d.id, userName: d.data().userName as string }))
+        );
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [leagueId, currentUser.uid, isMember]);
+
+  // Delete own typing doc on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      deleteDoc(doc(db, 'leagues', leagueId, 'typing', currentUser.uid)).catch(() => {});
+    };
+  }, [leagueId, currentUser.uid]);
 
   // Real-time subscription to last 50 messages
   useEffect(() => {
@@ -166,6 +195,19 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
     return () => observer.disconnect();
   }, [leagueId]);
 
+  const handleTyping = useCallback((value: string) => {
+    setNewMessage(value);
+    if (!isMember) return;
+    setDoc(doc(db, 'leagues', leagueId, 'typing', currentUser.uid), {
+      userName: currentUser.displayName || 'Jugador',
+      updatedAt: new Date().toISOString(),
+    }).catch(() => {});
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      deleteDoc(doc(db, 'leagues', leagueId, 'typing', currentUser.uid)).catch(() => {});
+    }, 3000);
+  }, [isMember, leagueId, currentUser.uid, currentUser.displayName]);
+
   const sendMessage = useCallback(async () => {
     const text = newMessage.trim();
     if (!text || !isMember) return;
@@ -176,6 +218,8 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
       return;
     }
 
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    deleteDoc(doc(db, 'leagues', leagueId, 'typing', currentUser.uid)).catch(() => {});
     setNewMessage('');
 
     const msgData = {
@@ -382,6 +426,21 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Typing indicator */}
+        {isMember && typingUsers.length > 0 && (
+          <div className="px-4 py-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <div className="flex gap-0.5 items-end">
+              {[0, 150, 300].map(delay => (
+                <span key={delay} className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+              ))}
+            </div>
+            <span>
+              {typingUsers.map(u => u.userName).join(', ')}
+              {typingUsers.length === 1 ? ' está escribiendo...' : ' están escribiendo...'}
+            </span>
+          </div>
+        )}
+
         {/* Input */}
         <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 shrink-0">
           {!isMember ? (
@@ -400,7 +459,7 @@ export function LeagueChat({ leagueId, leagueName, isPublic, isMember, currentUs
                   ref={inputRef}
                   type="text"
                   value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
+                  onChange={e => handleTyping(e.target.value)}
                   onKeyDown={onKeyDown}
                   placeholder="Escribí un mensaje..."
                   maxLength={500}

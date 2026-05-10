@@ -207,6 +207,17 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.members.size() == 1 && resource.data.members[0] == request.auth.uid);
 
       // -------------------------------------------------------
+      // Subcollection: typing (is-typing indicators)
+      // -------------------------------------------------------
+      match /typing/{typingUserId} {
+        allow read: if isAuthenticated() &&
+                    request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members;
+        allow write: if isAuthenticated() &&
+                     request.auth.uid == typingUserId &&
+                     request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members;
+      }
+
+      // -------------------------------------------------------
       // Subcollection: messages (league chat)
       // -------------------------------------------------------
       match /messages/{messageId} {
@@ -407,6 +418,14 @@ service cloud.firestore {
     match /estadisticas_globales/{docId} {
       allow read: if isAdmin();
       allow write: if false; // Written exclusively by the backend (Admin SDK bypasses this rule)
+    }
+
+    // ===============================================================
+    // Collection: liveTyping (is-typing indicators for live chat)
+    // ===============================================================
+    match /liveTyping/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // ===============================================================

@@ -322,7 +322,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
                               {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
                             </div>
                           )}
-                          <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>
+                          <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-900 dark:text-gray-100'}>
                             {p.displayName || 'Usuario Anónimo'}
                             {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{t('profile.you', 'Tú')}</span>}
                           </span>

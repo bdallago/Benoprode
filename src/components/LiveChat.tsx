@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, limit, doc, getDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, limit, doc, getDoc, updateDoc, where, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Button } from './ui/button';
 import { Send, AlertTriangle, MessageCircle, X } from 'lucide-react';
@@ -40,6 +40,8 @@ export function LiveChat({ onClose }: { onClose?: () => void }) {
   const [warnings, setWarnings] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [lastSentAt, setLastSentAt] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<{ id: string; userName: string }[]>([]);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { current: liveMatch, next: nextMatch } = getCurrentOrNextMatch();
@@ -78,14 +80,55 @@ export function LiveChat({ onClose }: { onClose?: () => void }) {
     return () => unsubscribe();
   }, [user]);
 
+  // Subscribe to live typing indicators
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(
+      collection(db, 'liveTyping'),
+      (snap) => {
+        const now = Date.now();
+        setTypingUsers(
+          snap.docs
+            .filter(d => d.id !== user.uid && now - new Date(d.data().updatedAt).getTime() < 5000)
+            .map(d => ({ id: d.id, userName: d.data().userName as string }))
+        );
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [user]);
+
+  // Delete own typing doc on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (user) deleteDoc(doc(db, 'liveTyping', user.uid)).catch(() => {});
+    };
+  }, [user]);
+
   const chatIsOpen = Date.now() >= CHAT_OPEN_TIMESTAMP;
   const cooldownRemaining = Math.max(0, RATE_LIMIT_MS - (Date.now() - lastSentAt));
   const canSend = chatIsOpen && !isBanned && !!user && newMessage.trim().length > 0 && cooldownRemaining === 0;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    if (!user || isBanned || !chatIsOpen) return;
+    setDoc(doc(db, 'liveTyping', user.uid), {
+      userName: user.displayName || 'Usuario',
+      updatedAt: new Date().toISOString(),
+    }).catch(() => {});
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      deleteDoc(doc(db, 'liveTyping', user.uid)).catch(() => {});
+    }, 3000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSend || !user) return;
 
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    deleteDoc(doc(db, 'liveTyping', user.uid)).catch(() => {});
     const messageText = newMessage.trim();
     setNewMessage('');
 
@@ -213,6 +256,21 @@ export function LiveChat({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900/50">
+          <div className="flex gap-0.5 items-end">
+            {[0, 150, 300].map(delay => (
+              <span key={delay} className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+            ))}
+          </div>
+          <span>
+            {typingUsers.map(u => u.userName).join(', ')}
+            {typingUsers.length === 1 ? ' está escribiendo...' : ' están escribiendo...'}
+          </span>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-3 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
         {!chatIsOpen ? (
@@ -232,7 +290,7 @@ export function LiveChat({ onClose }: { onClose?: () => void }) {
             <input
               type="text"
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               maxLength={500}
               placeholder={t('liveChat.placeholder')}
               className="flex-1 text-sm p-2 border border-gray-300 rounded-md dark:bg-gray-700/50 dark:border-gray-600 dark:text-gray-200 focus:ring-2 focus:ring-blue-400 outline-none"
