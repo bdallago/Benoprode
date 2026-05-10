@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, deleteDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { doc, deleteDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../../firebase";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -25,7 +25,7 @@ export function AdminReports({ onMessage }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc")))
+    getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(100)))
       .then((snap) => {
         setReports(snap.docs.map((d) => ({ ...d.data(), id: d.id } as Report)));
       })

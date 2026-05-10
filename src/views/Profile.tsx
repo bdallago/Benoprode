@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   updateDoc,
   deleteDoc,
+  limit,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -147,6 +148,7 @@ export default function Profile({ user, profileId }: ProfileProps) {
           collection(db, "users"),
           where("displayName", ">=", searchTerm),
           where("displayName", "<=", searchTerm + "\uf8ff"),
+          limit(25),
         );
         const snap = await getDocs(q);
         const results = snap.docs

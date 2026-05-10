@@ -1,6 +1,6 @@
 import { Bell, Check, Trash2, Trophy, Users, ShieldAlert, Star, X } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { collection, query, where, updateDoc, doc, writeBatch, onSnapshot, addDoc, getDoc, getDocs, arrayUnion } from "firebase/firestore";
+import { collection, query, where, updateDoc, doc, writeBatch, onSnapshot, addDoc, getDoc, getDocs, arrayUnion, limit } from "firebase/firestore";
 import { db } from "../firebase";
 import { User } from "firebase/auth";
 import Link from "next/link";
@@ -172,7 +172,7 @@ export function NotificationCenter({ user }: { user: User }) {
         await updateDoc(doc(db, 'duels_v2', notif.duelId), { status: accept ? 'accepted' : 'rejected' });
       } else {
         // Find duel manually if ID wasn't provided directly (fallback)
-        const qDuel = query(collection(db, 'duels_v2'), where('challengerId', '==', notif.fromUserId), where('challengedId', '==', user.uid), where('status', '==', 'pending'));
+        const qDuel = query(collection(db, 'duels_v2'), where('challengerId', '==', notif.fromUserId), where('challengedId', '==', user.uid), where('status', '==', 'pending'), limit(1));
         const snap = await getDocs(qDuel);
         if (!snap.empty) {
           const docRef = snap.docs[0].ref;

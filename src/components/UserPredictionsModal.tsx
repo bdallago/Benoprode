@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../data";
 import matchesData from "../lib/matches.json";
@@ -50,10 +50,9 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [predSnap, resSnap, leaguesSnap, userSnap, currentUserPredSnap] = await Promise.all([
+        const [predSnap, resSnap, userSnap, currentUserPredSnap] = await Promise.all([
           getDoc(doc(db, "predictions", userId)),
           getDoc(doc(db, "results", "actual")),
-          getDocs(query(collection(db, "leagues"), where("members", "array-contains", userId))),
           getDoc(doc(db, "users", userId)),
           user ? getDoc(doc(db, "predictions", user.uid)) : Promise.resolve(null)
         ]);
@@ -70,15 +69,6 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
         if (userSnap.exists()) {
           setUserStats(userSnap.data());
         }
-
-        const leagues = leaguesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-        const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
-        
-        setUserStats((prev: any) => ({
-          ...prev,
-          inBenoliga: userLeagues.some((l: any) => l.name.toLowerCase().includes('beno') || l.id === 'benoliga'),
-          inPrivateLeague: userLeagues.length > 0
-        }));
 
       } catch (error) {
         console.error("Error fetching data:", error);
