@@ -3,11 +3,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 import { GROUPS } from "../data";
 import { useTranslation } from 'react-i18next';
-
-// Fase de grupos se bloquea el 11 de Junio a las 00:00hs (-03:00 para alinear con Bs As)
-const GROUP_STAGE_DEADLINE = new Date('2026-06-11T00:00:00-03:00').getTime();
-// Lock anticipado: quien guarda antes del 1 de Junio gana la medalla lockedEarly
-const EARLY_LOCK_DEADLINE = new Date('2026-06-01T00:00:00-03:00').getTime();
+import { GROUP_STAGE_DEADLINE, EARLY_LOCK_DEADLINE } from '../lib/config';
 
 type MatchOutcome = 'A' | 'B' | 'DRAW' | '';
 type MatchPred = { teamA: number | '', teamB: number | '', outcome: MatchOutcome };

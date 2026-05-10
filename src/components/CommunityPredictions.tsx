@@ -35,7 +35,7 @@ export function CommunityPredictions() {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'statistics', 'matches'), (snap) => {
       if (snap.exists()) setMatchStats(snap.data() as Record<string, MatchStat>);
-    });
+    }, () => {});
     return () => unsub();
   }, []);
 

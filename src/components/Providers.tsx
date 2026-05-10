@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, useRef } from "react";
+import { useState, useEffect, createContext, useContext, useRef, useMemo, useCallback } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   doc,
@@ -20,6 +20,7 @@ import {
   DocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { EARLY_LOCK_DEADLINE_ISO } from "../lib/config";
 
 // Mandatory connection test
 async function testFirestoreConnection() {
@@ -209,7 +210,7 @@ function GlobalBadgeListener({
 
           if (data.isLocked && data.updatedAt) {
             const lockedDate = new Date(data.updatedAt);
-            const deadline = new Date("2026-06-01T00:00:00Z");
+            const deadline = new Date(EARLY_LOCK_DEADLINE_ISO);
             if (lockedDate < deadline && !stats.lockedEarly) {
               nextLockedEarly = true;
               changed = true;
@@ -539,7 +540,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const loadMoreLeagues = async () => {
+  const loadMoreLeagues = useCallback(async () => {
     if (!user || !lastLeagueDocRef.current) return;
     try {
       const snap = await getDocs(
@@ -551,7 +552,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn("loadMoreLeagues failed:", e);
     }
-  };
+  }, [user]);
+
+  const contextValue = useMemo(
+    () => ({ user, loading, isAdmin, globalLeagues, hasMoreLeagues, loadMoreLeagues, userStats }),
+    [user, loading, isAdmin, globalLeagues, hasMoreLeagues, loadMoreLeagues, userStats]
+  );
 
   if (loading) {
     return (
@@ -563,7 +569,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <TooltipProvider>
-      <AuthContext.Provider value={{ user, loading, isAdmin, globalLeagues, hasMoreLeagues, loadMoreLeagues, userStats }}>
+      <AuthContext.Provider value={contextValue}>
         <div className="min-h-[100dvh] flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <Navbar user={user} isAdmin={isAdmin} />
           {user && (

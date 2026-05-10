@@ -8,10 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { checkBadWords } from '../lib/badwords';
 import matchesData from '../lib/matches.json';
 
+import { CHAT_OPEN_TIMESTAMP } from '../lib/config';
+
 const RATE_LIMIT_MS = 5000;
 const MATCH_DURATION_MS = 120 * 60 * 1000;
-// Chat se abre cuando arranca el primer partido: 11/06 a las 16:00 ARG = 19:00 UTC
-const CHAT_OPEN_TIMESTAMP = new Date('2026-06-11T19:00:00.000Z').getTime();
 
 function getCurrentOrNextMatch() {
   const now = Date.now();

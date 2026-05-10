@@ -174,21 +174,23 @@ export default function Profile({ user, profileId }: ProfileProps) {
   const { globalLeagues } = useAuth();
 
   useEffect(() => {
+    let isMounted = true;
     const fetchProfile = async () => {
       try {
         const userDoc = await getDoc(doc(db, "users", targetUserId));
-        if (userDoc.exists()) {
+        if (isMounted && userDoc.exists()) {
           setProfileData(userDoc.data());
           setUserStats((prev: any) => ({ ...prev, ...userDoc.data() }));
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        if (isMounted) console.error("Error fetching profile:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchProfile();
+    return () => { isMounted = false; };
   }, [targetUserId]);
 
   useEffect(() => {

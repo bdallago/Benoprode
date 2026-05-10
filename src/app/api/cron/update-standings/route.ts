@@ -36,7 +36,9 @@ async function calculatePoints(database: any) {
     // Paginate users in chunks of 50 to avoid full-table memory load
     let lastDoc: any = null;
     let hasMore = true;
-    while (hasMore) {
+    let chunkCount = 0;
+    while (hasMore && chunkCount < 500) {
+      chunkCount++;
       let q = database.collection("users").orderBy("__name__").limit(50);
       if (lastDoc) q = q.startAfter(lastDoc);
       const chunk = await q.get();

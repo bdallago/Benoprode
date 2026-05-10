@@ -270,7 +270,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                     <Card key={groupLetter} className="overflow-hidden border-t-4 border-t-blue-600">
                       <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
                         <CardTitle className="text-md flex items-center justify-between w-full">
-                          <span>{t('userPredictions.group')} {groupLetter}</span>
+                          <span className="text-gray-900 dark:text-gray-100">{t('userPredictions.group')} {groupLetter}</span>
                           {canChallenge && (
                             <Button
                               variant="outline"
@@ -339,11 +339,11 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-2 flex-1 justify-end">
                            <span className="font-semibold text-gray-900 dark:text-gray-100">{match.teamA}</span>
-                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded">{pred.teamA !== '' ? pred.teamA : '-'}</span>
+                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-100 rounded">{pred.teamA !== '' ? pred.teamA : '-'}</span>
                         </div>
                         <span className="text-gray-500 font-bold">VS</span>
                         <div className="flex items-center gap-2 flex-1 justify-start">
-                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded">{pred.teamB !== '' ? pred.teamB : '-'}</span>
+                           <span className="text-xl font-bold px-3 py-1 bg-gray-100 dark:bg-gray-700 dark:text-gray-100 rounded">{pred.teamB !== '' ? pred.teamB : '-'}</span>
                            <span className="font-semibold text-gray-900 dark:text-gray-100">{match.teamB}</span>
                         </div>
                       </div>

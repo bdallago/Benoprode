@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock, MessageSquare } from "lucide-react";
+import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock, MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { CountdownBanner } from "../components/CountdownBanner";
 import { useTranslation } from 'react-i18next';
@@ -48,6 +48,7 @@ export default function Leagues({ user }: { user: User }) {
   const [selectedUser, setSelectedUser] = useState<{uid: string, name: string} | null>(null);
   const [activeChatLeague, setActiveChatLeague] = useState<any>(null);
   const [unreadLeagues, setUnreadLeagues] = useState<Set<string>>(new Set());
+  const [joiningLeagueId, setJoiningLeagueId] = useState<string | null>(null);
 
   // Compute unread badges from leagues data using lastMessageAt vs localStorage
   useEffect(() => {
@@ -271,8 +272,8 @@ export default function Leagues({ user }: { user: User }) {
                           </Button>
                         </>
                       ) : (
-                        <Button size="sm" className="font-bold" onClick={async () => { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); }}>
-                          <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinChallenge', 'Unirse al Desafío')}
+                        <Button size="sm" className="font-bold" disabled={joiningLeagueId === benoliga.id} onClick={async () => { setJoiningLeagueId(benoliga.id); try { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); } finally { setJoiningLeagueId(null); } }}>
+                          {joiningLeagueId === benoliga.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinChallenge', 'Unirse al Desafío')}</>}
                         </Button>
                       )}
                     </div>
@@ -364,8 +365,8 @@ export default function Leagues({ user }: { user: User }) {
                       </>
                     ) : (
                       league.isPublic ? (
-                        <Button size="sm" onClick={async () => { await joinLeague(league.id); await sendWelcomeMessage(league.id); }} className="w-full">
-                          <LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinLeague')}
+                        <Button size="sm" disabled={joiningLeagueId === league.id} onClick={async () => { setJoiningLeagueId(league.id); try { await joinLeague(league.id); await sendWelcomeMessage(league.id); } finally { setJoiningLeagueId(null); } }} className="w-full">
+                          {joiningLeagueId === league.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinLeague')}</>}
                         </Button>
                       ) : (
                         <Button size="sm" disabled className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed transition-colors duration-200">

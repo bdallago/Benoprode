@@ -69,12 +69,6 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
 
   const [isAllBadgesModalOpen, setIsAllBadgesModalOpen] = useState(false);
 
-  // Gamification states
-  const [isLeagueCreatorOrMember, setIsLeagueCreatorOrMember] = useState(false);
-  const [inBenoliga, setInBenoliga] = useState(false);
-  const [hasPerfectGroup, setHasPerfectGroup] = useState(false);
-  const [hasInvitedFriends, setHasInvitedFriends] = useState(false);
-
   const { t } = useTranslation();
 
   const [userStats, setUserStats] = useState<any>({});
@@ -92,9 +86,6 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
   useEffect(() => {
     if (contextUserStats && Object.keys(contextUserStats).length > 0) {
       setUserStats(contextUserStats);
-      setHasInvitedFriends((contextUserStats.referralsCount || 0) > 0);
-      setIsLeagueCreatorOrMember(contextUserStats.inPrivateLeague || false);
-      setInBenoliga(contextUserStats.inBenoliga || false);
     }
   }, [contextUserStats]);
 
@@ -142,43 +133,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
 
     fetchExactRank();
 
-    // Fetch user predictions and actual results to check for perfect group
-    const checkPerfectGroup = async () => {
-      if (typeof window !== "undefined" && !window.navigator.onLine) return;
-      try {
-        const [predsSnap, resultsSnap] = await Promise.all([
-          getDoc(doc(db, "predictions", user.uid)),
-          getDoc(doc(db, "results", "actual"))
-        ]);
-
-        if (predsSnap.exists() && resultsSnap.exists()) {
-          const preds = predsSnap.data().groups || {};
-          const results = resultsSnap.data().groups || {};
-
-          let perfect = false;
-          for (const group in results) {
-            if (
-              results[group] &&
-              preds[group] &&
-              JSON.stringify(results[group]) === JSON.stringify(preds[group])
-            ) {
-              perfect = true;
-              break;
-            }
-          }
-          setHasPerfectGroup(perfect);
-        }
-      } catch (error: any) {
-        // Soft fail sin retries recursivos
-        console.warn("Error checking perfect group (soft fail):", error?.message || error);
-      }
-    };
-
-    checkPerfectGroup();
-
-    return () => {
-      // nothing specialized to clean up here for user doc as it's now global
-    };
+    return () => {};
   }, [user.uid]);
 
   const myData = userStats;
