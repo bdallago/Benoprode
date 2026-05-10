@@ -5,8 +5,6 @@ import { User } from "firebase/auth";
 import {
   collection,
   query,
-  orderBy,
-  onSnapshot,
   doc,
   getDoc,
   getCountFromServer,

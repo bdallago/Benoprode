@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Clock, Lock } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-
-const DEADLINE = new Date('2026-06-11T00:00:00-03:00').getTime();
+import { GROUP_STAGE_DEADLINE as DEADLINE } from '../lib/config';
 
 export function CountdownBanner() {
   const [timeLeft, setTimeLeft] = useState(0);

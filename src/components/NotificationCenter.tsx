@@ -64,7 +64,7 @@ export function NotificationCenter({ user }: { user: User }) {
   useEffect(() => {
     if (!user?.uid) return;
     let isFirstLoad = true;
-    const q = query(collection(db, "notifications"), where("userId", "==", user.uid));
+    const q = query(collection(db, "notifications"), where("userId", "==", user.uid), limit(50));
     const unsub = onSnapshot(q, (snap) => {
       const notifs = snap.docs
         .map(d => ({ id: d.id, ...d.data() } as Notification))
