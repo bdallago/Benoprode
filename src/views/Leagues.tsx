@@ -232,55 +232,74 @@ export default function Leagues({ user }: { user: User }) {
                   <div className="absolute top-0 right-0 bg-sky-400 text-sky-900 text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
                     {t('leagues.createdByBeno', 'Creado por Beno')}
                   </div>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <Trophy className="w-5 h-5 text-sky-600 dark:text-sky-400" /> {benoliga.name}
-                        <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-normal">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between gap-2 pr-20">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Trophy className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                        <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{benoliga.name}</span>
+                        <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full shrink-0">
                           <Globe className="w-3 h-3" /> {t('leagues.public')}
                         </span>
                       </div>
-                      <span className="text-sm font-normal text-gray-500 dark:text-gray-200 flex items-center gap-1">
-                        <Users className="w-4 h-4" /> {benoliga.members.length}
+                      <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5" /> {benoliga.members.length}
                       </span>
-                    </CardTitle>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  <CardContent className="space-y-2 pt-0">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       {t('leagues.benoligaDesc', 'Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!')}
                     </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant={selectedLeague?.id === benoliga.id ? "default" : "outline"} size="sm" onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}>
-                        {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
-                      </Button>
-                      {benoliga.members.includes(user.uid) ? (
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => inviteToLeague(benoliga)}>
-                            {copiedLeagueId === benoliga.id ? (
-                              <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
-                            ) : (
-                              <><Share2 className="w-4 h-4 mr-2"/> {t('leagues.invite')}</>
-                            )}
+                    {benoliga.members.includes(user.uid) ? (
+                      <>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={selectedLeague?.id === benoliga.id ? "default" : "outline"}
+                            size="sm"
+                            className={`flex-1 ${selectedLeague?.id !== benoliga.id ? 'border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}`}
+                            onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}
+                          >
+                            {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
                           </Button>
                           <Button
                             size="sm"
                             variant={unreadLeagues.has(benoliga.id) ? "default" : "outline"}
-                            className={unreadLeagues.has(benoliga.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : ""}
+                            className={unreadLeagues.has(benoliga.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"}
                             onClick={() => openChat(benoliga)}
                           >
-                            <MessageSquare className="w-4 h-4 mr-2" /> Chat
+                            <MessageSquare className="w-4 h-4 mr-1.5" /> Chat
                           </Button>
-                        </>
-                      ) : (
-                        <Button size="sm" className="font-bold" disabled={joiningLeagueId === benoliga.id} onClick={async () => { setJoiningLeagueId(benoliga.id); try { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); } finally { setJoiningLeagueId(null); } }}>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" className="border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20" onClick={() => inviteToLeague(benoliga)}>
+                            {copiedLeagueId === benoliga.id ? (
+                              <><Check className="w-3.5 h-3.5 mr-1 text-green-600 dark:text-green-400"/><span className="text-green-600 dark:text-green-400 text-xs">{t('leagues.copied')}</span></>
+                            ) : (
+                              <><Share2 className="w-3.5 h-3.5 mr-1"/><span className="text-xs">{t('leagues.invite')}</span></>
+                            )}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          variant={selectedLeague?.id === benoliga.id ? "default" : "outline"}
+                          size="sm"
+                          className={selectedLeague?.id !== benoliga.id ? 'border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}
+                          onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}
+                        >
+                          {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
+                        </Button>
+                        <Button size="sm" className="flex-1 font-bold" disabled={joiningLeagueId === benoliga.id} onClick={async () => { setJoiningLeagueId(benoliga.id); try { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); } finally { setJoiningLeagueId(null); } }}>
                           {joiningLeagueId === benoliga.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinChallenge', 'Unirse al Desafío')}</>}
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </CardContent>
                </Card>
                {selectedLeague?.id === benoliga.id && (
                   <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                    {benoliga.members.includes(user.uid) && <LeagueActivity leagueId={benoliga.id} />}
                     <Leaderboard
                       title={`${t('leagues.ranking')}: ${benoliga.name}`}
                       players={players.filter(p => benoliga.members.includes(p.uid))}
@@ -290,7 +309,6 @@ export default function Leagues({ user }: { user: User }) {
                       onRemoveUser={isAdmin || benoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: benoliga.id, userId: u.uid, userName: u.name}) : undefined}
                     />
                     <LeagueStats members={players.filter(p => benoliga.members.includes(p.uid))} />
-                    {benoliga.members.includes(user.uid) && <LeagueActivity leagueId={benoliga.id} />}
                   </div>
                )}
             </div>
@@ -303,74 +321,85 @@ export default function Leagues({ user }: { user: User }) {
 
             return (
               <div key={league.id} className={`${isSelected ? 'col-span-full order-none' : ''} space-y-4`}>
-                <Card className={`${isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''}`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        {league.name}
+                <Card className={`overflow-hidden border-l-4 ${isMember ? 'border-l-blue-500' : 'border-l-gray-200 dark:border-l-gray-700'} ${isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{league.name}</span>
                         {league.isPublic ? (
-                          <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-normal">
-                             <Globe className="w-3 h-3" /> {t('leagues.public')}
+                          <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full shrink-0">
+                            <Globe className="w-3 h-3" /> {t('leagues.public')}
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full font-normal">
-                             <Lock className="w-3 h-3" /> {t('leagues.private')}
+                          <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded-full shrink-0">
+                            <Lock className="w-3 h-3" /> {t('leagues.private')}
                           </span>
                         )}
                         {isAdmin && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setLeagueToDelete(league); }} 
-                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setLeagueToDelete(league); }}
+                            className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
-                      <span className="text-sm font-normal text-gray-500 dark:text-gray-200 flex items-center gap-1">
-                        <Users className="w-4 h-4" /> {league.members.length}
+                      <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5" /> {league.members.length}
                       </span>
-                    </CardTitle>
+                    </div>
                   </CardHeader>
-                  <CardContent className="flex gap-2 flex-wrap">
-                    <Button variant={isSelected ? "default" : "outline"} size="sm" onClick={() => setSelectedLeague(isSelected ? null : league)}>
-                      {isSelected ? t('leagues.hideRanking') : t('leagues.viewRanking')}
-                    </Button>
-                    
-                    {isMember ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => inviteToLeague(league)}>
-                          {copiedLeagueId === league.id ? (
-                            <><Check className="w-4 h-4 mr-2 text-green-600 dark:text-green-400"/> <span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
-                          ) : (
-                            <><Share2 className="w-4 h-4 mr-2"/> {t('leagues.invite')}</>
-                          )}
-                        </Button>
-                        <Button variant="success" size="sm" onClick={() => inviteViaWhatsApp(league)}>
-                          <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2 fill-current" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                          </svg>
-                          WhatsApp
-                        </Button>
+                  <CardContent className="space-y-2 pt-0">
+                    {/* Primary actions row */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        className={`flex-1 ${!isSelected ? 'border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''}`}
+                        onClick={() => setSelectedLeague(isSelected ? null : league)}
+                      >
+                        {isSelected ? t('leagues.hideRanking') : t('leagues.viewRanking')}
+                      </Button>
+                      {isMember && (
                         <Button
                           size="sm"
                           variant={unreadLeagues.has(league.id) ? "default" : "outline"}
-                          className={unreadLeagues.has(league.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : ""}
+                          className={unreadLeagues.has(league.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"}
                           onClick={() => openChat(league)}
                         >
-                          <MessageSquare className="w-4 h-4 mr-2" /> Chat
+                          <MessageSquare className="w-4 h-4 mr-1.5" /> Chat
                         </Button>
-                        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setLeagueToLeave(league)}>
-                          <LogOut className="w-4 h-4 mr-2"/> {t('leagues.leave')}
+                      )}
+                    </div>
+
+                    {/* Secondary actions row */}
+                    {isMember ? (
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20" onClick={() => inviteToLeague(league)}>
+                          {copiedLeagueId === league.id ? (
+                            <><Check className="w-3.5 h-3.5 mr-1 text-green-600 dark:text-green-400"/><span className="text-green-600 dark:text-green-400 text-xs">{t('leagues.copied')}</span></>
+                          ) : (
+                            <><Share2 className="w-3.5 h-3.5 mr-1"/><span className="text-xs">{t('leagues.invite')}</span></>
+                          )}
                         </Button>
-                      </>
+                        <Button variant="success" size="sm" onClick={() => inviteViaWhatsApp(league)}>
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                          </svg>
+                          <span className="text-xs ml-1">WhatsApp</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="ml-auto text-red-500 dark:text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => setLeagueToLeave(league)}>
+                          <LogOut className="w-3.5 h-3.5 mr-1"/><span className="text-xs">{t('leagues.leave')}</span>
+                        </Button>
+                      </div>
                     ) : (
                       league.isPublic ? (
-                        <Button size="sm" disabled={joiningLeagueId === league.id} onClick={async () => { setJoiningLeagueId(league.id); try { await joinLeague(league.id); await sendWelcomeMessage(league.id); } finally { setJoiningLeagueId(null); } }} className="w-full">
+                        <Button size="sm" className="w-full" disabled={joiningLeagueId === league.id} onClick={async () => { setJoiningLeagueId(league.id); try { await joinLeague(league.id); await sendWelcomeMessage(league.id); } finally { setJoiningLeagueId(null); } }}>
                           {joiningLeagueId === league.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2"/> {t('leagues.joinLeague')}</>}
                         </Button>
                       ) : (
-                        <Button size="sm" disabled className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed transition-colors duration-200">
-                          <Lock className="w-4 h-4 mr-2"/> {t('leagues.requiresInvite')}
+                        <Button size="sm" disabled className="w-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed">
+                          <Lock className="w-3.5 h-3.5 mr-2"/> {t('leagues.requiresInvite')}
                         </Button>
                       )
                     )}
@@ -378,6 +407,7 @@ export default function Leagues({ user }: { user: User }) {
                 </Card>
                 {isSelected && (
                   <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                    {isMember && <LeagueActivity leagueId={league.id} />}
                     <Leaderboard
                       title={`${t('leagues.ranking')}: ${league.name}`}
                       players={players.filter(p => league.members.includes(p.uid))}
@@ -387,7 +417,6 @@ export default function Leagues({ user }: { user: User }) {
                       onRemoveUser={isAdmin || league.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({leagueId: league.id, userId: u.uid, userName: u.name}) : undefined}
                     />
                     <LeagueStats members={players.filter(p => league.members.includes(p.uid))} />
-                    {isMember && <LeagueActivity leagueId={league.id} />}
                   </div>
                 )}
               </div>

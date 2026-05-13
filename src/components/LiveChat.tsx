@@ -175,9 +175,15 @@ export function LiveChat({ onClose }: { onClose?: () => void }) {
       {/* Header */}
       <div className="bg-blue-900 text-white p-4 flex flex-col items-center justify-center relative gap-2">
         <div className="absolute top-2 right-2 flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs font-bold animate-pulse">
-            <span className="w-2 h-2 bg-white rounded-full inline-block" /> {t('liveChat.live')}
-          </div>
+          {liveMatch ? (
+            <div className="flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded text-xs font-bold animate-pulse">
+              <span className="w-2 h-2 bg-white rounded-full inline-block" /> {t('liveChat.live')}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 bg-gray-600/80 px-2 py-0.5 rounded text-xs font-semibold">
+              <span className="w-2 h-2 bg-gray-400 rounded-full inline-block" /> OFF
+            </div>
+          )}
           {onClose && (
             <button onClick={onClose} className="text-blue-200 hover:text-white transition-colors" title="Cerrar">
               <X className="w-4 h-4" />

@@ -113,6 +113,8 @@ function GlobalBadgeListener({
   // Refs so the stable subscription always reads fresh values without recreating
   const globalLeaguesRef = useRef(globalLeagues);
   const userStatsRef = useRef(userStats);
+  // Tracks badges already queued this session so re-triggers (before Firestore confirms) don't re-show them
+  const shownInSessionRef = useRef<Set<string>>(new Set());
   const checkBadgesRef = useRef<(() => void) | null>(null);
   useEffect(() => { globalLeaguesRef.current = globalLeagues; });
   useEffect(() => { userStatsRef.current = userStats; });
@@ -168,10 +170,12 @@ function GlobalBadgeListener({
 
       const storedBadges = stats.earnedBadges || [];
       const newEarnedBadges = userBadgesFull.filter(
-        (b) => b && !storedBadges.includes(b.id),
+        (b) => b && !storedBadges.includes(b.id) && !shownInSessionRef.current.has(b.id),
       ) as { id: string; name: string; icon: string; description: string }[];
 
       if (newEarnedBadges.length > 0) {
+        // Mark as handled immediately so re-triggers while Firestore is persisting don't re-queue them
+        newEarnedBadges.forEach(b => shownInSessionRef.current.add(b.id));
         setBadgeQueue((prev) => {
           const existingIds = prev.map((p) => p.id);
           const toAdd = newEarnedBadges.filter((b) => !existingIds.includes(b.id));

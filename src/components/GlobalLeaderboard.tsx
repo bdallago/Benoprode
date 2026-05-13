@@ -3,7 +3,7 @@ import { collection, query, orderBy, limit, getDocs, startAfter, where, document
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Users } from 'lucide-react';
+import { Trophy, Search, ChevronLeft, ChevronRight, Target, UserPlus, Users, User as UserIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTranslation } from 'react-i18next';
 import { useSocial } from '../hooks/useSocial';
@@ -291,9 +291,9 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                <th className="py-3 px-4 font-semibold w-24 text-center">{t('dashboard.tablePos', 'Pos')}</th>
-                <th className="py-3 px-4 font-semibold">{t('dashboard.tablePlayer', 'Jugador')}</th>
-                <th className="py-3 px-4 font-semibold text-right w-32">{t('dashboard.tablePoints', 'Puntos')}</th>
+                <th className="py-3 px-2 md:px-4 font-semibold w-10 md:w-20 text-center">{t('dashboard.tablePos', 'Pos')}</th>
+                <th className="py-3 px-2 md:px-4 font-semibold">{t('dashboard.tablePlayer', 'Jugador')}</th>
+                <th className="py-3 px-2 md:px-4 font-semibold text-right w-16 md:w-28">{t('dashboard.tablePoints', 'Puntos')}</th>
               </tr>
             </thead>
             <tbody>
@@ -310,47 +310,47 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
                   const isMe = p.uid === currentUser.uid;
                   return (
                     <tr key={p.uid} onClick={() => onUserClick && onUserClick({ uid: p.uid, name: p.displayName || 'Usuario Anónimo', points: p.totalPoints || 0 })} className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80 cursor-pointer transition-colors ${isMe ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}>
-                      <td className="py-3 px-4 text-center font-bold text-gray-400">
+                      <td className="py-3 px-2 md:px-4 text-center font-bold text-gray-400 text-sm">
                         {rank}
                       </td>
-                      <td className="py-3 px-4 font-medium flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3 px-2 md:px-4 font-medium overflow-hidden">
+                        <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                          {/* Friend icon slot — fixed width keeps rows aligned */}
+                          <div className="w-7 h-7 shrink-0 flex items-center justify-center">
+                            {!isMe && (
+                              friends.has(p.uid) ? (
+                                <span title={t('profile.areFriends', 'Amigos')}><UserIcon className="w-4 h-4 text-green-500" /></span>
+                              ) : sentRequests.has(p.uid) ? (
+                                <span title={t('profile.requestSent', 'Solicitud pendiente')}><UserIcon className="w-4 h-4 text-orange-500" /></span>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-0 h-7 w-7 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
+                                  onClick={(e) => handleAddFriendAction(e, p.uid)}
+                                  title={t('profile.addFriend', 'Añadir amigo')}
+                                >
+                                  <UserPlus className="w-4 h-4" />
+                                </Button>
+                              )
+                            )}
+                          </div>
                           {p.photoURL ? (
-                            <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full border border-gray-200" />
+                            <img src={p.photoURL} alt={p.displayName} className="w-7 h-7 rounded-full border border-gray-200 shrink-0" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs shrink-0">
                               {p.displayName ? p.displayName.charAt(0).toUpperCase() : '?'}
                             </div>
                           )}
-                          <span className={isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-900 dark:text-gray-100'}>
-                            {p.displayName || 'Usuario Anónimo'}
-                            {isMe && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{t('profile.you', 'Tú')}</span>}
-                          </span>
+                          <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                            <span className={`truncate text-sm ${isMe ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-900 dark:text-gray-100'}`}>
+                              {p.displayName || 'Usuario Anónimo'}
+                            </span>
+                            {isMe && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full shrink-0">{t('profile.you', 'Tú')}</span>}
+                          </div>
                         </div>
-                        
-                        {!isMe && (
-                          friends.has(p.uid) ? (
-                            <div className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                              {t('profile.areFriends', 'Amigos')}
-                            </div>
-                          ) : sentRequests.has(p.uid) ? (
-                            <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
-                              {t('profile.requestSent', 'Solicitud pendiente')}
-                            </div>
-                          ) : (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="p-1.5 h-8 w-8 shrink-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full"
-                              onClick={(e) => handleAddFriendAction(e, p.uid)}
-                              title={t('profile.addFriend', 'Añadir amigo')}
-                            >
-                              <UserPlus className="w-5 h-5" />
-                            </Button>
-                          )
-                        )}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-2 md:px-4 text-right font-bold text-sm text-gray-800 dark:text-gray-200">
                         {p.totalPoints || 0}
                       </td>
                     </tr>
