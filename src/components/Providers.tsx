@@ -466,7 +466,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
               tourCompleted: false,
               chatWarnings: 0,
               isChatBanned: false,
+              welcomeEmailSent: true,
             });
+
+            // Send welcome email (fire-and-forget — never block login on mail failure)
+            if (currentUser.email && !currentUser.email.endsWith("@no-email.com")) {
+              fetch("/api/mail/welcome", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  email: currentUser.email,
+                  displayName: currentUser.displayName || "jugador",
+                }),
+              }).catch((e) => console.warn("Welcome mail failed:", e));
+            }
 
             if (refId && refId !== currentUser.uid) {
               try {
