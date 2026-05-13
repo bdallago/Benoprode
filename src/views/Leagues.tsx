@@ -207,7 +207,7 @@ export default function Leagues({ user }: { user: User }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-4">
+    <div className="max-w-6xl mx-auto space-y-6">
       <CountdownBanner />
 
       <div className="space-y-6">

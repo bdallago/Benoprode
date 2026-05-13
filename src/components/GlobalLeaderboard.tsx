@@ -284,16 +284,17 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         </div>
       </CardHeader>
 
-      <div className="overflow-auto max-h-[400px]">
+      {/* Mobile: tabla en flujo normal de página (sin scroll interno). Desktop: max-h con scroll vertical */}
+      <div className="md:overflow-y-auto md:max-h-[400px]">
         {loading ? (
           <div className="p-8 text-center text-gray-500">{t('dashboard.loadingRanking', 'Cargando clasificación...')}</div>
         ) : (
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse table-fixed">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm">
-                <th className="py-3 px-2 md:px-4 font-semibold w-10 md:w-20 text-center">{t('dashboard.tablePos', 'Pos')}</th>
+              <tr className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm">
+                <th className="py-3 px-2 font-semibold w-10 text-center">{t('dashboard.tablePos', 'Pos')}</th>
                 <th className="py-3 px-2 md:px-4 font-semibold">{t('dashboard.tablePlayer', 'Jugador')}</th>
-                <th className="py-3 px-2 md:px-4 font-semibold text-right w-16 md:w-28">{t('dashboard.tablePoints', 'Puntos')}</th>
+                <th className="py-3 px-2 font-semibold text-right w-14">{t('dashboard.tablePoints', 'Pts')}</th>
               </tr>
             </thead>
             <tbody>
@@ -350,7 +351,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-2 md:px-4 text-right font-bold text-sm text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-2 text-right font-bold text-sm text-gray-800 dark:text-gray-200">
                         {p.totalPoints || 0}
                       </td>
                     </tr>
