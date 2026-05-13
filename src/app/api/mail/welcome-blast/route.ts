@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { sendMail } from "../../../../lib/mailer";
 import { renderWelcome } from "../../../../emails/welcome";
-
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY ?? process.env.FIREBASE_ADMIN_KEY ?? "";
-  const serviceAccount = JSON.parse(raw);
-  return initializeApp({ credential: cert(serviceAccount) });
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,8 +10,8 @@ export async function POST(req: NextRequest) {
     const idToken = authHeader.replace("Bearer ", "").trim();
     if (!idToken) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-    const adminApp = getAdminApp();
-    const adminAuth = getAuth(adminApp);
+    const adminAuth = getAdminAuth();
+    if (!adminAuth) return NextResponse.json({ error: "Auth no disponible" }, { status: 500 });
 
     let uid: string;
     try {
@@ -29,8 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Token inválido" }, { status: 401 });
     }
 
-    const adminFirestore = getFirestore(adminApp);
-    const callerDoc = await adminFirestore.collection("users").doc(uid).get();
+    const db = getAdminDb();
+    if (!db) return NextResponse.json({ error: "DB no disponible" }, { status: 500 });
+
+    const callerDoc = await db.collection("users").doc(uid).get();
     if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
@@ -41,8 +35,7 @@ export async function POST(req: NextRequest) {
     let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
     while (true) {
-      // Iterate all users — filter in code so documents without the field are included
-      let q = adminFirestore.collection("users").orderBy("createdAt").limit(50);
+      let q = db.collection("users").orderBy("createdAt").limit(50);
       if (lastDoc) q = q.startAfter(lastDoc);
 
       const snap = await q.get();
@@ -51,7 +44,6 @@ export async function POST(req: NextRequest) {
       for (const userDoc of snap.docs) {
         const data = userDoc.data();
 
-        // Skip users who already received the welcome email
         if (data.welcomeEmailSent === true) {
           skipped++;
           continue;
