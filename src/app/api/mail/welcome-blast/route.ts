@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { sendMail } from "../../../../lib/mailer";
 import { renderWelcome } from "../../../../emails/welcome";
@@ -41,11 +41,8 @@ export async function POST(req: NextRequest) {
     let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
     while (true) {
-      // Only fetch users that haven't received the welcome email yet
-      let q = adminFirestore
-        .collection("users")
-        .where("welcomeEmailSent", "!=", true)
-        .limit(50);
+      // Iterate all users — filter in code so documents without the field are included
+      let q = adminFirestore.collection("users").orderBy("createdAt").limit(50);
       if (lastDoc) q = q.startAfter(lastDoc);
 
       const snap = await q.get();
@@ -53,12 +50,18 @@ export async function POST(req: NextRequest) {
 
       for (const userDoc of snap.docs) {
         const data = userDoc.data();
+
+        // Skip users who already received the welcome email
+        if (data.welcomeEmailSent === true) {
+          skipped++;
+          continue;
+        }
+
         const email: string = data.email ?? "";
         const displayName: string = data.displayName ?? "jugador";
 
         if (!email || email.endsWith("@no-email.com")) {
           skipped++;
-          // Mark them so they don't appear in future runs either
           await userDoc.ref.update({ welcomeEmailSent: true }).catch(() => {});
           continue;
         }
