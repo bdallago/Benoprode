@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
     while (true) {
-      let q = db.collection("users").orderBy("createdAt").limit(50);
+      let q = db.collection("users").orderBy("lastLogin").limit(50);
       if (lastDoc) q = q.startAfter(lastDoc);
 
       const snap = await q.get();
