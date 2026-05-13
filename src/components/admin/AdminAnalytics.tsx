@@ -97,6 +97,34 @@ export function AdminAnalytics({ onMessage }: Props) {
     return count;
   };
 
+  const sendInactiveMail = async () => {
+    const confirmed = window.confirm(
+      "¿Enviar \"Te extrañamos\" a todos los usuarios inactivos hace 7+ días que aún no lo recibieron?"
+    );
+    if (!confirmed) return;
+
+    setCampaignLoading("inactive");
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("No autenticado");
+      const res = await fetch("/api/mail/inactive", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      onMessage({
+        type: "success",
+        text: `Re-engagement enviado: ${data.sent} enviados, ${data.failed} fallidos, ${data.skipped} ya lo habían recibido o sin email.`,
+      });
+    } catch (err: any) {
+      onMessage({ type: "error", text: `Error: ${err.message}` });
+      setTimeout(() => onMessage(null), 6000);
+    } finally {
+      setCampaignLoading(null);
+    }
+  };
+
   const sendWelcomeBlast = async () => {
     const confirmed = window.confirm(
       "¿Enviar mail de bienvenida a todos los usuarios que aún no lo recibieron?\n\nEs idempotente: si lo disparás de nuevo, no enviará nada."
@@ -146,7 +174,7 @@ export function AdminAnalytics({ onMessage }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? res.statusText);
-      onMessage({ type: "success", text: `Campaña enviada: ${data.sent} enviados, ${data.failed} fallidos de ${data.total} usuarios.` });
+      onMessage({ type: "success", text: `Campaña enviada: ${data.sent} enviados, ${data.failed} fallidos, ${data.skipped} ya la habían recibido.` });
     } catch (err: any) {
       onMessage({ type: "error", text: `Error al enviar campaña: ${err.message}` });
       setTimeout(() => onMessage(null), 6000);
@@ -433,6 +461,26 @@ export function AdminAnalytics({ onMessage }: Props) {
         >
           <Mail className="w-3.5 h-3.5" />
           {campaignLoading === "welcome-blast" ? "Enviando..." : "Enviar bienvenida"}
+        </Button>
+      </div>
+
+      {/* Re-engagement manual */}
+      <div className="border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className="flex-1">
+          <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Re-engagement — "Te extrañamos"</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Envía el mail a usuarios inactivos hace 7+ días que aún no lo recibieron. El cron lo hace automáticamente a las 10:00 UTC, este botón lo dispara ahora.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={campaignLoading !== null}
+          onClick={sendInactiveMail}
+          className="flex items-center gap-2 border-purple-400 text-purple-700 hover:bg-purple-100 shrink-0"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          {campaignLoading === "inactive" ? "Enviando..." : "Enviar ahora"}
         </Button>
       </div>
 
