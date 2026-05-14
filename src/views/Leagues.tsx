@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
-import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock, MessageSquare, Loader2 } from "lucide-react";
+import { Trophy, Plus, LogIn, LogOut, Share2, Users, Trash2, Check, Globe, Lock, MessageSquare, Loader2, Search, X, AlertTriangle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { CountdownBanner } from "../components/CountdownBanner";
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,36 @@ import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 
+function GhostMemberBanner({ count, repairing, result, onRepair }: {
+  count: number;
+  repairing: boolean;
+  result: { repaired: number; notFoundInAuth: number } | null;
+  onRepair: () => void;
+}) {
+  if (result) {
+    return (
+      <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-4 py-3 flex items-center gap-3 text-sm">
+        <Check className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+        <span className="text-green-800 dark:text-green-300">
+          Reparación completada: <strong>{result.repaired}</strong> perfil{result.repaired !== 1 ? 'es' : ''} creado{result.repaired !== 1 ? 's' : ''}.
+          {result.notFoundInAuth > 0 && ` ${result.notFoundInAuth} UID${result.notFoundInAuth !== 1 ? 's' : ''} no encontrado${result.notFoundInAuth !== 1 ? 's' : ''} en Auth (cuenta eliminada).`}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5 text-sm text-amber-800 dark:text-amber-300 min-w-0">
+        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+        <span><strong>{count}</strong> miembro{count !== 1 ? 's' : ''} sin perfil detectado{count !== 1 ? 's' : ''} en esta liga.</span>
+      </div>
+      <Button size="sm" variant="outline" disabled={repairing} onClick={onRepair} className="shrink-0 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30">
+        {repairing ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Reparando...</> : 'Reparar perfiles'}
+      </Button>
+    </div>
+  );
+}
+
 export default function Leagues({ user }: { user: User }) {
   const { isAdmin } = useAuth();
   const { t } = useTranslation();
@@ -27,6 +57,7 @@ export default function Leagues({ user }: { user: User }) {
     setSelectedLeague,
     pendingInvitation,
     setPendingInvitation,
+    orphanedMemberIds,
     createLeague,
     deleteLeague,
     joinLeague,
@@ -48,6 +79,29 @@ export default function Leagues({ user }: { user: User }) {
   const [activeChatLeague, setActiveChatLeague] = useState<any>(null);
   const [unreadLeagues, setUnreadLeagues] = useState<Set<string>>(new Set());
   const [joiningLeagueId, setJoiningLeagueId] = useState<string | null>(null);
+  const [leagueSearch, setLeagueSearch] = useState('');
+  const [repairingGhosts, setRepairingGhosts] = useState(false);
+  const [repairResult, setRepairResult] = useState<{repaired: number, notFoundInAuth: number} | null>(null);
+
+  const repairGhostMembers = async () => {
+    if (!orphanedMemberIds.length || repairingGhosts) return;
+    setRepairingGhosts(true);
+    setRepairResult(null);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/admin/repair-ghost-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uids: orphanedMemberIds }),
+      });
+      const data = await res.json();
+      setRepairResult({ repaired: data.repaired?.length ?? 0, notFoundInAuth: data.notFoundInAuth?.length ?? 0 });
+    } catch (e) {
+      console.error('Error reparando miembros:', e);
+    } finally {
+      setRepairingGhosts(false);
+    }
+  };
 
   // Compute unread badges from leagues data using lastMessageAt vs localStorage
   useEffect(() => {
@@ -194,6 +248,14 @@ export default function Leagues({ user }: { user: User }) {
   const extraSlots = Math.max(0, MAX_TOTAL - (benoliga ? 1 : 0) - myLeagues.length);
   const otherLeagues = [...myLeagues, ...notMyLeagues.slice(0, extraSlots)];
 
+  const leagueSearchLower = leagueSearch.trim().toLowerCase();
+  const filteredBenoliga = leagueSearchLower
+    ? (benoliga && benoliga.name.toLowerCase().includes(leagueSearchLower) ? benoliga : undefined)
+    : benoliga;
+  const filteredOtherLeagues = leagueSearchLower
+    ? otherLeagues.filter((l: any) => l.name.toLowerCase().includes(leagueSearchLower))
+    : otherLeagues;
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6 animate-pulse p-4">
@@ -223,11 +285,31 @@ export default function Leagues({ user }: { user: User }) {
           </Button>
         </div>
 
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={leagueSearch}
+            onChange={e => setLeagueSearch(e.target.value)}
+            placeholder={t('leagues.searchPlaceholder', 'Buscar torneo...')}
+            className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+          />
+          {leagueSearch && (
+            <button
+              onClick={() => setLeagueSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Benoliga Card */}
-          {benoliga && (
+          {filteredBenoliga && (
             <div className="col-span-full space-y-4">
-              <div className={`rounded-xl overflow-hidden border-2 border-sky-400 dark:border-sky-500 shadow-md ${selectedLeague?.id === benoliga.id ? 'ring-2 ring-sky-500' : ''}`}>
+              <div className={`rounded-xl overflow-hidden border-2 border-sky-400 dark:border-sky-500 shadow-md ${selectedLeague?.id === filteredBenoliga.id ? 'ring-2 ring-sky-500' : ''}`}>
                 {/* Header band */}
                 <div className="px-4 py-4 bg-gradient-to-r from-sky-500 to-cyan-500 relative">
                   <div className="absolute top-0 right-0 bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-bl-lg uppercase tracking-wider">
@@ -236,10 +318,10 @@ export default function Leagues({ user }: { user: User }) {
                   <div className="flex items-start gap-2.5 pr-24">
                     <Trophy className="w-5 h-5 text-white/90 shrink-0 mt-0.5" />
                     <div>
-                      <h3 className="font-bold text-white text-base leading-snug">{benoliga.name}</h3>
+                      <h3 className="font-bold text-white text-base leading-snug">{filteredBenoliga.name}</h3>
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-xs text-white/80 flex items-center gap-1"><Globe className="w-3 h-3" /> {t('leagues.public')}</span>
-                        <span className="text-xs text-white/80 flex items-center gap-1"><Users className="w-3 h-3" /> {benoliga.members.length} jugadores</span>
+                        <span className="text-xs text-white/80 flex items-center gap-1"><Users className="w-3 h-3" /> {filteredBenoliga.members.length} jugadores</span>
                       </div>
                     </div>
                   </div>
@@ -249,29 +331,29 @@ export default function Leagues({ user }: { user: User }) {
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {t('leagues.benoligaDesc', 'Competí contra Beno y ganale en su cara y en su cancha. ¡El creador del prode te desafía!')}
                   </p>
-                  {benoliga.members.includes(user.uid) ? (
+                  {filteredBenoliga.members.includes(user.uid) ? (
                     <>
                       <div className="flex gap-2">
                         <Button
-                          variant={selectedLeague?.id === benoliga.id ? "default" : "outline"}
+                          variant={selectedLeague?.id === filteredBenoliga.id ? "default" : "outline"}
                           size="sm"
-                          className={`flex-1 ${selectedLeague?.id !== benoliga.id ? 'border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 bg-white dark:bg-transparent' : ''}`}
-                          onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}
+                          className={`flex-1 ${selectedLeague?.id !== filteredBenoliga.id ? 'border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 bg-white dark:bg-transparent' : ''}`}
+                          onClick={() => setSelectedLeague(selectedLeague?.id === filteredBenoliga.id ? null : filteredBenoliga)}
                         >
-                          {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
+                          {selectedLeague?.id === filteredBenoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
                         </Button>
                         <Button
                           size="sm"
-                          variant={unreadLeagues.has(benoliga.id) ? "default" : "outline"}
-                          className={unreadLeagues.has(benoliga.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent"}
-                          onClick={() => openChat(benoliga)}
+                          variant={unreadLeagues.has(filteredBenoliga.id) ? "default" : "outline"}
+                          className={unreadLeagues.has(filteredBenoliga.id) ? "bg-red-500 hover:bg-red-600 text-white border-red-500" : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent"}
+                          onClick={() => openChat(filteredBenoliga)}
                         >
                           <MessageSquare className="w-4 h-4 mr-1.5" /> Chat
                         </Button>
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-sky-200/60 dark:border-sky-800/40">
-                        <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors" onClick={() => inviteToLeague(benoliga)}>
-                          {copiedLeagueId === benoliga.id
+                        <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors" onClick={() => inviteToLeague(filteredBenoliga)}>
+                          {copiedLeagueId === filteredBenoliga.id
                             ? <><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-green-600 dark:text-green-400">{t('leagues.copied')}</span></>
                             : <><Share2 className="w-3.5 h-3.5" />{t('leagues.invite')}</>}
                         </button>
@@ -280,39 +362,40 @@ export default function Leagues({ user }: { user: User }) {
                   ) : (
                     <div className="flex gap-2">
                       <Button
-                        variant={selectedLeague?.id === benoliga.id ? "default" : "outline"}
+                        variant={selectedLeague?.id === filteredBenoliga.id ? "default" : "outline"}
                         size="sm"
-                        className={selectedLeague?.id !== benoliga.id ? 'border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 bg-white dark:bg-transparent' : ''}
-                        onClick={() => setSelectedLeague(selectedLeague?.id === benoliga.id ? null : benoliga)}
+                        className={selectedLeague?.id !== filteredBenoliga.id ? 'border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 bg-white dark:bg-transparent' : ''}
+                        onClick={() => setSelectedLeague(selectedLeague?.id === filteredBenoliga.id ? null : filteredBenoliga)}
                       >
-                        {selectedLeague?.id === benoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
+                        {selectedLeague?.id === filteredBenoliga.id ? t('leagues.hideRanking') : t('leagues.viewRanking')}
                       </Button>
-                      <Button size="sm" className="flex-1 font-bold" disabled={joiningLeagueId === benoliga.id} onClick={async () => { setJoiningLeagueId(benoliga.id); try { await joinLeague(benoliga.id); await sendWelcomeMessage(benoliga.id); } finally { setJoiningLeagueId(null); } }}>
-                        {joiningLeagueId === benoliga.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2" /> {t('leagues.joinChallenge', 'Unirse al Desafío')}</>}
+                      <Button size="sm" className="flex-1 font-bold" disabled={joiningLeagueId === filteredBenoliga.id} onClick={async () => { setJoiningLeagueId(filteredBenoliga.id); try { await joinLeague(filteredBenoliga.id); await sendWelcomeMessage(filteredBenoliga.id); } finally { setJoiningLeagueId(null); } }}>
+                        {joiningLeagueId === filteredBenoliga.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uniéndose...</> : <><LogIn className="w-4 h-4 mr-2" /> {t('leagues.joinChallenge', 'Unirse al Desafío')}</>}
                       </Button>
                     </div>
                   )}
                 </div>
               </div>
-              {selectedLeague?.id === benoliga.id && (
+              {selectedLeague?.id === filteredBenoliga.id && (
                 <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
-                  {benoliga.members.includes(user.uid) && <LeagueActivity leagueId={benoliga.id} />}
+                  {filteredBenoliga.members.includes(user.uid) && <LeagueActivity leagueId={filteredBenoliga.id} />}
                   <Leaderboard
-                    title={`${t('leagues.ranking')}: ${benoliga.name}`}
-                    players={players.filter(p => benoliga.members.includes(p.uid))}
+                    title={`${t('leagues.ranking')}: ${filteredBenoliga.name}`}
+                    players={players.filter(p => filteredBenoliga.members.includes(p.uid))}
                     currentUser={user}
                     onUserClick={(u) => setSelectedUser({ uid: u.uid, name: u.name })}
                     loading={loading}
-                    onRemoveUser={isAdmin || benoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({ leagueId: benoliga.id, userId: u.uid, userName: u.name }) : undefined}
+                    onRemoveUser={isAdmin || filteredBenoliga.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({ leagueId: filteredBenoliga.id, userId: u.uid, userName: u.name }) : undefined}
                   />
-                  <LeagueStats members={players.filter(p => benoliga.members.includes(p.uid))} />
+                  <LeagueStats members={players.filter(p => filteredBenoliga.members.includes(p.uid))} />
+                  {isAdmin && orphanedMemberIds.length > 0 && <GhostMemberBanner count={orphanedMemberIds.length} repairing={repairingGhosts} result={repairResult} onRepair={repairGhostMembers} />}
                 </div>
               )}
             </div>
           )}
 
           {/* Other Leagues */}
-          {otherLeagues.map((league: any) => {
+          {filteredOtherLeagues.map((league: any) => {
             const isSelected = selectedLeague?.id === league.id;
             const isMember = league.members.includes(user.uid);
             const hasUnread = unreadLeagues.has(league.id);
@@ -410,6 +493,7 @@ export default function Leagues({ user }: { user: User }) {
                       onRemoveUser={isAdmin || league.createdBy === user.uid ? (u) => setUserToRemoveFromLeague({ leagueId: league.id, userId: u.uid, userName: u.name }) : undefined}
                     />
                     <LeagueStats members={players.filter(p => league.members.includes(p.uid))} />
+                    {isAdmin && orphanedMemberIds.length > 0 && <GhostMemberBanner count={orphanedMemberIds.length} repairing={repairingGhosts} result={repairResult} onRepair={repairGhostMembers} />}
                   </div>
                 )}
               </div>
@@ -420,6 +504,12 @@ export default function Leagues({ user }: { user: User }) {
         {leagues.length === 0 && (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-700">
             {t('leagues.noLeagues')}
+          </div>
+        )}
+
+        {leagues.length > 0 && leagueSearchLower && !filteredBenoliga && filteredOtherLeagues.length === 0 && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-700">
+            {t('leagues.noSearchResults', 'No se encontraron torneos con "{{query}}"', { query: leagueSearch })}
           </div>
         )}
       </div>

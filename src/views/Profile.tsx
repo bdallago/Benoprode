@@ -144,10 +144,11 @@ export default function Profile({ user, profileId }: ProfileProps) {
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        const normalizedTerm = searchTerm.trim().toLowerCase();
         const q = query(
           collection(db, "users"),
-          where("displayName", ">=", searchTerm),
-          where("displayName", "<=", searchTerm + "\uf8ff"),
+          where("displayName", ">=", normalizedTerm),
+          where("displayName", "<=", normalizedTerm + "\uf8ff"),
           limit(25),
         );
         const snap = await getDocs(q);

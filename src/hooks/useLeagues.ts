@@ -32,6 +32,7 @@ export function useLeagues(userId: string) {
   const [loading, setLoading] = useState(true);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [pendingInvitation, setPendingInvitation] = useState<{league: League, inviter: string} | null>(null);
+  const [orphanedMemberIds, setOrphanedMemberIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!selectedLeague?.members?.length) {
@@ -44,20 +45,18 @@ export function useLeagues(userId: string) {
       try {
         const uids = selectedLeague.members;
         setLoading(true);
-        // Clear previous players list to avoid showing stale data from another league
+        // Clear previous players list and orphaned state when switching leagues
         setPlayers([]);
+        setOrphanedMemberIds([]);
 
         const allPlayers = await fetchUsersInChunks(db, uids);
 
-        // Diagnostic: if counts don't match, log the missing UIDs for debugging
+        // Detect UIDs with no user document (deleted/ghost accounts)
         if (allPlayers.length < uids.length) {
           const foundUids = new Set(allPlayers.map(p => p.uid));
           const missing = uids.filter(uid => !foundUids.has(uid));
           console.warn("DISCREPANCIA DETECTADA en miembros de liga:", selectedLeague.name, "IDs sin perfil:", missing);
-          
-          // DO NOT process automatic cleanup here. New users might experience a split-second delay 
-          // between creating their auth session and having their users document synced.
-          // Doing arrayRemove here kicks legitimate new users out of their newly joined leagues instantly.
+          setOrphanedMemberIds(missing);
         }
         
         // sort by totalPoints desc
@@ -188,6 +187,7 @@ export function useLeagues(userId: string) {
     setSelectedLeague,
     pendingInvitation,
     setPendingInvitation,
+    orphanedMemberIds,
     createLeague,
     deleteLeague,
     joinLeague,

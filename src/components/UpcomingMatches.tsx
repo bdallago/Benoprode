@@ -55,7 +55,7 @@ export function UpcomingMatches({ user }: { user: User }) {
     try {
       await setDoc(doc(db, "predictions", user.uid), {
         matches: currentMatches,
-        lastUpdated: new Date().toISOString()
+        updatedAt: new Date().toISOString()
       }, { merge: true });
       
       // Simular onWrite Cloud Function asincrónica para actualizar las estadísticas base

@@ -473,6 +473,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
               welcomeEmailSent: true,
             });
 
+            // Verify the write actually landed — catches silent rule rejections immediately
+            const verifySnap = await getDoc(userRef);
+            if (!verifySnap.exists()) {
+              console.error("[CRITICAL] User profile creation was silently rejected by Firestore. User is authenticated but has no profile document.", {
+                uid: currentUser.uid,
+                email: currentUser.email,
+              });
+            }
+
             // Send welcome email (fire-and-forget — never block login on mail failure)
             if (currentUser.email && !currentUser.email.endsWith("@no-email.com")) {
               fetch("/api/mail/welcome", {

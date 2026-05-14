@@ -5,10 +5,10 @@ import {
   limit, startAfter, writeBatch,
   QueryConstraint, DocumentSnapshot,
 } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db, auth } from "../../firebase";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Trash2, Users, Unlock } from "lucide-react";
+import { Trash2, Users, Unlock, ShieldCheck, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface UserProfile {
@@ -37,15 +37,25 @@ export function AdminUsers({ onMessage }: Props) {
   const [loading, setLoading] = useState(true);
   const searchIsFirstRender = useRef(true);
 
+  // Integrity check state
+  type GhostUser = { uid: string; displayName: string; email: string; createdAt: string };
+  const [integrityLoading, setIntegrityLoading] = useState(false);
+  const [integrityDone, setIntegrityDone] = useState(false);
+  const [ghostUsers, setGhostUsers] = useState<GhostUser[]>([]);
+  const [totalInAuth, setTotalInAuth] = useState(0);
+  const [repairingAll, setRepairingAll] = useState(false);
+  const [repairDone, setRepairDone] = useState<{ repaired: number; notFoundInAuth: number } | null>(null);
+
   const loadUsers = async (search: string, mode: "reset" | "append") => {
     if (mode === "append") setLoadingMore(true);
     try {
       let snap;
       if (search.trim()) {
-        const field = search.includes("@") ? "email" : "displayName";
+        const normalizedSearch = search.trim().toLowerCase();
+        const field = normalizedSearch.includes("@") ? "email" : "displayName";
         const q = query(
           collection(db, "users"),
-          where(field, ">=", search),
+          where(field, ">=", normalizedSearch),
           where(field, "<=", search + ""),
           limit(50)
         );
@@ -147,6 +157,54 @@ export function AdminUsers({ onMessage }: Props) {
       onMessage({ type: "error", text: t("admin.messages.deleteUserError") });
     } finally {
       setTimeout(() => onMessage(null), 5000);
+    }
+  };
+
+  const getToken = () => auth.currentUser?.getIdToken() ?? Promise.resolve(null);
+
+  const checkIntegrity = async () => {
+    setIntegrityLoading(true);
+    setIntegrityDone(false);
+    setGhostUsers([]);
+    setRepairDone(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/find-ghost-users", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setTotalInAuth(data.totalInAuth ?? 0);
+      setGhostUsers(data.ghosts ?? []);
+      setIntegrityDone(true);
+    } catch (e) {
+      console.error("Error checking integrity:", e);
+      onMessage({ type: "error", text: "Error al verificar integridad." });
+    } finally {
+      setIntegrityLoading(false);
+    }
+  };
+
+  const repairAllGhosts = async () => {
+    if (!ghostUsers.length || repairingAll) return;
+    setRepairingAll(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/repair-ghost-users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uids: ghostUsers.map((g) => g.uid) }),
+      });
+      const data = await res.json();
+      setRepairDone({ repaired: data.repaired?.length ?? 0, notFoundInAuth: data.notFoundInAuth?.length ?? 0 });
+      setGhostUsers([]);
+    } catch (e) {
+      console.error("Error repairing ghosts:", e);
+      onMessage({ type: "error", text: "Error al reparar perfiles." });
+    } finally {
+      setRepairingAll(false);
     }
   };
 
@@ -277,6 +335,90 @@ export function AdminUsers({ onMessage }: Props) {
           </Button>
         </div>
       )}
+
+      {/* Integrity check section */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-indigo-500" /> Integridad de perfiles
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Compara todos los usuarios de Firebase Auth contra Firestore y detecta quiénes no tienen perfil creado.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={checkIntegrity}
+            disabled={integrityLoading}
+            className="shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400"
+          >
+            {integrityLoading
+              ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Verificando...</>
+              : "Verificar ahora"}
+          </Button>
+        </div>
+
+        {integrityDone && !repairDone && (
+          ghostUsers.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-4 py-3">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Todo OK — {totalInAuth} usuarios en Auth, todos tienen perfil en Firestore.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>
+                    <strong>{ghostUsers.length}</strong> usuario{ghostUsers.length !== 1 ? "s" : ""} sin perfil
+                    {" "}de {totalInAuth} en Auth.
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={repairingAll}
+                  onClick={repairAllGhosts}
+                  className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {repairingAll
+                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Reparando...</>
+                    : "Reparar todos"}
+                </Button>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                    <tr>
+                      <th className="px-4 py-2">Nombre (Auth)</th>
+                      <th className="px-4 py-2">Email</th>
+                      <th className="px-4 py-2">Registrado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ghostUsers.map((g) => (
+                      <tr key={g.uid} className="border-t border-gray-100 dark:border-gray-700">
+                        <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{g.displayName}</td>
+                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{g.email}</td>
+                        <td className="px-4 py-2 text-gray-400">{g.createdAt ? new Date(g.createdAt).toLocaleDateString("es-AR") : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        )}
+
+        {repairDone && (
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg px-4 py-3">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            Reparación completa: <strong>{repairDone.repaired}</strong> perfil{repairDone.repaired !== 1 ? "es" : ""} creado{repairDone.repaired !== 1 ? "s" : ""}.
+            {repairDone.notFoundInAuth > 0 && ` ${repairDone.notFoundInAuth} UID${repairDone.notFoundInAuth !== 1 ? "s" : ""} no exist${repairDone.notFoundInAuth !== 1 ? "en" : "e"} en Auth (cuenta eliminada).`}
+          </div>
+        )}
+      </div>
 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
