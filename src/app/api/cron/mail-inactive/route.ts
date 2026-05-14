@@ -76,10 +76,13 @@ export async function GET(request: NextRequest) {
 
   console.log(`mail-inactive cron: sent=${sent} failed=${failed} skipped=${skipped}`);
 
-  // Also recalculate badges for all users — fire-and-forget, never fail the cron
-  recalculateAllBadges()
-    .then((r) => console.log(`badge recalc: processed=${r.processed} updated=${r.updated}`))
-    .catch((e) => console.error("[mail-inactive] badge recalc failed:", e));
+  // Recalculate badges for all users — awaited so Vercel doesn't kill it before completion
+  try {
+    const badgeResult = await recalculateAllBadges();
+    console.log(`badge recalc: processed=${badgeResult.processed} updated=${badgeResult.updated}`);
+  } catch (e) {
+    console.error("[mail-inactive] badge recalc failed:", e);
+  }
 
   return NextResponse.json({ ok: true, sent, failed, skipped });
 }
