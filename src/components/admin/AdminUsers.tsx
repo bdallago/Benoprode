@@ -45,6 +45,8 @@ export function AdminUsers({ onMessage }: Props) {
   const [totalInAuth, setTotalInAuth] = useState(0);
   const [repairingAll, setRepairingAll] = useState(false);
   const [repairDone, setRepairDone] = useState<{ repaired: number; notFoundInAuth: number } | null>(null);
+  const [backfillLoading, setBackfillLoading] = useState(false);
+  const [backfillDone, setBackfillDone] = useState<{ updated: number; skipped: number } | null>(null);
 
   // Referral audit state
   type ReferredUser = { uid: string; name: string; email: string };
@@ -71,11 +73,11 @@ export function AdminUsers({ onMessage }: Props) {
       let snap;
       if (search.trim()) {
         const normalizedSearch = search.trim().toLowerCase();
-        const field = normalizedSearch.includes("@") ? "email" : "displayName";
+        const field = normalizedSearch.includes("@") ? "email" : "displayNameLower";
         const q = query(
           collection(db, "users"),
           where(field, ">=", normalizedSearch),
-          where(field, "<=", search + ""),
+          where(field, "<=", normalizedSearch + ""),
           limit(50)
         );
         snap = await getDocs(q);
@@ -224,6 +226,26 @@ export function AdminUsers({ onMessage }: Props) {
       onMessage({ type: "error", text: "Error al reparar perfiles." });
     } finally {
       setRepairingAll(false);
+    }
+  };
+
+  const runBackfillDisplayNameLower = async () => {
+    setBackfillLoading(true);
+    setBackfillDone(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/backfill-displayname-lower", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setBackfillDone({ updated: data.updated ?? 0, skipped: data.skipped ?? 0 });
+    } catch (e) {
+      console.error("Backfill error:", e);
+      onMessage({ type: "error", text: "Error al ejecutar backfill." });
+    } finally {
+      setBackfillLoading(false);
     }
   };
 
@@ -511,6 +533,32 @@ export function AdminUsers({ onMessage }: Props) {
             {repairDone.notFoundInAuth > 0 && ` ${repairDone.notFoundInAuth} UID${repairDone.notFoundInAuth !== 1 ? "s" : ""} no exist${repairDone.notFoundInAuth !== 1 ? "en" : "e"} en Auth (cuenta eliminada).`}
           </div>
         )}
+
+        {/* Backfill displayNameLower */}
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Backfill búsqueda por nombre</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Escribe <code>displayNameLower</code> en todos los perfiles existentes para que la búsqueda sea case-insensitive.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {backfillDone && (
+              <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {backfillDone.updated} actualizados, {backfillDone.skipped} ya tenían el campo.
+              </span>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runBackfillDisplayNameLower}
+              disabled={backfillLoading}
+              className="shrink-0 border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400"
+            >
+              {backfillLoading ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Procesando...</> : "Ejecutar backfill"}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Referral audit section */}

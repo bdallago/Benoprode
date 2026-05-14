@@ -163,8 +163,8 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
 
         q = query(
           collection(db, "users"),
-          where("displayName", ">=", lowSearch),
-          where("displayName", "<=", lowSearch + '\uf8ff'),
+          where("displayNameLower", ">=", lowSearch),
+          where("displayNameLower", "<=", lowSearch + '\uf8ff'),
           limit(25)
         );
         setPage(0);

@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendMail } from "../../../../lib/mailer";
 import { renderMissYou } from "../../../../emails/missYou";
+import { recalculateAllBadges } from "@/lib/recalculate-all-badges";
 
 const INACTIVITY_DAYS = 7;
 
@@ -74,5 +75,11 @@ export async function GET(request: NextRequest) {
   }
 
   console.log(`mail-inactive cron: sent=${sent} failed=${failed} skipped=${skipped}`);
+
+  // Also recalculate badges for all users — fire-and-forget, never fail the cron
+  recalculateAllBadges()
+    .then((r) => console.log(`badge recalc: processed=${r.processed} updated=${r.updated}`))
+    .catch((e) => console.error("[mail-inactive] badge recalc failed:", e));
+
   return NextResponse.json({ ok: true, sent, failed, skipped });
 }

@@ -147,8 +147,8 @@ export default function Profile({ user, profileId }: ProfileProps) {
         const normalizedTerm = searchTerm.trim().toLowerCase();
         const q = query(
           collection(db, "users"),
-          where("displayName", ">=", normalizedTerm),
-          where("displayName", "<=", normalizedTerm + "\uf8ff"),
+          where("displayNameLower", ">=", normalizedTerm),
+          where("displayNameLower", "<=", normalizedTerm + "\uf8ff"),
           limit(25),
         );
         const snap = await getDocs(q);

@@ -14,13 +14,10 @@ import {
   limit,
   startAfter,
   updateDoc,
-  increment,
-  arrayUnion,
   getDocFromServer,
   DocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { EARLY_LOCK_DEADLINE_ISO } from "../lib/config";
 
 // Mandatory connection test
 async function testFirestoreConnection() {
@@ -39,7 +36,7 @@ import { Navbar } from "./Navbar";
 import "../i18n";
 import { useTranslation } from "react-i18next";
 import { usePathname, useRouter } from "next/navigation";
-import { getUserBadges, BADGES } from "../lib/gamification";
+import { BADGES } from "../lib/gamification";
 import { X, MessageCircle } from "lucide-react";
 import { LiveChat } from "./LiveChat";
 import { useTheme } from "./ThemeProvider";
@@ -110,135 +107,73 @@ function GlobalBadgeListener({
   const [badgeQueue, setBadgeQueue] = useState<{ id: string; name: string; icon: string; description: string }[]>([]);
   const [currentBadge, setCurrentBadge] = useState<{ id: string; name: string; icon: string; description: string } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Refs so the stable subscription always reads fresh values without recreating
-  const globalLeaguesRef = useRef(globalLeagues);
-  const userStatsRef = useRef(userStats);
-  // Tracks badges already queued this session so re-triggers (before Firestore confirms) don't re-show them
+  // Tracks badges already shown this session so onSnapshot re-fires don't re-queue them
   const shownInSessionRef = useRef<Set<string>>(new Set());
-  const checkBadgesRef = useRef<(() => void) | null>(null);
-  useEffect(() => { globalLeaguesRef.current = globalLeagues; });
-  useEffect(() => { userStatsRef.current = userStats; });
-
-  // Re-run badge check when userStats or globalLeagues change (no subscription involved)
-  useEffect(() => {
-    if (user && userStats && Object.keys(userStats).length > 0) {
-      checkBadgesRef.current?.();
-    }
-  }, [user, userStats?.totalPoints, userStats?.earnedBadges?.length, globalLeagues?.length]);
+  const prevEarnedRef = useRef<string[]>([]);
+  // Prevents re-showing already-earned badges on first load
+  const isFirstBadgeRenderRef = useRef(true);
 
   useEffect(() => {
     audioRef.current = new Audio("/badge-sound.mp3");
     audioRef.current.volume = 0.5;
   }, []);
 
+  // Call the server to recalculate and write badges — fire-and-forget
+  const triggerRecalculate = useCallback(async () => {
+    try {
+      const idToken = await user.getIdToken();
+      await fetch("/api/badges/recalculate", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+    } catch (e) {
+      console.warn("[badges] recalculate failed:", e);
+    }
+  }, [user]);
+
+  // Recalculate when totalPoints or league membership changes
+  useEffect(() => {
+    if (!userStats || Object.keys(userStats).length === 0) return;
+    triggerRecalculate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userStats?.totalPoints, globalLeagues?.length]);
+
+  // Watch earnedBadges from the user onSnapshot — show toast for any new entries
+  useEffect(() => {
+    const current = userStats?.earnedBadges ?? [];
+    // On first load, silently initialize prev to avoid toasting already-earned badges
+    if (isFirstBadgeRenderRef.current) {
+      isFirstBadgeRenderRef.current = false;
+      prevEarnedRef.current = current;
+      return;
+    }
+    const prev = prevEarnedRef.current;
+    const newOnes = current.filter(
+      (id) => !prev.includes(id) && !shownInSessionRef.current.has(id)
+    );
+    if (newOnes.length > 0) {
+      newOnes.forEach((id) => shownInSessionRef.current.add(id));
+      const newFull = newOnes
+        .map((id) => BADGES.find((b) => b.id === id))
+        .filter(Boolean) as { id: string; name: string; icon: string; description: string }[];
+      setBadgeQueue((prev) => {
+        const existing = new Set(prev.map((p) => p.id));
+        return [...prev, ...newFull.filter((b) => !existing.has(b.id))];
+      });
+    }
+    prevEarnedRef.current = current;
+  }, [userStats?.earnedBadges?.join(",")]);
+
+  // Recalculate when predictions change (triggers hasSavedPredictions / lockedEarly update)
   useEffect(() => {
     if (!user) return;
-
-    const checkBadges = () => {
-      const stats = userStatsRef.current;
-      const leagues = globalLeaguesRef.current;
-      if (!stats) return;
-
-      const myPoints = stats.totalPoints || 0;
-      const hasInvitedFriends = (stats.referralsCount || 0) > 0;
-      const hasSavedPredictions = !!stats.hasSavedPredictions;
-      const lockedEarly = !!stats.lockedEarly;
-
-      const userLeagues = leagues.filter(
-        (l: any) => l.members?.includes(user.uid) || l.createdBy === user.uid,
-      );
-      const inBenoliga = userLeagues.some(
-        (l: any) =>
-          l.name?.toLowerCase().includes("beno") || l.id === "benoliga",
-      );
-      const inPrivateLeague = userLeagues.length > 0;
-
-      const badgeCriteria = {
-        referralsCount: hasInvitedFriends ? 1 : 0,
-        inBenoliga,
-        inPrivateLeague,
-        hasSavedPredictions,
-        lockedEarly,
-      };
-
-      const userBadgeIds = Array.from(
-        new Set(getUserBadges(myPoints, badgeCriteria)),
-      );
-      const userBadgesFull = userBadgeIds
-        .map((id) => BADGES.find((b) => b.id === id))
-        .filter(Boolean);
-
-      const storedBadges = stats.earnedBadges || [];
-      const newEarnedBadges = userBadgesFull.filter(
-        (b) => b && !storedBadges.includes(b.id) && !shownInSessionRef.current.has(b.id),
-      ) as { id: string; name: string; icon: string; description: string }[];
-
-      if (newEarnedBadges.length > 0) {
-        // Mark as handled immediately so re-triggers while Firestore is persisting don't re-queue them
-        newEarnedBadges.forEach(b => shownInSessionRef.current.add(b.id));
-        setBadgeQueue((prev) => {
-          const existingIds = prev.map((p) => p.id);
-          const toAdd = newEarnedBadges.filter((b) => !existingIds.includes(b.id));
-          return [...prev, ...toAdd];
-        });
-        const newBadgesList = Array.from(
-          new Set([...storedBadges, ...userBadgeIds]),
-        );
-        updateDoc(doc(db, "users", user.uid), {
-          earnedBadges: newBadgesList,
-        }).catch(e => console.warn('Badge persist failed:', e));
-      } else if (storedBadges.length === 0 && userBadgeIds.length > 0) {
-        updateDoc(doc(db, "users", user.uid), {
-          earnedBadges: userBadgeIds,
-        }).catch(e => console.warn('Badge persist failed:', e));
-      }
-    };
-
-    checkBadgesRef.current = checkBadges;
-    checkBadges();
-
-    const unsubscribePredictions = onSnapshot(
+    const unsubscribe = onSnapshot(
       doc(db, "predictions", user.uid),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const stats = userStatsRef.current;
-          let changed = false;
-          let nextSavedPredictions = !!stats.hasSavedPredictions;
-          let nextLockedEarly = !!stats.lockedEarly;
-
-          if (!stats.hasSavedPredictions) {
-            nextSavedPredictions = true;
-            changed = true;
-          }
-
-          if (data.isLocked && data.updatedAt) {
-            const lockedDate = new Date(data.updatedAt);
-            const deadline = new Date(EARLY_LOCK_DEADLINE_ISO);
-            if (lockedDate < deadline && !stats.lockedEarly) {
-              nextLockedEarly = true;
-              changed = true;
-            }
-          }
-
-          if (changed) {
-            updateDoc(doc(db, "users", user.uid), {
-              hasSavedPredictions: nextSavedPredictions,
-              lockedEarly: nextLockedEarly,
-            }).catch(e => console.warn('Could not update prediction flags:', e));
-          }
-        }
-        checkBadges();
-      },
-      (err) => {
-        console.warn("Predictions snapshot error (idle/cancel):", err);
-      }
+      () => { triggerRecalculate(); },
+      (err) => { console.warn("Predictions snapshot error:", err); }
     );
-
-    return () => {
-      unsubscribePredictions();
-    };
-  }, [user]); // Only recreate when user changes — globalLeagues/userStats are read via refs
+    return () => unsubscribe();
+  }, [user, triggerRecalculate]);
 
   // Effect 1: Process the queue
   useEffect(() => {
@@ -448,93 +383,51 @@ export function Providers({ children }: { children: React.ReactNode }) {
           }
 
           if (!userSnap.exists()) {
-            const role = isAdminEmail ? "admin" : "player";
             setIsAdmin(isAdminEmail);
 
             const refId = localStorage.getItem("referralId");
-            const todayStr = new Date().toISOString().split("T")[0];
 
-            await setDoc(userRef, {
-              uid: currentUser.uid,
-              displayName: currentUser.displayName || "Usuario",
-              email: currentUser.email || `${currentUser.uid}@no-email.com`,
-              photoURL: currentUser.photoURL || "",
-              role: role,
-              totalPoints: 0,
-              referralsCount: 0,
-              referredBy: refId || null,
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
-              activeDays: [todayStr],
-              loginCount: 1,
-              tourCompleted: false,
-              chatWarnings: 0,
-              isChatBanned: false,
-              welcomeEmailSent: true,
-            });
-
-            // Verify the write actually landed — catches silent rule rejections immediately
-            const verifySnap = await getDoc(userRef);
-            if (!verifySnap.exists()) {
-              console.error("[CRITICAL] User profile creation was silently rejected by Firestore. User is authenticated but has no profile document.", {
-                uid: currentUser.uid,
-                email: currentUser.email,
-              });
-            }
-
-            // Send welcome email (fire-and-forget — never block login on mail failure)
-            if (currentUser.email && !currentUser.email.endsWith("@no-email.com")) {
-              fetch("/api/mail/welcome", {
+            try {
+              const idToken = await currentUser.getIdToken();
+              const res = await fetch("/api/auth/create-profile", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  email: currentUser.email,
-                  displayName: currentUser.displayName || "jugador",
-                }),
-              }).catch((e) => console.warn("Welcome mail failed:", e));
-            }
-
-            if (refId && refId !== currentUser.uid) {
-              try {
-                const referrerRef = doc(db, "users", refId);
-                const referrerSnap = await getDoc(referrerRef);
-                if (referrerSnap.exists()) {
-                  await updateDoc(referrerRef, {
-                    referralsCount: increment(1),
-                  });
-                }
-              } catch (err) {
-                console.error("Error updating referrer points:", err);
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ referralId: refId || null }),
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.error("[CRITICAL] Profile creation API failed — user is authenticated but may have no Firestore profile:", err, { uid: currentUser.uid });
               }
+            } catch (e) {
+              console.error("[CRITICAL] Profile creation API unreachable:", e, { uid: currentUser.uid });
             }
 
+            localStorage.removeItem("referralId");
             localStorage.removeItem(`user_badges_${currentUser.uid}`);
           } else {
             const userData = userSnap.data();
             const currentRole = userData.role;
             setIsAdmin(isAdminEmail || currentRole === "admin");
 
-            const todayStr = new Date().toISOString().split("T")[0];
-            const updates: Record<string, unknown> = {
-              lastLogin: new Date().toISOString(),
-              loginCount: increment(1),
-              activeDays: arrayUnion(todayStr),
-              uid: currentUser.uid,
-            };
+            // Server handles lastLogin, loginCount, activeDays, and backfill fields
+            currentUser.getIdToken().then((idToken) => {
+              fetch("/api/auth/login-activity", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${idToken}` },
+              }).catch((e) => console.warn("[login-activity] failed:", e));
+            });
 
-            if (isAdminEmail && currentRole !== "admin") updates.role = "admin";
-            else if (!currentRole) updates.role = "player";
-
-            if (userData.totalPoints == null) updates.totalPoints = 0;
+            // Client-only: role promotion and display-field backfills (rare, mostly one-time)
+            const clientUpdates: Record<string, unknown> = {};
+            if (isAdminEmail && currentRole !== "admin") clientUpdates.role = "admin";
+            else if (!currentRole) clientUpdates.role = "player";
             if (!userData.displayName)
-              updates.displayName = currentUser.displayName || "Usuario";
+              clientUpdates.displayName = currentUser.displayName || "Usuario";
             if (!userData.email)
-              updates.email =
-                currentUser.email || `${currentUser.uid}@no-email.com`;
-            if (userData.chatWarnings == null) updates.chatWarnings = 0;
-            if (userData.isChatBanned == null) updates.isChatBanned = false;
-
-            await updateDoc(userRef, updates);
+              clientUpdates.email = currentUser.email || `${currentUser.uid}@no-email.com`;
+            if (Object.keys(clientUpdates).length > 0) {
+              await updateDoc(userRef, clientUpdates);
+            }
           }
 
           // Auto-create Benoliga if admin
