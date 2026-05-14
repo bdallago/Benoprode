@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import {
   doc, getDoc, setDoc, deleteDoc,
   collection, getDocs, query, where,
@@ -8,7 +8,7 @@ import {
 import { db, auth } from "../../firebase";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Trash2, Users, Unlock, ShieldCheck, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Trash2, Users, Unlock, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Share2, ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface UserProfile {
@@ -45,6 +45,25 @@ export function AdminUsers({ onMessage }: Props) {
   const [totalInAuth, setTotalInAuth] = useState(0);
   const [repairingAll, setRepairingAll] = useState(false);
   const [repairDone, setRepairDone] = useState<{ repaired: number; notFoundInAuth: number } | null>(null);
+
+  // Referral audit state
+  type ReferredUser = { uid: string; name: string; email: string };
+  type ReferralRow = {
+    uid: string; displayName: string; email: string | null; exists: boolean;
+    storedCount: number; actualCount: number;
+    referredUsers: ReferredUser[];
+    status: "ok" | "mismatch" | "referrer_deleted";
+    fixed?: boolean;
+  };
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralData, setReferralData] = useState<{
+    totalReferred: number; totalReferrers: number; mismatchCount: number; fixed: boolean; results: ReferralRow[];
+  } | null>(null);
+  const [referralFixing, setReferralFixing] = useState(false);
+  const [expandedReferrer, setExpandedReferrer] = useState<string | null>(null);
+  const [reassignInputs, setReassignInputs] = useState<Record<string, string>>({});
+  const [reassigning, setReassigning] = useState<Record<string, boolean>>({});
+  const [reassignResults, setReassignResults] = useState<Record<string, string>>({});
 
   const loadUsers = async (search: string, mode: "reset" | "append") => {
     if (mode === "append") setLoadingMore(true);
@@ -205,6 +224,80 @@ export function AdminUsers({ onMessage }: Props) {
       onMessage({ type: "error", text: "Error al reparar perfiles." });
     } finally {
       setRepairingAll(false);
+    }
+  };
+
+  const reassignGhostReferrer = async (ghostUid: string) => {
+    const realUid = reassignInputs[ghostUid]?.trim();
+    if (!realUid) return;
+    setReassigning((prev) => ({ ...prev, [ghostUid]: true }));
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/fix-ghost-referrer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ghostUid, realUid }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setReassignResults((prev) => ({ ...prev, [ghostUid]: `Error: ${data.error}` }));
+      } else {
+        setReassignResults((prev) => ({
+          ...prev,
+          [ghostUid]: `✅ ${data.referredCount} referido${data.referredCount !== 1 ? "s" : ""} reasignados a ${data.realUserName}. referralsCount: ${data.oldReferralsCount} → ${data.newReferralsCount}`,
+        }));
+        // Re-audit to refresh the table
+        await auditReferrals();
+      }
+    } catch (e) {
+      console.error("Error reassigning ghost referrer:", e);
+      setReassignResults((prev) => ({ ...prev, [ghostUid]: "Error al reasignar." }));
+    } finally {
+      setReassigning((prev) => ({ ...prev, [ghostUid]: false }));
+    }
+  };
+
+  const auditReferrals = async () => {
+    setReferralLoading(true);
+    setReferralData(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/referral-audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      setReferralData(data);
+    } catch (e) {
+      console.error("Error running referral audit:", e);
+      onMessage({ type: "error", text: "Error al auditar referidos." });
+    } finally {
+      setReferralLoading(false);
+    }
+  };
+
+  const fixReferralDiscrepancies = async () => {
+    if (!referralData || referralFixing) return;
+    setReferralFixing(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/admin/referral-audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fix: true }),
+      });
+      const data = await res.json();
+      setReferralData(data);
+      onMessage({ type: "success", text: `${data.mismatchCount === 0 ? "Sin" : data.results.filter((r: ReferralRow) => r.fixed).length} correcciones aplicadas.` });
+    } catch (e) {
+      console.error("Error fixing referral discrepancies:", e);
+      onMessage({ type: "error", text: "Error al corregir discrepancias." });
+    } finally {
+      setReferralFixing(false);
     }
   };
 
@@ -418,6 +511,179 @@ export function AdminUsers({ onMessage }: Props) {
             {repairDone.notFoundInAuth > 0 && ` ${repairDone.notFoundInAuth} UID${repairDone.notFoundInAuth !== 1 ? "s" : ""} no exist${repairDone.notFoundInAuth !== 1 ? "en" : "e"} en Auth (cuenta eliminada).`}
           </div>
         )}
+      </div>
+
+      {/* Referral audit section */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-emerald-500" /> Auditoría de Referidos
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Verifica que el contador <code>referralsCount</code> coincida con los usuarios que efectivamente entraron via referido.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={auditReferrals}
+            disabled={referralLoading}
+            className="shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+          >
+            {referralLoading
+              ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Auditando...</>
+              : "Auditar ahora"}
+          </Button>
+        </div>
+
+        {referralData && (() => {
+          const ghostReferrers = referralData.results.filter((r) => r.status === "referrer_deleted");
+          const hasIssues = referralData.mismatchCount > 0 || ghostReferrers.length > 0;
+          return (
+          <div className="space-y-3">
+            {/* Summary bar */}
+            <div className={`flex items-center justify-between gap-3 rounded-lg px-4 py-3 border ${
+              hasIssues
+                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+                : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+            }`}>
+              <div className={`flex items-center gap-2 text-sm ${
+                hasIssues ? "text-amber-800 dark:text-amber-300" : "text-green-700 dark:text-green-400"
+              }`}>
+                {hasIssues
+                  ? <AlertTriangle className="w-4 h-4 shrink-0" />
+                  : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                <span>
+                  <strong>{referralData.totalReferred}</strong> usuario{referralData.totalReferred !== 1 ? "s" : ""} referidos
+                  {" "}por <strong>{referralData.totalReferrers}</strong> persona{referralData.totalReferrers !== 1 ? "s" : ""}.
+                  {referralData.mismatchCount > 0 && <> <strong>{referralData.mismatchCount}</strong> contador{referralData.mismatchCount !== 1 ? "es" : ""} incorrecto{referralData.mismatchCount !== 1 ? "s" : ""}.</>}
+                  {ghostReferrers.length > 0 && <> <strong>{ghostReferrers.length}</strong> referidor{ghostReferrers.length !== 1 ? "es" : ""} sin perfil — usá "Integridad de perfiles → Reparar" primero.</>}
+                  {!hasIssues && " Todos los contadores coinciden."}
+                </span>
+              </div>
+              {referralData.mismatchCount > 0 && !referralData.fixed && (
+                <Button
+                  size="sm"
+                  disabled={referralFixing}
+                  onClick={fixReferralDiscrepancies}
+                  className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {referralFixing
+                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Corrigiendo...</>
+                    : "Corregir todo"}
+                </Button>
+              )}
+              {referralData.fixed && referralData.mismatchCount === 0 && (
+                <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Corregido
+                </span>
+              )}
+            </div>
+
+            {/* Referral table */}
+            {referralData.results.length > 0 && (
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                    <tr>
+                      <th className="px-4 py-2">Referidor</th>
+                      <th className="px-4 py-2 text-center">Referidos reales</th>
+                      <th className="px-4 py-2 text-center">Contador guardado</th>
+                      <th className="px-4 py-2 text-center">Estado</th>
+                      <th className="px-4 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {referralData.results.map((row) => (
+                      <Fragment key={row.uid}>
+                        <tr
+                          className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                          onClick={() => setExpandedReferrer(expandedReferrer === row.uid ? null : row.uid)}
+                        >
+                          <td className="px-4 py-2 font-medium text-gray-900 dark:text-gray-100">
+                            {row.displayName}
+                            {row.email && <div className="text-gray-400 font-normal">{row.email}</div>}
+                          </td>
+                          <td className="px-4 py-2 text-center font-bold text-gray-800 dark:text-gray-200">
+                            {row.actualCount}
+                          </td>
+                          <td className="px-4 py-2 text-center text-gray-600 dark:text-gray-400">
+                            {row.storedCount}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {row.status === "ok" && <span className="text-green-600 dark:text-green-400">✅</span>}
+                            {row.status === "mismatch" && (
+                              <span className="text-amber-600 dark:text-amber-400 font-bold">
+                                {row.fixed ? "✅ Corregido" : "⚠️"}
+                              </span>
+                            )}
+                            {row.status === "referrer_deleted" && <span className="text-red-400 font-semibold">Sin perfil</span>}
+                          </td>
+                          <td className="px-4 py-2 text-gray-400">
+                            {expandedReferrer === row.uid
+                              ? <ChevronUp className="w-3.5 h-3.5" />
+                              : <ChevronDown className="w-3.5 h-3.5" />}
+                          </td>
+                        </tr>
+                        {expandedReferrer === row.uid && (
+                          <tr className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40">
+                            <td colSpan={5} className="px-6 py-3 space-y-3">
+                              <div>
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                                  Usuarios referidos por <span className="text-gray-700 dark:text-gray-200">{row.displayName}</span>:
+                                </p>
+                                <ul className="space-y-1">
+                                  {row.referredUsers.map((u) => (
+                                    <li key={u.uid} className="text-xs text-gray-700 dark:text-gray-300">
+                                      {u.name} {u.email && <span className="text-gray-400">— {u.email}</span>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                              {row.status === "referrer_deleted" && (
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                                  <p className="text-xs font-semibold text-red-500 dark:text-red-400 mb-2">
+                                    UID fantasma: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-gray-700 dark:text-gray-300">{row.uid}</code>
+                                    <span className="ml-2 font-normal text-gray-400">(no existe en Auth ni Firestore)</span>
+                                  </p>
+                                  {reassignResults[row.uid] ? (
+                                    <p className="text-xs text-green-700 dark:text-green-400">{reassignResults[row.uid]}</p>
+                                  ) : (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <input
+                                        type="text"
+                                        placeholder="UID real del usuario actual..."
+                                        value={reassignInputs[row.uid] ?? ""}
+                                        onChange={(e) => setReassignInputs((prev) => ({ ...prev, [row.uid]: e.target.value }))}
+                                        className="flex-1 min-w-48 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        disabled={!reassignInputs[row.uid]?.trim() || reassigning[row.uid]}
+                                        onClick={() => reassignGhostReferrer(row.uid)}
+                                        className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                                      >
+                                        {reassigning[row.uid]
+                                          ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Reasignando...</>
+                                          : "Reasignar referidos"}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+        })()}
       </div>
 
       {confirmDelete && (

@@ -130,7 +130,9 @@ service cloud.firestore {
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid) &&
                        (!('role' in resource.data) || request.resource.data.role == resource.data.role) &&
-                       (!('totalPoints' in resource.data) || request.resource.data.totalPoints == resource.data.totalPoints))
+                       (!('totalPoints' in resource.data) || request.resource.data.totalPoints == resource.data.totalPoints) &&
+                       // referredBy is immutable once set: prevent retroactive referral attribution
+                       (!('referredBy' in resource.data) || resource.data.referredBy == null || request.resource.data.referredBy == resource.data.referredBy))
                       ||
                       (isAdmin() &&
                        isValidUser(request.resource.data) &&
