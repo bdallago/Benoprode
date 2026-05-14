@@ -7,6 +7,7 @@ import { Trophy, LogOut, Settings, PenSquare, BookOpen, Users, Home, Moon, Sun, 
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "./ThemeProvider";
 import { useEffect, useState } from "react";
+import { useAuth } from "./Providers";
 
 import { NotificationCenter } from "./NotificationCenter";
 import { SettingsModal } from "./SettingsModal";
@@ -16,6 +17,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
   const pathname = usePathname();
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
+  const { loading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -53,7 +55,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
   const getLinkStyle = (path: string, colorNormal: string, colorPressed: string) => {
     const isActive = pathname === path;
-    const baseStyle = "hidden md:flex items-center justify-center gap-1 px-1 lg:px-2 py-2 flex-1 max-w-[145px] rounded-xl font-bold text-white transition-all duration-100 ease-in-out text-[11px] lg:text-sm shadow-md whitespace-nowrap";
+    const baseStyle = "hidden md:flex items-center justify-center gap-1 px-1 lg:px-2 py-2 flex-1 max-w-[145px] rounded-xl font-bold text-white transition-all duration-200 ease-out text-[11px] lg:text-sm shadow-md whitespace-nowrap";
     if (isActive) {
       return `${baseStyle} ${colorPressed} translate-y-[4px] border-b-0`;
     } else {
@@ -63,7 +65,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
   const getMobileLinkStyle = (path: string, colorNormal: string, colorPressed: string) => {
     const isActive = pathname === path;
-    const baseStyle = "flex flex-col items-center justify-center p-2 rounded-xl text-white transition-all duration-100 ease-in-out font-bold shadow-sm flex-1 mx-1 max-w-[4rem]";
+    const baseStyle = "flex flex-col items-center justify-center p-2 rounded-xl text-white transition-all duration-200 ease-out font-bold shadow-sm flex-1 mx-1 max-w-[4rem]";
     if (isActive) {
       return `${baseStyle} ${colorPressed} translate-y-[4px] border-b-0`;
     } else {
@@ -130,11 +132,14 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
 
               {/* Right Side: Search, Notifications & Profile Menu */}
               <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
-                {user && (
+                {loading && (
+                  <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse shrink-0" />
+                )}
+                {!loading && user && (
                   <Link href="/profile?tab=friends" passHref className="shrink-0">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full flex items-center justify-center"
                       title={t('profile.searchFriends', 'Buscar amigos') as string}
                     >
@@ -142,11 +147,11 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
                     </Button>
                   </Link>
                 )}
-                {user && <NotificationCenter user={user} />}
-                {user && (
+                {!loading && user && <NotificationCenter user={user} />}
+                {!loading && user && (
                   <div className="relative">
-                    <button 
-                      onClick={() => setProfileMenuOpen(!profileMenuOpen)} 
+                    <button
+                      onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                       className="flex items-center hover:bg-white/10 p-1 rounded-full transition-colors shrink-0"
                     >
                       {user.photoURL ? (

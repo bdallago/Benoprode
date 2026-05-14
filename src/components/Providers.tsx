@@ -512,14 +512,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     [user, loading, isAdmin, globalLeagues, hasMoreLeagues, loadMoreLeagues, userStats]
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
     <TooltipProvider>
       <AuthContext.Provider value={contextValue}>
@@ -534,7 +526,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </main>
 
           <footer
-            className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-cover bg-center bg-no-repeat"
+            className="w-full text-white pt-6 pb-24 md:py-6 mt-auto border-t border-blue-800/30 dark:border-gray-800 bg-cover bg-center bg-no-repeat bg-blue-950 min-h-[88px]"
             style={{ backgroundImage: 'url("/footer.jpeg")' }}
           >
             <div className="container mx-auto px-4 text-center space-y-2 text-sm text-blue-200 dark:text-gray-200">
