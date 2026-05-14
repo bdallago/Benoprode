@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
+import { logError } from "@/lib/error-logger";
 import { sendMail } from "@/lib/mailer";
 import { renderWelcome } from "@/emails/welcome";
 import { FieldValue } from "firebase-admin/firestore";
@@ -49,25 +50,35 @@ export async function POST(req: Request) {
   const todayStr = new Date().toISOString().split("T")[0];
 
   // Create profile — Admin SDK bypasses Firestore rules, no silent failures possible
-  await userRef.set({
-    uid,
-    displayName,
-    displayNameLower: displayName.toLowerCase(),
-    email,
-    photoURL,
-    role,
-    totalPoints: 0,
-    referralsCount: 0,
-    referredBy: referralId || null,
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    activeDays: [todayStr],
-    loginCount: 1,
-    tourCompleted: false,
-    chatWarnings: 0,
-    isChatBanned: false,
-    welcomeEmailSent: false, // set to true below only if email actually sends
-  });
+  try {
+    await userRef.set({
+      uid,
+      displayName,
+      displayNameLower: displayName.toLowerCase(),
+      email,
+      photoURL,
+      role,
+      totalPoints: 0,
+      referralsCount: 0,
+      referredBy: referralId || null,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      activeDays: [todayStr],
+      loginCount: 1,
+      tourCompleted: false,
+      chatWarnings: 0,
+      isChatBanned: false,
+      welcomeEmailSent: false,
+    });
+  } catch (e) {
+    await logError({
+      message: "create-profile: Firestore set failed",
+      stack: e instanceof Error ? e.stack : String(e),
+      context: "create-profile",
+      uid,
+    });
+    return NextResponse.json({ error: "Profile creation failed" }, { status: 500 });
+  }
 
   // Send welcome email (fire-and-forget — never fail the profile creation because of mail)
   if (email && !email.endsWith("@no-email.com")) {

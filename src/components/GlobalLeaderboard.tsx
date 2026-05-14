@@ -196,7 +196,14 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         const snap = await getDocs(q);
         const fetched = snap.docs.map((d: any) => ({ ...d.data(), uid: d.id }));
         setPlayers(fetched);
-        
+
+        // Merge search results into local cache so next search finds them without a Firestore hit
+        if (searchQuery.trim().length > 2 && fetched.length > 0) {
+          const existing = new Map(allPlayersCache.current.map((p: any) => [p.uid, p]));
+          fetched.forEach((p: any) => existing.set(p.uid, p));
+          allPlayersCache.current = Array.from(existing.values());
+        }
+
         if (!searchQuery && (dir === 'next' || dir === 'first' || dir === 'restore')) {
           const last = snap.docs[snap.docs.length - 1];
           if (last) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
+import { logError } from "@/lib/error-logger";
 import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: Request) {
@@ -44,7 +45,17 @@ export async function POST(req: Request) {
   if (userData.chatWarnings == null) updates.chatWarnings = 0;
   if (userData.isChatBanned == null) updates.isChatBanned = false;
 
-  await userRef.update(updates);
+  try {
+    await userRef.update(updates);
+  } catch (e) {
+    await logError({
+      message: `login-activity: Firestore update failed`,
+      stack: e instanceof Error ? e.stack : String(e),
+      context: "login-activity",
+      uid,
+    });
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

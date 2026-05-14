@@ -141,7 +141,10 @@ function GlobalBadgeListener({
   // Watch earnedBadges from the user onSnapshot — show toast for any new entries
   useEffect(() => {
     const current = userStats?.earnedBadges ?? [];
-    // On first load, silently initialize prev to avoid toasting already-earned badges
+    // Skip until Firestore has delivered real data (userStats starts as {})
+    const hasLoaded = !!userStats && Object.keys(userStats).length > 0;
+    if (!hasLoaded) return;
+    // On first real snapshot, silently initialize prev to avoid toasting already-earned badges
     if (isFirstBadgeRenderRef.current) {
       isFirstBadgeRenderRef.current = false;
       prevEarnedRef.current = current;
@@ -303,6 +306,14 @@ function LiveChatFAB({ user }: { user: User }) {
   );
 }
 
+function sendClientError(message: string, stack?: string, context?: string, uid?: string) {
+  fetch("/api/log-error", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, stack, context, uid }),
+  }).catch(() => {});
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userStats, setUserStats] = useState<UserStats>({});
@@ -316,6 +327,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useTheme();
+
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      sendClientError(event.message, event.error?.stack, "window.onerror");
+    };
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const message = reason instanceof Error ? reason.message : String(reason ?? "Unhandled rejection");
+      sendClientError(message, reason instanceof Error ? reason.stack : undefined, "unhandledrejection");
+    };
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -409,13 +437,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
             const currentRole = userData.role;
             setIsAdmin(isAdminEmail || currentRole === "admin");
 
-            // Server handles lastLogin, loginCount, activeDays, and backfill fields
-            currentUser.getIdToken().then((idToken) => {
-              fetch("/api/auth/login-activity", {
-                method: "POST",
-                headers: { Authorization: `Bearer ${idToken}` },
-              }).catch((e) => console.warn("[login-activity] failed:", e));
-            });
+            // Server handles lastLogin, loginCount, activeDays — once per browser session
+            const sessionKey = `login_done_${currentUser.uid}`;
+            let alreadyCalled = false;
+            try { alreadyCalled = !!sessionStorage.getItem(sessionKey); } catch {}
+            if (!alreadyCalled) {
+              try { sessionStorage.setItem(sessionKey, "1"); } catch {}
+              currentUser.getIdToken().then((idToken) => {
+                fetch("/api/auth/login-activity", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${idToken}` },
+                }).catch((e) => console.warn("[login-activity] failed:", e));
+              });
+            }
 
             // Client-only: role promotion and display-field backfills (rare, mostly one-time)
             const clientUpdates: Record<string, unknown> = {};

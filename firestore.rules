@@ -82,6 +82,8 @@ service cloud.firestore {
              (!('activeDays' in data) || data.activeDays is list) &&
              (!('loginCount' in data) || data.loginCount is number) &&
              (!('welcomeEmailSent' in data) || data.welcomeEmailSent is bool) &&
+             (!('displayNameLower' in data) || data.displayNameLower is string) &&
+             (!('lastRecalcAt' in data) || data.lastRecalcAt is string) &&
              data.role in ['admin', 'player'] &&
              data.totalPoints is number && data.totalPoints >= 0;
     }
@@ -118,7 +120,7 @@ service cloud.firestore {
       
       // Create: User can create their own profile. Role must be 'player' unless they are an admin.
       allow create: if isAuthenticated() && isOwner(userId) &&
-                    hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned', 'welcomeEmailSent']) &&
+                    hasOnlyAllowedFields(['uid', 'displayName', 'displayNameLower', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'chatWarnings', 'isChatBanned', 'welcomeEmailSent', 'lastRecalcAt']) &&
                     isValidUser(request.resource.data) &&
                     request.resource.data.uid == userId &&
                     ((request.resource.data.role == 'player' && request.resource.data.totalPoints == 0) || isAdmin());
@@ -126,7 +128,7 @@ service cloud.firestore {
       // Update: User can update their own profile (cannot change role/points). Admin can update any profile.
       allow update: if isAuthenticated() && (
                       (isOwner(userId) &&
-                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'welcomeEmailSent']) &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'displayNameLower', 'email', 'photoURL', 'role', 'totalPoints', 'lastLogin', 'createdAt', 'updatedAt', 'tourCompleted', 'chatWarnings', 'isChatBanned', 'referralsCount', 'referredBy', 'unlockedBadges', 'earnedBadges', 'hasSavedPredictions', 'lockedEarly', 'inPrivateLeague', 'inBenoliga', 'activeDays', 'loginCount', 'welcomeEmailSent', 'lastRecalcAt', 'sentCampaigns']) &&
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid) &&
                        (!('role' in resource.data) || request.resource.data.role == resource.data.role) &&
@@ -137,10 +139,6 @@ service cloud.firestore {
                       (isAdmin() &&
                        isValidUser(request.resource.data) &&
                        (!('uid' in resource.data) || request.resource.data.uid == resource.data.uid))
-                      ||
-                      (!isOwner(userId) &&
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralsCount']) &&
-                       request.resource.data.referralsCount == resource.data.referralsCount + 1)
                     );
                     
       // Delete: Only admins can delete users
@@ -429,6 +427,14 @@ service cloud.firestore {
     match /liveTyping/{userId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ===============================================================
+    // Collection: errors
+    // ===============================================================
+    match /errors/{errorId} {
+      allow read: if isAdmin();
+      allow write: if false; // Written exclusively by the backend (Admin SDK bypasses this rule)
     }
 
     // ===============================================================

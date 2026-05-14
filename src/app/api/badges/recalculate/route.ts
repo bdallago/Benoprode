@@ -4,6 +4,8 @@ import { getUserBadges } from "@/lib/gamification";
 import { EARLY_LOCK_DEADLINE_ISO } from "@/lib/config";
 import type * as FirebaseFirestore from "firebase-admin/firestore";
 
+const COOLDOWN_MS = 60_000;
+
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");
   const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -33,10 +35,19 @@ export async function POST(req: Request) {
   }
 
   const userData = userSnap.data()!;
+
+  // Cooldown: skip full recalc if called within the last 60s
+  const lastRecalcAt = userData.lastRecalcAt as string | undefined;
+  if (lastRecalcAt && Date.now() - new Date(lastRecalcAt).getTime() < COOLDOWN_MS) {
+    return NextResponse.json({
+      newBadges: [],
+      allBadges: userData.earnedBadges ?? [],
+      cached: true,
+    });
+  }
+
   const currentEarnedIds: string[] = userData.earnedBadges ?? [];
 
-  // Derive hasSavedPredictions and lockedEarly from predictions document
-  // (trust stored values if already true; re-derive otherwise)
   let hasSavedPredictions = !!userData.hasSavedPredictions;
   let lockedEarly = !!userData.lockedEarly;
 
@@ -52,20 +63,17 @@ export async function POST(req: Request) {
     }
   }
 
-  // Derive league membership
   const inBenoliga = leaguesSnap.docs.some(
     (d: FirebaseFirestore.QueryDocumentSnapshot) => d.id === "benoliga" || ((d.data().name as string) || "").toLowerCase().includes("beno")
   );
   const inPrivateLeague = leaguesSnap.docs.length > 0;
 
-  // Build userStats for getUserBadges (mirrors what the client previously passed)
   const userStats = {
     referralsCount: (userData.referralsCount as number) ?? 0,
     hasSavedPredictions,
     lockedEarly,
     inBenoliga,
     inPrivateLeague,
-    // Advanced stats stored on the user document (populated by scoring engine)
     exactMatchCount: userData.exactMatchCount ?? 0,
     correctMatchCount: userData.correctMatchCount ?? 0,
     groupsPerfectCount: userData.groupsPerfectCount ?? 0,
@@ -89,14 +97,14 @@ export async function POST(req: Request) {
 
   const newOnes = newBadgeIds.filter((id) => !currentEarnedIds.includes(id));
 
-  // Build updates object
-  const updates: Record<string, unknown> = { earnedBadges: newBadgeIds };
+  const updates: Record<string, unknown> = {
+    earnedBadges: newBadgeIds,
+    lastRecalcAt: new Date().toISOString(),
+  };
   if (hasSavedPredictions !== !!userData.hasSavedPredictions) updates.hasSavedPredictions = hasSavedPredictions;
   if (lockedEarly !== !!userData.lockedEarly) updates.lockedEarly = lockedEarly;
 
-  if (newOnes.length > 0 || Object.keys(updates).length > 1) {
-    await db.collection("users").doc(uid).update(updates);
-  }
+  await db.collection("users").doc(uid).update(updates);
 
   return NextResponse.json({ newBadges: newOnes, allBadges: newBadgeIds });
 }
