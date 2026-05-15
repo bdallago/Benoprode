@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { User } from "firebase/auth";
@@ -725,28 +726,6 @@ export default function Profile({ user, profileId }: ProfileProps) {
                                 <div className="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800 flex items-center justify-center text-4xl shadow-sm hover:border-blue-400 dark:hover:border-blue-500 hover:scale-105 transition-all">
                                   {badge.icon}
                                 </div>
-                                {/* Tooltip */}
-                                {activeTooltip === badge.id && (
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl z-50 text-center">
-                                    <div className="font-bold text-blue-300 mb-1">
-                                      {
-                                        t(
-                                          `gamification.badges.${badge.id}.name`,
-                                          badge.name,
-                                        ) as string
-                                      }
-                                    </div>
-                                    <div className="text-gray-300 text-xs">
-                                      {
-                                        t(
-                                          `gamification.badges.${badge.id}.description`,
-                                          badge.description,
-                                        ) as string
-                                      }
-                                    </div>
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                  </div>
-                                )}
                               </div>
                             ),
                         )
@@ -1345,6 +1324,31 @@ export default function Profile({ user, profileId }: ProfileProps) {
           onClose={() => setIsPredictionsModalOpen(false)}
         />
       )}
+
+      {activeTooltip && (() => {
+        const activeBadge = badges.find((b: any) => b && b.id === activeTooltip);
+        if (!activeBadge) return null;
+        return createPortal(
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center p-6 bg-black/40"
+            onClick={() => setActiveTooltip(null)}
+          >
+            <div
+              className="bg-gray-900 text-white p-5 rounded-2xl shadow-2xl max-w-xs w-full text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-4xl mb-3">{activeBadge.icon}</div>
+              <div className="font-bold text-blue-300 text-base mb-2">
+                {t(`gamification.badges.${activeBadge.id}.name`, activeBadge.name) as string}
+              </div>
+              <div className="text-gray-300 text-sm leading-relaxed">
+                {t(`gamification.badges.${activeBadge.id}.description`, activeBadge.description) as string}
+              </div>
+            </div>
+          </div>,
+          document.body
+        );
+      })()}
 
       {isAllBadgesModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm sm:backdrop-blur-none flex items-center justify-center z-[60] p-4">

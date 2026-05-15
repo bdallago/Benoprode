@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
@@ -80,13 +81,19 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     fetchData();
   }, [userId]);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   if (loading) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
           <div className="text-center py-10 text-gray-900 dark:text-gray-100">{t('userPredictions.loading', { userName })}</div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -94,7 +101,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const userBadges = userBadgeIds.map((id: string) => BADGES.find((b: any) => b.id === id)).filter(Boolean);
 
   if (!predictions) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-between items-start mb-4">
@@ -114,9 +121,9 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       {t('profile.requestSent', 'Solicitud pendiente')}
                     </span>
                   ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="h-8 gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       onClick={(e) => { e.preventDefault(); handleAddFriendAction(); }}
                     >
@@ -135,7 +142,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             <Button onClick={onClose}>{t('userPredictions.close')}</Button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -173,7 +181,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     return { correct: false, points: 0 };
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-t-lg transition-colors duration-200">
@@ -471,6 +479,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
           onClose={() => setDuelData(null)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
