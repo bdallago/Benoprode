@@ -6,8 +6,36 @@ import { TeamFlag } from "../Fixture";
 import matchesData from "../../lib/matches.json";
 import { db } from "../../firebase";
 import { MatchComments } from "./MatchComments";
-import { onSnapshot, doc } from "firebase/firestore";
+import { onSnapshot, doc, DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
+import { MATCH_LOCK_BUFFER_MS } from "../../lib/config";
+
+function subscribeWithRetry(
+  ref: DocumentReference,
+  onData: (snap: DocumentSnapshot) => void,
+  onFallback?: () => void,
+  maxRetries = 5,
+): () => void {
+  let unsub = () => {};
+  let retries = 0;
+  let cancelled = false;
+
+  const attach = () => {
+    unsub = onSnapshot(ref, (snap) => { retries = 0; onData(snap); }, (err) => {
+      if (cancelled) return;
+      console.warn('[snapshot] error, retry', retries + 1, err?.message);
+      onFallback?.();
+      if (retries < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retries), 30000);
+        retries++;
+        setTimeout(attach, delay);
+      }
+    });
+  };
+
+  attach();
+  return () => { cancelled = true; unsub(); };
+}
 
 interface MatchesStageProps {
   matchPredictions: Record<string, { teamA: number | '', teamB: number | '', outcome: 'A' | 'B' | 'DRAW' | '' }>;
@@ -56,29 +84,32 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
 
   const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Stats + skeleton loading (Feature 3)
+  // Stats + skeleton loading — retries on error with exponential backoff
   useEffect(() => {
-    const statsDoc = doc(db, "statistics", "matches");
-    const unsubscribe = onSnapshot(statsDoc, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setMatchStats(data as any);
-        setCommentActivity(data._comments || {});
-      }
-      setStatsLoaded(true);
-    }, () => setStatsLoaded(true));
-    return () => unsubscribe();
+    return subscribeWithRetry(
+      doc(db, "statistics", "matches"),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setMatchStats(data as any);
+          setCommentActivity(data._comments || {});
+        }
+        setStatsLoaded(true);
+      },
+      () => setStatsLoaded(true),
+    );
   }, []);
 
-  // Feature 5: Real match results listener
+  // Real match results listener — retries on error
   useEffect(() => {
-    const resultsDoc = doc(db, "results", "actual");
-    const unsubscribe = onSnapshot(resultsDoc, (snapshot) => {
-      if (snapshot.exists()) {
-        setMatchResults(snapshot.data().matches || {});
-      }
-    });
-    return () => unsubscribe();
+    return subscribeWithRetry(
+      doc(db, "results", "actual"),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setMatchResults(snapshot.data().matches || {});
+        }
+      },
+    );
   }, []);
 
   const today = new Date();
@@ -237,7 +268,7 @@ export function MatchesStage({ matchPredictions, effectiveIsLocked, saving, hand
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
                     {dayMatches.map((match) => {
                       const matchDate = new Date(match.date);
-                      const isMatchLocked = Date.now() >= matchDate.getTime() - 60 * 60 * 1000;
+                      const isMatchLocked = Date.now() >= matchDate.getTime() - MATCH_LOCK_BUFFER_MS;
                       const locked = isMatchLocked;
                       const pred = matchPredictions[match.id] || { teamA: '', teamB: '', outcome: '' };
                       const hasPrediction = typeof pred.teamA === 'number' && typeof pred.teamB === 'number';

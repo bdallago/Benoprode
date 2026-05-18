@@ -18,10 +18,11 @@ function buildFact(match: typeof matchesData[0], stats: MatchStat | undefined): 
   if (!stats || stats.total === 0) {
     return `La comunidad está súper dividida con ${match.teamA} vs ${match.teamB}. ¡Hacé tu predicción y marcá la diferencia!`;
   }
-  const { total, A, DRAW, B } = stats;
-  const pctA = Math.round((A / total) * 100);
+  const { total, A, DRAW } = stats;
+  // Use the same rounding strategy as the bar chart: A and DRAW rounded, B as remainder
+  const pctA    = Math.round((A / total) * 100);
   const pctDRAW = Math.round((DRAW / total) * 100);
-  const pctB = Math.round((B / total) * 100);
+  const pctB    = 100 - pctA - pctDRAW;
   if (pctA >= 50) return `El ${pctA}% de la comunidad confía en que gana ${match.teamA} contra ${match.teamB}. ¿Vas a ir en contra?`;
   if (pctB >= 50) return `El ${pctB}% de la comunidad confía en la victoria de ${match.teamB} frente a ${match.teamA}. ¿Te sumás a la minoría?`;
   if (pctDRAW >= 50) return `Fuerte tendencia al empate: el ${pctDRAW}% votó que termina igualado entre ${match.teamA} y ${match.teamB}.`;
@@ -33,10 +34,27 @@ export function CommunityPredictions() {
   const [currentFact, setCurrentFact] = useState(0);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'statistics', 'matches'), (snap) => {
-      if (snap.exists()) setMatchStats(snap.data() as Record<string, MatchStat>);
-    }, () => {});
-    return () => unsub();
+    let cancelled = false;
+    let unsub = () => {};
+    let retries = 0;
+
+    const attach = () => {
+      unsub = onSnapshot(doc(db, 'statistics', 'matches'), (snap) => {
+        retries = 0;
+        if (snap.exists()) setMatchStats(snap.data() as Record<string, MatchStat>);
+      }, (err) => {
+        if (cancelled) return;
+        console.warn('[CommunityPredictions] snapshot error, retry', retries + 1, err?.message);
+        if (retries < 5) {
+          const delay = Math.min(1000 * Math.pow(2, retries), 30000);
+          retries++;
+          setTimeout(attach, delay);
+        }
+      });
+    };
+
+    attach();
+    return () => { cancelled = true; unsub(); };
   }, []);
 
   const upcoming = useMemo(() => {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
+import { recalculateGlobalStats } from "@/lib/recalculate-global-stats";
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -26,86 +27,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const now = new Date();
-    const iso = (offsetMs: number) => new Date(now.getTime() - offsetMs).toISOString();
-    const d1  = iso(1  * 24 * 60 * 60 * 1000);
-    const d7  = iso(7  * 24 * 60 * 60 * 1000);
-    const d14 = iso(14 * 24 * 60 * 60 * 1000);
-    const d30 = iso(30 * 24 * 60 * 60 * 1000);
-
-    const n = (snap: { data(): { count: number } }) => snap.data().count;
-
-    const [
-      totalUsers,
-      nuevos7d,
-      activosHoy,
-      activosSemana,
-      activosMes,
-      inactivos14d,
-      referidos,
-      regresaron1vez,
-      regresaronVarias,
-      totalLeagues,
-      privadas,
-      publicas,
-      duelsCreados,
-      duelsAceptados,
-      conPrediccion,
-      conEspeciales,
-      prodeCompleto,
-    ] = await Promise.all([
-      db.collection("users").count().get().then(n),
-      db.collection("users").where("createdAt", ">=", d7).count().get().then(n),
-      db.collection("users").where("lastLogin", ">=", d1).count().get().then(n),
-      db.collection("users").where("lastLogin", ">=", d7).count().get().then(n),
-      db.collection("users").where("lastLogin", ">=", d30).count().get().then(n),
-      db.collection("users").where("lastLogin", "<", d14).count().get().then(n),
-      // referredBy es string uid o null — ">" filtra sólo los strings non-empty (invitados)
-      db.collection("users").where("referredBy", ">", "").count().get().then(n),
-      db.collection("users").where("loginCount", ">=", 2).count().get().then(n),
-      db.collection("users").where("loginCount", ">=", 3).count().get().then(n),
-      db.collection("leagues").count().get().then(n),
-      db.collection("leagues").where("isPublic", "==", false).count().get().then(n),
-      db.collection("leagues").where("isPublic", "==", true).count().get().then(n),
-      db.collection("duels_v2").count().get().then(n),
-      db.collection("duels_v2").where("status", "==", "accepted").count().get().then(n),
-      db.collection("predictions").where("hasSavedPredictions", "==", true).count().get().then(n),
-      // ">" en campo anidado evita el índice compuesto que requiere "!="
-      db.collection("predictions").where("specials.topScorer", ">", "").count().get().then(n),
-      db.collection("predictions").where("isLocked", "==", true).count().get().then(n),
-    ]);
-
-    await db.collection("estadisticas_globales").doc("actual").set({
-      usuarios: {
-        total:           totalUsers,
-        nuevos7d,
-        organicos:       totalUsers - referidos,
-        referidos,
-        activosHoy,
-        activosSemana,
-        activosMes,
-        inactivos14d,
-        regresaron1vez,
-        regresaronVarias,
-      },
-      participacion: {
-        conPrediccion,
-        conEspeciales,
-        prodeCompleto,
-      },
-      torneos: {
-        total:   totalLeagues,
-        privadas,
-        publicas,
-      },
-      duelos: {
-        creados:   duelsCreados,
-        aceptados: duelsAceptados,
-      },
-      actualizadoEn: now.toISOString(),
-    });
-
-    return NextResponse.json({ ok: true, actualizadoEn: now.toISOString() });
+    const result = await recalculateGlobalStats(db);
+    return NextResponse.json({ ok: true, ...result });
   } catch (e: any) {
     console.error("[recalcular-estadisticas] Error:", e);
     return NextResponse.json({ error: e?.message ?? "Unknown error" }, { status: 500 });

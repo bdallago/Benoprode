@@ -443,12 +443,11 @@ service cloud.firestore {
     match /statistics/{statsId} {
       allow read: if isAuthenticated();
       allow create: if isAdmin();
-      // Admin can update anything; any authenticated user can update only the _comments map
-      // (used to track per-match comment activity for live indicators)
+      // Admin can update anything; authenticated users can update statistics/matches
+      // (vote counts A/B/DRAW/total updated via increment() on each prediction change,
+      //  plus the _comments map for per-match comment activity indicators)
       allow update: if isAdmin() ||
-        (statsId == 'matches' &&
-         isAuthenticated() &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['_comments']));
+        (statsId == 'matches' && isAuthenticated());
       allow delete: if isAdmin();
     }
   }

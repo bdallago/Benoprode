@@ -25,6 +25,9 @@ export function usePredictions(userId: string) {
   const previousMatchOutcomes = useRef<Record<string, MatchOutcome>>({});
   // Guard: only true once fetchPredictions completes — prevents save-on-unmount from overwriting with empty state
   const dataLoaded = useRef(false);
+  // Debounce stats: accumulate net deltas, flush after 1.5s idle
+  const pendingStats = useRef<Record<string, { firstOld: MatchOutcome; latest: MatchOutcome }>>({});
+  const statsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const fetchPredictions = async () => {
@@ -86,33 +89,43 @@ export function usePredictions(userId: string) {
     return () => clearInterval(interval);
   }, [isLocked, loading]);
 
+  // Flush any pending stats on unmount so no writes are lost
+  useEffect(() => () => { flushStats(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isGroupStageLocked = Date.now() >= GROUP_STAGE_DEADLINE || isLocked;
   const effectiveIsLocked = isLocked || isGroupStageLocked;
 
-  // Push an atomic stats update to statistics/matches immediately (fire-and-forget)
-  const pushStatsUpdate = (matchId: string, oldOutcome: MatchOutcome, newOutcome: MatchOutcome) => {
-    if (oldOutcome === newOutcome) return;
+  // Flush accumulated vote deltas to Firestore as a single update
+  const flushStats = () => {
+    const pending = pendingStats.current;
+    if (Object.keys(pending).length === 0) return;
+    pendingStats.current = {};
 
     const flat: Record<string, ReturnType<typeof increment>> = {};
-
-    if (newOutcome) {
-      flat[`${matchId}.${newOutcome}`] = increment(1);
-      if (oldOutcome) {
-        flat[`${matchId}.${oldOutcome}`] = increment(-1);
-        // total unchanged — same user, different vote
-      } else {
-        flat[`${matchId}.total`] = increment(1);
-      }
-    } else if (oldOutcome) {
-      // User cleared their outcome
-      flat[`${matchId}.${oldOutcome}`] = increment(-1);
-      flat[`${matchId}.total`] = increment(-1);
+    for (const [matchId, { firstOld, latest }] of Object.entries(pending)) {
+      if (firstOld === latest) continue;
+      if (latest)   flat[`${matchId}.${latest}`]   = increment(1);
+      if (firstOld) flat[`${matchId}.${firstOld}`] = increment(-1);
+      // total only changes when crossing the "no vote" boundary
+      if (!firstOld && latest)   flat[`${matchId}.total`] = increment(1);
+      else if (firstOld && !latest) flat[`${matchId}.total`] = increment(-1);
     }
-
     if (Object.keys(flat).length === 0) return;
-
     updateDoc(doc(db, "statistics", "matches"), flat)
-      .catch(e => console.warn("Stats update skipped (doc may not exist yet):", e));
+      .catch(e => console.warn("Stats flush failed:", e));
+  };
+
+  // Debounced stats update: accumulates per-match deltas, fires 1.5s after last change
+  const pushStatsUpdate = (matchId: string, oldOutcome: MatchOutcome, newOutcome: MatchOutcome) => {
+    if (oldOutcome === newOutcome) return;
+    const existing = pendingStats.current[matchId];
+    if (existing) {
+      existing.latest = newOutcome;
+    } else {
+      pendingStats.current[matchId] = { firstOld: oldOutcome, latest: newOutcome };
+    }
+    if (statsTimer.current) clearTimeout(statsTimer.current);
+    statsTimer.current = setTimeout(flushStats, 1500);
   };
 
   // handleMatchChange lives in the hook so it can update stats immediately on outcome change
