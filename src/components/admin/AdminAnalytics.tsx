@@ -3,7 +3,7 @@ import { doc, onSnapshot, getCountFromServer, collection } from "firebase/firest
 import { db, auth } from "../../firebase";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Calculator, Mail } from "lucide-react";
+import { Calculator, Mail, Database } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface AnalyticsData {
@@ -68,6 +68,7 @@ export function AdminAnalytics({ onMessage }: Props) {
   const [analyticsUpdatedAt, setAnalyticsUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
+  const [syncingMatches, setSyncingMatches] = useState(false);
   const [campaignLoading, setCampaignLoading] = useState<string | null>(null);
   const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
 
@@ -180,6 +181,34 @@ export function AdminAnalytics({ onMessage }: Props) {
       setTimeout(() => onMessage(null), 6000);
     } finally {
       setCampaignLoading(null);
+    }
+  };
+
+  const syncMatches = async () => {
+    const confirmed = window.confirm(
+      "¿Poblar la colección \"matches\" en Firestore con los 72 partidos del Mundial?\n\nEs seguro: usa merge, no borra predicciones ni datos existentes. Podés repetirlo sin problema."
+    );
+    if (!confirmed) return;
+
+    setSyncingMatches(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("No autenticado");
+      const res = await fetch("/api/admin/sync-matches", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(body.error ?? res.statusText);
+      }
+      const data = await res.json();
+      onMessage({ type: "success", text: `Partidos sincronizados: ${data.count} documentos escritos en Firestore.` });
+    } catch (err: any) {
+      onMessage({ type: "error", text: `Error al sincronizar partidos: ${err.message}` });
+      setTimeout(() => onMessage(null), 6000);
+    } finally {
+      setSyncingMatches(false);
     }
   };
 
@@ -434,6 +463,29 @@ export function AdminAnalytics({ onMessage }: Props) {
             <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{analytics.duelsAccepted}</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Setup inicial */}
+      <h3 className="text-xl font-bold text-indigo-700 mt-10 mb-4 border-b border-indigo-100 pb-2 flex items-center gap-2">
+        <Database className="w-5 h-5" /> Configuración Inicial
+      </h3>
+      <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <div className="flex-1">
+          <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Poblar colección de partidos</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Escribe los 72 partidos del Mundial en Firestore (<code>matches/</code>). Necesario para que las reglas de seguridad puedan bloquear predicciones al inicio de cada partido. Usa merge — no borra predicciones ni datos existentes. Idempotente: podés repetirlo.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={syncingMatches}
+          onClick={syncMatches}
+          className="flex items-center gap-2 border-emerald-400 text-emerald-700 hover:bg-emerald-100 shrink-0"
+        >
+          <Database className="w-3.5 h-3.5" />
+          {syncingMatches ? "Sincronizando..." : "Sincronizar partidos"}
+        </Button>
       </div>
 
       {/* Campañas de Mail */}
