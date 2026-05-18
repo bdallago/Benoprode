@@ -96,7 +96,9 @@ async function calculatePoints(database: any) {
     updatedAt: new Date().toISOString()
   });
 
-  // Batch write user points, badges, and badge notifications (450 per batch)
+  // Pass 1: write user points + badges in batches of 450 (well under the 500-write Firestore limit)
+  const pendingNotifs: { userId: string; badgeId: string }[] = [];
+
   const chunks: any[][] = [];
   let currentChunk: any[] = [];
   for (const res of userResults) {
@@ -127,21 +129,31 @@ async function calculatePoints(database: any) {
       if (unlockedBadges.length > currentEarnedIds.length) {
         const newBadges = unlockedBadges.filter((b: string) => !currentEarnedIds.includes(b));
         for (const newBadge of newBadges) {
-          const notifRef = database.collection("notifications").doc();
-          batch.set(notifRef, {
-            userId: res.userId,
-            type: 'badge_earned',
-            title: '¡Medalla Desbloqueada!',
-            message: `Has desbloqueado la medalla: ${newBadge}`,
-            read: false,
-            createdAt: new Date().toISOString(),
-            actionUrl: '/profile?tab=stats',
-            badgeId: newBadge
-          });
+          pendingNotifs.push({ userId: res.userId, badgeId: newBadge });
         }
       }
     }
 
+    await batch.commit();
+  }
+
+  // Pass 2: write badge notifications in separate batches of 499
+  const createdAt = new Date().toISOString();
+  for (let i = 0; i < pendingNotifs.length; i += 499) {
+    const batch = database.batch();
+    for (const { userId, badgeId } of pendingNotifs.slice(i, i + 499)) {
+      const notifRef = database.collection("notifications").doc();
+      batch.set(notifRef, {
+        userId,
+        type: 'badge_earned',
+        title: '¡Medalla Desbloqueada!',
+        message: `Has desbloqueado la medalla: ${badgeId}`,
+        read: false,
+        createdAt,
+        actionUrl: '/profile?tab=stats',
+        badgeId,
+      });
+    }
     await batch.commit();
   }
 }
