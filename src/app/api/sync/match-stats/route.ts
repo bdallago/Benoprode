@@ -34,8 +34,12 @@ export async function POST(request: Request) {
       }
     });
 
-    await db.collection("statistics").doc("matches").set(stats);
-    
+    // Preserve existing _comments metadata (comment activity indicators) before overwriting
+    const existing = await db.collection("statistics").doc("matches").get();
+    const existingComments = existing.exists ? (existing.data()!._comments ?? {}) : {};
+
+    await db.collection("statistics").doc("matches").set({ ...stats, _comments: existingComments });
+
     return NextResponse.json({ success: true, message: "Stats synced." });
   } catch (error: any) {
     console.error("Error syncing stats in bg:", error);

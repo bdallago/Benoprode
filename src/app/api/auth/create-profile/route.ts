@@ -5,7 +5,7 @@ import { sendMail } from "@/lib/mailer";
 import { renderWelcome } from "@/emails/welcome";
 import { FieldValue } from "firebase-admin/firestore";
 
-const ADMIN_EMAIL = "bdallago01@gmail.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? '';
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");

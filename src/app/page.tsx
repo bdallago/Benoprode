@@ -19,14 +19,18 @@ export default function HomePage() {
 
       // If there is a league invite in the URL, redirect to leagues ONLY if user is logged in
       if (user) {
-        const search = window.location.search;
         const hash = window.location.hash;
-        if (search.includes('league=')) {
-          router.push("/leagues" + search);
+        const leagueId = searchParams.get('league');
+        if (leagueId && /^[a-zA-Z0-9_-]{1,128}$/.test(leagueId)) {
+          router.push(`/leagues?league=${encodeURIComponent(leagueId)}`);
         } else if (hash.includes('league=')) {
           // Legacy hash-based invite links → convert to query params
-          const hashParams = new URLSearchParams(hash.replace('#', ''));
-          router.push(`/leagues?${hashParams.toString()}`);
+          const hashLeagueId = new URLSearchParams(hash.replace('#', '')).get('league');
+          if (hashLeagueId && /^[a-zA-Z0-9_-]{1,128}$/.test(hashLeagueId)) {
+            router.push(`/leagues?league=${encodeURIComponent(hashLeagueId)}`);
+          } else {
+            router.push("/inicio");
+          }
         } else {
            router.push("/inicio");
         }

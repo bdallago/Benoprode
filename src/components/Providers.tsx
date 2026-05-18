@@ -112,6 +112,8 @@ function GlobalBadgeListener({
   const prevEarnedRef = useRef<string[]>([]);
   // Prevents re-showing already-earned badges on first load
   const isFirstBadgeRenderRef = useRef(true);
+  // Debounce timer for badge recalculation (server has 60s cooldown anyway)
+  const recalcTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     audioRef.current = new Audio("/badge-sound.mp3");
@@ -131,10 +133,11 @@ function GlobalBadgeListener({
     }
   }, [user]);
 
-  // Recalculate when totalPoints or league membership changes
+  // Recalculate when totalPoints or league membership changes — debounced 2s
   useEffect(() => {
     if (!userStats || Object.keys(userStats).length === 0) return;
-    triggerRecalculate();
+    if (recalcTimerRef.current) clearTimeout(recalcTimerRef.current);
+    recalcTimerRef.current = setTimeout(triggerRecalculate, 2000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userStats?.totalPoints, globalLeagues?.length]);
 
@@ -392,8 +395,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
       if (currentUser) {
         try {
+          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '';
           const isAdminEmail =
-            currentUser.email?.toLowerCase() === "bdallago01@gmail.com";
+            !!adminEmail && currentUser.email?.toLowerCase() === adminEmail.toLowerCase();
 
           // Check if user exists in db, if not create
           const userRef = doc(db, "users", currentUser.uid);

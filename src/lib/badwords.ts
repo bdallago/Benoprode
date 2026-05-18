@@ -15,20 +15,10 @@ export const BAD_WORDS = [
   "porra", "caralho", "fdp", "buceta", "viado", "merda", "cu"
 ];
 
-export const checkBadWords = (text: string): boolean => {
-  const lowerText = text.toLowerCase();
-  return BAD_WORDS.some(word => {
-    // Check if the word is present as a standalone word (to avoid false positives like "put" in "computer" - though "puta" in "computadora" could trigger if we just use includes, so we use word boundaries)
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lowerText);
-  });
-}
+// Precompiled at module load — avoids creating N RegExp objects per check call
+const _checkRegex  = new RegExp(BAD_WORDS.map(w => `\\b${w}\\b`).join('|'), 'i');
+const _filterRegex = new RegExp(BAD_WORDS.map(w => `\\b${w}\\b`).join('|'), 'ig');
 
-export const filterBadWords = (text: string): string => {
-  let filteredText = text;
-  BAD_WORDS.forEach((word: string) => {
-    const regex = new RegExp(`\\b${word}\\b`, 'ig');
-    filteredText = filteredText.replace(regex, '***');
-  });
-  return filteredText;
-}
+export const checkBadWords = (text: string): boolean => _checkRegex.test(text);
+
+export const filterBadWords = (text: string): string => text.replace(_filterRegex, '***');

@@ -59,7 +59,9 @@ export async function POST(req: Request) {
       hasSavedPredictions = !!(hasMatches || hasGroups);
     }
     if (!lockedEarly && predData.isLocked && predData.updatedAt) {
-      lockedEarly = new Date(predData.updatedAt) < new Date(EARLY_LOCK_DEADLINE_ISO);
+      const updatedTime = new Date(predData.updatedAt).getTime();
+      const deadlineTime = new Date(EARLY_LOCK_DEADLINE_ISO).getTime();
+      lockedEarly = !isNaN(updatedTime) && updatedTime < deadlineTime;
     }
   }
 

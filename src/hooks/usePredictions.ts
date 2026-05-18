@@ -160,6 +160,7 @@ export function usePredictions(userId: string) {
 
   const savePredictions = async (lock: boolean = false, silent: boolean = false) => {
     if (!dataLoaded.current) return;
+    setSaving(true);
     if (!silent) setMessage(null);
 
     // Optimistic UI: show success + confetti immediately before Firebase responds
@@ -207,6 +208,8 @@ export function usePredictions(userId: string) {
         }
         setTimeout(() => setMessage(null), 5000);
       }
+    } finally {
+      setSaving(false);
     }
   };
 
