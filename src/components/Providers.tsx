@@ -325,6 +325,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [globalLeagues, setGlobalLeagues] = useState<League[]>([]);
   const [hasMoreLeagues, setHasMoreLeagues] = useState(false);
   const lastLeagueDocRef = useRef<DocumentSnapshot | null>(null);
+  // Refs to coordinate two simultaneous snapshots (benoliga + paginated leagues)
+  const benoligaDataRef = useRef<League | null>(null);
+  const paginatedLeaguesRef = useRef<League[]>([]);
 
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -354,8 +357,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
       setGlobalLeagues([]);
       setHasMoreLeagues(false);
       lastLeagueDocRef.current = null;
+      benoligaDataRef.current = null;
+      paginatedLeaguesRef.current = [];
       return;
     }
+
+    const mergeLeagues = () => {
+      const paginated = paginatedLeaguesRef.current;
+      const benoliga = benoligaDataRef.current;
+      if (!benoliga) {
+        setGlobalLeagues(paginated);
+        return;
+      }
+      // Benoliga always pinned first; deduplicate if it appeared in paginated results too
+      setGlobalLeagues([benoliga, ...paginated.filter(l => l.id !== benoliga.id)]);
+    };
 
     const unsubscribeUser = onSnapshot(
       doc(db, "users", user.uid),
@@ -369,13 +385,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Scoped listener: only the user's own leagues (first 20), no unbounded collection read
+    // Dedicated listener for benoliga so it's always pinned regardless of pagination
+    const unsubscribeBenoliga = onSnapshot(
+      doc(db, "leagues", "benoliga"),
+      (snap) => {
+        benoligaDataRef.current = snap.exists() ? ({ id: snap.id, ...snap.data() } as League) : null;
+        mergeLeagues();
+      },
+      (err) => {
+        console.warn("Benoliga snapshot error:", err);
+      }
+    );
+
+    // Paginated listener: 20 most-recent community leagues
     const unsubscribeLeagues = onSnapshot(
       query(collection(db, "leagues"), orderBy("createdAt", "desc"), limit(20)),
       (snapshot) => {
         lastLeagueDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
         setHasMoreLeagues(snapshot.docs.length === 20);
-        setGlobalLeagues(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as League)));
+        paginatedLeaguesRef.current = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as League));
+        mergeLeagues();
       },
       (err) => {
         console.warn("Leagues snapshot error (idle/cancel):", err);
@@ -384,6 +413,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubscribeUser();
+      unsubscribeBenoliga();
       unsubscribeLeagues();
     };
   }, [user]);

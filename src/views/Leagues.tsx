@@ -46,7 +46,7 @@ function GhostMemberBanner({ count, repairing, result, onRepair }: {
 }
 
 export default function Leagues({ user }: { user: User }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasMoreLeagues, loadMoreLeagues } = useAuth();
   const { t } = useTranslation();
   
   const {
@@ -64,6 +64,8 @@ export default function Leagues({ user }: { user: User }) {
     leaveLeague,
     removeMember
   } = useLeagues(user.uid);
+
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isConfirmingCreate, setIsConfirmingCreate] = useState(false);
@@ -240,13 +242,12 @@ export default function Leagues({ user }: { user: User }) {
   };
 
   // Benoliga logic
-  const isBenoliga = (l: any) => l.name.toLowerCase().includes('beno') || l.id === 'benoliga';
+  const isBenoliga = (l: any) => l.id === 'benoliga' || l.name.toLowerCase().includes('beno');
   const benoliga = leagues.find(isBenoliga);
   const myLeagues = leagues.filter((l: any) => !isBenoliga(l) && l.members.includes(user.uid));
   const notMyLeagues = leagues.filter((l: any) => !isBenoliga(l) && !l.members.includes(user.uid));
-  const MAX_TOTAL = 20;
-  const extraSlots = Math.max(0, MAX_TOTAL - (benoliga ? 1 : 0) - myLeagues.length);
-  const otherLeagues = [...myLeagues, ...notMyLeagues.slice(0, extraSlots)];
+  // My leagues first, then the rest — no frontend cap (pagination is handled by loadMoreLeagues)
+  const otherLeagues = [...myLeagues, ...notMyLeagues];
 
   const leagueSearchLower = leagueSearch.trim().toLowerCase();
   const filteredBenoliga = leagueSearchLower
@@ -500,6 +501,21 @@ export default function Leagues({ user }: { user: User }) {
             );
           })}
         </div>
+
+        {hasMoreLeagues && !leagueSearchLower && (
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="outline"
+              disabled={loadingMore}
+              onClick={async () => {
+                setLoadingMore(true);
+                try { await loadMoreLeagues(); } finally { setLoadingMore(false); }
+              }}
+            >
+              {loadingMore ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cargando...</> : 'Cargar más torneos'}
+            </Button>
+          </div>
+        )}
 
         {leagues.length === 0 && (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-700">
