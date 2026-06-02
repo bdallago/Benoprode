@@ -1,25 +1,19 @@
 import { initializeApp, applicationDefault, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import fs from "fs";
-import path from "path";
 
 const globalAny = globalThis as any;
 
 export function getAdminDb() {
   if (globalAny.cachedDb) return globalAny.cachedDb;
 
-  const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
-  if (!globalAny.cachedConfig) {
-    if (!fs.existsSync(configPath)) {
-      console.error("Firebase Admin Error: config not found at", configPath);
-      return null;
-    }
-    globalAny.cachedConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const dbId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || "(default)";
+
+  if (!projectId) {
+    console.error("Firebase Admin Error: NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set");
+    return null;
   }
-  
-  const config = globalAny.cachedConfig;
-  const dbId = config.firestoreDatabaseId;
 
   if (getApps().length === 0) {
     let credential;
@@ -81,7 +75,7 @@ export function getAdminDb() {
     
     const app = initializeApp({
       credential,
-      projectId: config.projectId,
+      projectId,
     });
     console.log("Firebase Admin Initialized for DB ID:", dbId);
     globalAny.cachedDb = getFirestore(app, dbId);
