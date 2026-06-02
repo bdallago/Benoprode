@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const snapshot = await db.collection("predictions").get();
 
   const data: Record<string, any> = {};
-  snapshot.forEach((doc) => {
+  snapshot.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
     data[doc.id] = doc.data();
   });
 
