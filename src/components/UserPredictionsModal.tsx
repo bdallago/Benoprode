@@ -157,6 +157,17 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const matchPredictions = predictions.matches || {};
   const knockoutPredictions = predictions.knockouts || {};
 
+  // A match is duelable only if it hasn't started yet
+  const isMatchDuelable = (match: { date: string }) =>
+    new Date(match.date) > new Date();
+
+  // A group is duelable only if it has no resolved standings yet
+  const isGroupDuelable = (groupLetter: string) => {
+    const actual = results?.groups?.[groupLetter];
+    if (!actual || actual.length === 0) return true;
+    return actual.every((t: string) => !t);
+  };
+
   const getGroupStatus = (groupLetter: string, predictedTeams: string[]) => {
     if (!results || !results.groups || !results.groups[groupLetter]) return null;
     const actualTeams = results.groups[groupLetter];
@@ -279,16 +290,16 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
                         <CardTitle className="text-md flex items-center justify-between w-full">
                           <span className="text-gray-900 dark:text-gray-100">{t('userPredictions.group')} {groupLetter}</span>
-                          {canChallenge && (
+                          {canChallenge && isGroupDuelable(groupLetter) && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-7 text-blue-600 border-blue-200"
                               title={t('userPredictions.challengeGroup', 'Retar grupo completo')}
-                              onClick={() => setDuelData({ 
-                                duelType: 'group_complete', 
-                                matchId: `group_${groupLetter}_complete`, 
-                                matchData: { groupLetter }, 
+                              onClick={() => setDuelData({
+                                duelType: 'group_complete',
+                                matchId: `group_${groupLetter}_complete`,
+                                matchData: { groupLetter },
                                 challengedPrediction: { teams },
                                 myPrediction: { teams: currentUserPredictions?.groups?.[groupLetter] || [] }
                               })}
@@ -309,13 +320,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                                   </span>
                                   <span className="font-medium text-gray-900 dark:text-gray-100">{t(`teams.${team}`)}</span>
                                 </div>
-                                {canChallenge && (
-                                  <Button 
+                                {canChallenge && isGroupDuelable(groupLetter) && (
+                                  <Button
                                     variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title={t('userPredictions.challengePrediction', 'Retar predicción')}
-                                    onClick={() => setDuelData({ 
-                                      duelType: 'group_position', 
-                                      matchId: `group_${groupLetter}_pos_${index + 1}`, 
-                                      matchData: { groupLetter, position: index + 1 }, 
+                                    onClick={() => setDuelData({
+                                      duelType: 'group_position',
+                                      matchId: `group_${groupLetter}_pos_${index + 1}`,
+                                      matchData: { groupLetter, position: index + 1 },
                                       challengedPrediction: { team },
                                       myPrediction: { team: currentUserPredictions?.groups?.[groupLetter]?.[index] || '' }
                                     })}
@@ -356,13 +367,13 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                         </div>
                       </div>
                       
-                      {canChallenge && (
-                        <Button 
+                      {canChallenge && isMatchDuelable(match) && (
+                        <Button
                           size="sm" title="Retar partido" className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full md:w-auto mt-2 md:mt-0"
-                          onClick={() => setDuelData({ 
-                            duelType: 'match', 
-                            matchId: match.id, 
-                            matchData: match, 
+                          onClick={() => setDuelData({
+                            duelType: 'match',
+                            matchId: match.id,
+                            matchData: match,
                             challengedPrediction: pred,
                             myPrediction: currentUserPredictions?.matches?.[match.id] || { teamA: '', teamB: '', outcome: '' }
                           })}

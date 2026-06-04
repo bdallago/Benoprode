@@ -15,3 +15,5 @@ prompt.txt
 prompt.txt.txt
 firebase-applet-config.json
 tsconfig.tsbuildinfo
+
+.vercel

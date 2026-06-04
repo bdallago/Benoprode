@@ -68,21 +68,36 @@ export function computePoints(
     }
   }
 
+  const normScore = (v: any): number =>
+    v === "" || v === null || v === undefined ? 0 : Number(v);
+
   for (const [matchId, actualMatch] of Object.entries(actualMatches)) {
     const pm = predMatches[matchId];
     if (!pm || !actualMatch) continue;
-    if (pm.outcome && actualMatch.outcome && pm.outcome === actualMatch.outcome) {
+
+    const predA = normScore(pm.teamA);
+    const predB = normScore(pm.teamB);
+
+    // Re-derive outcome from normalized scores when the stored outcome is missing
+    // (happens when a user filled only one score and the auto-derive didn't run)
+    let effectiveOutcome = pm.outcome;
+    if (!effectiveOutcome) {
+      if (predA > predB) effectiveOutcome = "A";
+      else if (predA < predB) effectiveOutcome = "B";
+      else effectiveOutcome = "DRAW";
+    }
+
+    if (effectiveOutcome && actualMatch.outcome && effectiveOutcome === actualMatch.outcome) {
       totalPoints += 1;
       correctMatchCount++;
     }
     if (
-      pm.teamA !== "" && pm.teamB !== "" &&
       actualMatch.teamA !== "" && actualMatch.teamB !== "" &&
-      pm.teamA === actualMatch.teamA && pm.teamB === actualMatch.teamB
+      predA === actualMatch.teamA && predB === actualMatch.teamB
     ) {
       totalPoints += 1;
       exactMatchCount++;
-      if (pm.teamA === 0 && pm.teamB === 0) zeroZeroPredictionsCount++;
+      if (predA === 0 && predB === 0) zeroZeroPredictionsCount++;
     }
   }
 
