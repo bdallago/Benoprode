@@ -218,6 +218,27 @@ export function AdminResults({ onMessage }: Props) {
     }
   };
 
+  const clearLeaderboard = async () => {
+    setCalculating(true);
+    onMessage(null);
+    try {
+      await setDoc(doc(db, "system_stats", "leaderboard_top_1000"), {
+        players: [],
+        totalCount: 0,
+        updatedAt: new Date().toISOString(),
+      });
+      onMessage({ type: "success", text: "Ranking global limpiado correctamente." });
+      window.scrollTo(0, 0);
+    } catch (error: any) {
+      console.error("Error clearing leaderboard:", error);
+      onMessage({ type: "error", text: "Error al limpiar el ranking: " + error.message });
+      window.scrollTo(0, 0);
+    } finally {
+      setCalculating(false);
+      setTimeout(() => onMessage(null), 5000);
+    }
+  };
+
   const stripResultBadges = async () => {
     setCalculating(true);
     onMessage(null);
@@ -311,6 +332,15 @@ export function AdminResults({ onMessage }: Props) {
           className="flex-1 md:flex-none flex items-center gap-2"
         >
           <AlertCircle className="w-4 h-4" /> {t("admin.results.resetBtn")}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={clearLeaderboard}
+          disabled={calculating}
+          className="flex-1 md:flex-none flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+        >
+          <AlertCircle className="w-4 h-4" />
+          {calculating ? "Limpiando..." : "Limpiar Ranking Global"}
         </Button>
         <Button
           variant="outline"
