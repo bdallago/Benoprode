@@ -188,7 +188,13 @@ export function AdminResults({ onMessage }: Props) {
         lastDoc = usersSnapChunk.docs[usersSnapChunk.docs.length - 1];
         const batch = writeBatch(db);
         usersSnapChunk.docs.forEach((d) =>
-          batch.set(doc(db, "users", d.id), { totalPoints: 0 }, { merge: true })
+          batch.set(doc(db, "users", d.id), {
+          totalPoints: 0,
+          earnedBadges: [],
+          exactMatchCount: 0,
+          correctMatchCount: 0,
+          groupsPerfectCount: 0,
+        }, { merge: true })
         );
         await batch.commit();
         totalProcessed += usersSnapChunk.size;
