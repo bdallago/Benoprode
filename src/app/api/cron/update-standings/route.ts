@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { syncStandings } from "@/lib/sync-standings";
+import { recalculatePoints } from "@/lib/recalculate-points";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
 
   try {
     await syncStandings(db, process.env.API_FOOTBALL_KEY);
+    await recalculatePoints(db);
     return NextResponse.json({ success: true, message: "Standings updated and points recalculated." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
