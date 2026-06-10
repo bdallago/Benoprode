@@ -425,7 +425,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
       if (currentUser) {
         try {
-          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '';
+          const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'bdallago01@gmail.com';
           const isAdminEmail =
             !!adminEmail && currentUser.email?.toLowerCase() === adminEmail.toLowerCase();
 
