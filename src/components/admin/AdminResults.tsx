@@ -5,7 +5,7 @@ import {
   where, limit, startAfter, writeBatch,
   QueryConstraint,
 } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db, auth } from "../../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../../data";
 import matchesData from "../../lib/matches.json";
 import { computePoints, sanitizeGroups } from "../../lib/points-calculation";
@@ -188,12 +188,24 @@ export function AdminResults({ onMessage }: Props) {
         lastDoc = usersSnapChunk.docs[usersSnapChunk.docs.length - 1];
         const batch = writeBatch(db);
         usersSnapChunk.docs.forEach((d) =>
-          batch.set(doc(db, "users", d.id), { totalPoints: 0 }, { merge: true })
+          batch.set(doc(db, "users", d.id), {
+          totalPoints: 0,
+          earnedBadges: [],
+          exactMatchCount: 0,
+          correctMatchCount: 0,
+          groupsPerfectCount: 0,
+        }, { merge: true })
         );
         await batch.commit();
         totalProcessed += usersSnapChunk.size;
         console.log(`Reset points for ${totalProcessed} users...`);
       }
+
+      await setDoc(doc(db, "system_stats", "leaderboard_top_1000"), {
+        players: [],
+        totalCount: 0,
+        updatedAt: new Date().toISOString(),
+      });
 
       onMessage({ type: "success", text: t("admin.messages.resetSuccess") });
       window.scrollTo(0, 0);
@@ -204,6 +216,28 @@ export function AdminResults({ onMessage }: Props) {
     } finally {
       setCalculating(false);
       setTimeout(() => onMessage(null), 5000);
+    }
+  };
+
+  const stripResultBadges = async () => {
+    setCalculating(true);
+    onMessage(null);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/strip-result-badges", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error desconocido");
+      onMessage({ type: "success", text: `Medallas de resultados eliminadas. Usuarios procesados: ${data.processed}, modificados: ${data.stripped}` });
+      window.scrollTo(0, 0);
+    } catch (error: any) {
+      console.error("Error stripping badges:", error);
+      onMessage({ type: "error", text: "Error al limpiar medallas: " + error.message });
+      window.scrollTo(0, 0);
+    } finally {
+      setCalculating(false);
+      setTimeout(() => onMessage(null), 8000);
     }
   };
 
@@ -278,6 +312,15 @@ export function AdminResults({ onMessage }: Props) {
           className="flex-1 md:flex-none flex items-center gap-2"
         >
           <AlertCircle className="w-4 h-4" /> {t("admin.results.resetBtn")}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={stripResultBadges}
+          disabled={calculating}
+          className="flex-1 md:flex-none flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+        >
+          <AlertCircle className="w-4 h-4" />
+          {calculating ? "Limpiando..." : "Limpiar Medallas de Resultados"}
         </Button>
         <Button
           variant="outline"

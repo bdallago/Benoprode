@@ -169,7 +169,7 @@ service cloud.firestore {
       
       // Only admins can create/update/delete results
       allow write: if isAdmin() && docId == 'actual' &&
-                   hasOnlyAllowedFields(['groups', 'standings', 'specials', 'knockouts', 'updatedAt']) &&
+                   hasOnlyAllowedFields(['groups', 'standings', 'specials', 'knockouts', 'matches', 'updatedAt', 'isGroupStageFinished']) &&
                    isValidResult(request.resource.data);
     }
     // ===============================================================
