@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     const idToken = authHeader.slice(7);
     try {
       const adminAuth = getAdminAuth();
+      if (!adminAuth) throw new Error("Auth not configured");
       const decoded = await adminAuth.verifyIdToken(idToken);
       const db = getAdminDb();
       const userDoc = await db!.collection("users").doc(decoded.uid).get();
