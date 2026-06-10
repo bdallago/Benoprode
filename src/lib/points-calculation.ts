@@ -87,7 +87,15 @@ export function computePoints(
       else effectiveOutcome = "DRAW";
     }
 
-    if (effectiveOutcome && actualMatch.outcome && effectiveOutcome === actualMatch.outcome) {
+    // Derive actual outcome from scores when the field is missing (manual results entry)
+    let actualOutcome = actualMatch.outcome;
+    if (!actualOutcome && actualMatch.teamA !== "" && actualMatch.teamB !== "") {
+      const a = normScore(actualMatch.teamA);
+      const b = normScore(actualMatch.teamB);
+      actualOutcome = a > b ? "A" : a < b ? "B" : "DRAW";
+    }
+
+    if (effectiveOutcome && actualOutcome && effectiveOutcome === actualOutcome) {
       totalPoints += 1;
       correctMatchCount++;
     }
