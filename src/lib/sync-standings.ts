@@ -71,6 +71,9 @@ const TEAM_NAME_MAPPING: Record<string, string> = {
   "Panama":                          "Panamá",
 };
 
+// Each team plays 3 group stage games → 4 teams × 3 = 12 total games when group is complete.
+const GAMES_PER_GROUP = 12;
+
 export async function syncStandings(database: any, apiKey: string): Promise<void> {
   const response = await axios.get("https://v3.football.api-sports.io/standings", {
     params: { league: 1, season: 2026 },
@@ -82,22 +85,29 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
 
   const standings = data.response[0].league.standings;
   const newGroups: Record<string, string[]> = {};
+  const finishedGroups: string[] = [];
 
   standings.forEach((groupStandings: any[]) => {
     if (!groupStandings?.length) return;
     const groupLetter = groupStandings[0].group.replace("Group ", "").trim();
     if (!(groupLetter in GROUPS)) return;
 
-    // Skip groups where no matches have been played — the API returns a default
-    // pre-tournament order that would falsely match users' default predictions.
     const totalPlayed = groupStandings.reduce((sum: number, s: any) => sum + (s.all?.played ?? 0), 0);
+
+    // Skip groups with no matches played — API returns pre-tournament default order.
     if (totalPlayed === 0) return;
 
     groupStandings.sort((a: any, b: any) => a.rank - b.rank);
     newGroups[groupLetter] = groupStandings.map((s: any) => TEAM_NAME_MAPPING[s.team.name] ?? s.team.name);
+
+    // Mark group as finished only when all matches have been played.
+    if (totalPlayed >= GAMES_PER_GROUP) finishedGroups.push(groupLetter);
   });
 
   if (Object.keys(newGroups).length > 0) {
-    await database.collection("results").doc("actual").set({ groups: newGroups }, { merge: true });
+    await database.collection("results").doc("actual").set({
+      groups: newGroups,
+      finishedGroups,
+    }, { merge: true });
   }
 }
