@@ -16,7 +16,16 @@ export async function recalculatePoints(database: any): Promise<void> {
 
   const actualData = resultsDoc.data();
   const isGroupStageFinished: boolean = actualData.isGroupStageFinished || false;
-  const sanitizedActualG = sanitizeGroups(actualData.groups ?? {});
+  const finishedGroups: string[] = actualData.finishedGroups || [];
+
+  // Only score groups explicitly marked as finished (all 12 matches played).
+  // Prevents awarding points from partial or pre-tournament default standings.
+  const rawGroups: Record<string, string[]> = actualData.groups ?? {};
+  const sanitizedActualG: Record<string, string[]> = {};
+  for (const letter of finishedGroups) {
+    if (rawGroups[letter]) sanitizedActualG[letter] = rawGroups[letter];
+  }
+
   const actualSpecials: Record<string, string> = actualData.specials || {};
   const actualMatches: Record<string, any> = actualData.matches || {};
 
