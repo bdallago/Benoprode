@@ -87,6 +87,12 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
     if (!groupStandings?.length) return;
     const groupLetter = groupStandings[0].group.replace("Group ", "").trim();
     if (!(groupLetter in GROUPS)) return;
+
+    // Skip groups where no matches have been played — the API returns a default
+    // pre-tournament order that would falsely match users' default predictions.
+    const totalPlayed = groupStandings.reduce((sum: number, s: any) => sum + (s.all?.played ?? 0), 0);
+    if (totalPlayed === 0) return;
+
     groupStandings.sort((a: any, b: any) => a.rank - b.rank);
     newGroups[groupLetter] = groupStandings.map((s: any) => TEAM_NAME_MAPPING[s.team.name] ?? s.team.name);
   });
