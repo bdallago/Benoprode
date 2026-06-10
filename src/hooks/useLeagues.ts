@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { collection, addDoc, updateDoc, doc, getDoc, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { fetchUsersInChunks } from "../lib/firestore-utils";
@@ -33,6 +33,7 @@ export function useLeagues(userId: string) {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [pendingInvitation, setPendingInvitation] = useState<{league: League, inviter: string} | null>(null);
   const [orphanedMemberIds, setOrphanedMemberIds] = useState<string[]>([]);
+  const joinedLeagueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!selectedLeague?.members?.length) {
@@ -109,14 +110,18 @@ export function useLeagues(userId: string) {
     if (leagueId) {
       const league = leaguesData.find((l: any) => l.id === leagueId);
       if (league) {
-        if (!league.members.includes(userId)) {
+        const alreadyMember = league.members.includes(userId);
+        const justJoined = joinedLeagueIdRef.current === leagueId;
+        if (!alreadyMember && !justJoined) {
           setPendingInvitation({ league, inviter });
           setLoading(false);
         } else {
           if (typeof window !== 'undefined') {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
+          if (alreadyMember) joinedLeagueIdRef.current = null;
           setSelectedLeague(league);
+          setLoading(false);
         }
       } else {
          setLoading(false);
@@ -143,6 +148,7 @@ export function useLeagues(userId: string) {
   };
 
   const joinLeague = async (leagueId: string) => {
+    joinedLeagueIdRef.current = leagueId;
     await updateDoc(doc(db, "leagues", leagueId), {
       members: arrayUnion(userId)
     });
