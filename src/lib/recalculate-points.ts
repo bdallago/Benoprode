@@ -30,7 +30,7 @@ export async function recalculatePoints(database: any): Promise<void> {
   let chunkCount = 0;
   while (hasMore && chunkCount < 500) {
     chunkCount++;
-    let q = database.collection("users").orderBy("__name__").limit(50);
+    let q = database.collection("users").orderBy("__name__").limit(29);
     if (lastDoc) q = q.startAfter(lastDoc);
     const chunk = await q.get();
     if (chunk.empty) { hasMore = false; break; }

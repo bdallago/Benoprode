@@ -89,7 +89,9 @@ export function computePoints(
 
     // Derive actual outcome from scores when the field is missing (manual results entry)
     let actualOutcome = actualMatch.outcome;
-    if (!actualOutcome && actualMatch.teamA !== "" && actualMatch.teamB !== "") {
+    const hasActualScores = actualMatch.teamA !== "" && actualMatch.teamA !== null && actualMatch.teamA !== undefined &&
+      actualMatch.teamB !== "" && actualMatch.teamB !== null && actualMatch.teamB !== undefined;
+    if (!actualOutcome && hasActualScores) {
       const a = normScore(actualMatch.teamA);
       const b = normScore(actualMatch.teamB);
       actualOutcome = a > b ? "A" : a < b ? "B" : "DRAW";
@@ -99,10 +101,9 @@ export function computePoints(
       totalPoints += 1;
       correctMatchCount++;
     }
-    if (
-      actualMatch.teamA !== "" && actualMatch.teamB !== "" &&
-      predA === actualMatch.teamA && predB === actualMatch.teamB
-    ) {
+    const actualA = normScore(actualMatch.teamA);
+    const actualB = normScore(actualMatch.teamB);
+    if (hasActualScores && predA === actualA && predB === actualB) {
       totalPoints += 1;
       exactMatchCount++;
       if (predA === 0 && predB === 0) zeroZeroPredictionsCount++;
