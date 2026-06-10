@@ -47,9 +47,6 @@ export async function recalculatePoints(database: any): Promise<void> {
       const userLeagues = leagues.filter((l: any) => l.members?.includes(userId) || l.createdBy === userId);
       userData.inBenoliga = userLeagues.some((l: any) => l.name?.toLowerCase().includes("beno") || l.id === "benoliga");
       userData.inPrivateLeague = userLeagues.length > 0;
-      userData.inLargePrivateLeague = userLeagues.some((l: any) =>
-        l.id !== "benoliga" && !l.name?.toLowerCase().includes("beno") && (l.members?.length || 0) >= 10
-      );
 
       const pred = predMap.get(userId) ?? {};
       const scored = computePoints(sanitizedActualG, actualSpecials, actualMatches, pred);
