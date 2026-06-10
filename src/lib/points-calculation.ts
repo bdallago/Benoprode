@@ -6,6 +6,8 @@ export interface PointsResult {
   correctMatchCount: number;
   groupsPerfectCount: number;
   zeroZeroPredictionsCount: number;
+  mufaGroupCount: number;
+  argentinaPerfectGroup: boolean;
 }
 
 export function sanitizeGroups(
@@ -37,6 +39,8 @@ export function computePoints(
   let correctMatchCount = 0;
   let groupsPerfectCount = 0;
   let zeroZeroPredictionsCount = 0;
+  let mufaGroupCount = 0;
+  let argentinaPerfectGroup = false;
 
   const predGroups = sanitizeGroups(pred.groups ?? {});
   const predSpecials = pred.specials ?? {};
@@ -54,7 +58,11 @@ export function computePoints(
     if (exact === 4) {
       totalPoints += 3;
       groupsPerfectCount++;
+      if (letter === "J") argentinaPerfectGroup = true;
     }
+    // mufa: group is fully resolved (all 4 positions filled) and user got 0 correct
+    const groupResolved = actualTeams.every(t => t && t !== "");
+    if (groupResolved && exact === 0) mufaGroupCount++;
   }
 
   for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
@@ -110,5 +118,5 @@ export function computePoints(
     }
   }
 
-  return { totalPoints, exactMatchCount, correctMatchCount, groupsPerfectCount, zeroZeroPredictionsCount };
+  return { totalPoints, exactMatchCount, correctMatchCount, groupsPerfectCount, zeroZeroPredictionsCount, mufaGroupCount, argentinaPerfectGroup };
 }
