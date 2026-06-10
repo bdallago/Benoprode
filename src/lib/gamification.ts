@@ -148,13 +148,11 @@ export function getUserBadges(
     longShotsGuessed = 0 // Cazador de utopias
   } = context;
 
-  // Grupos y Resultados (Solo al termino de la fase de grupos)
-  if (isGroupStageFinished) {
-    if (groupsPerfectCount >= 1) earned.add('visionario');
-    if (groupsPerfectCount >= 3) earned.add('oraculo');
-    if (groupsPerfectCount >= 6) earned.add('viajero_tiempo');
-    if (mufaGroupCount >= 1) earned.add('mufa');
-  }
+  // Grupos y Resultados
+  if (groupsPerfectCount >= 1) earned.add('visionario');
+  if (groupsPerfectCount >= 3) earned.add('oraculo');
+  if (groupsPerfectCount >= 6) earned.add('viajero_tiempo');
+  if (mufaGroupCount >= 1) earned.add('mufa');
 
   if (exactMatchCount >= 1) earned.add('ojo_halcon');
   if (exactMatchCount >= 5) earned.add('francotirador');
