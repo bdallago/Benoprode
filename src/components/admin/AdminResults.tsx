@@ -8,7 +8,7 @@ import {
 import { db, auth } from "../../firebase";
 import { GROUPS, SPECIAL_QUESTIONS } from "../../data";
 import matchesData from "../../lib/matches.json";
-import { computePoints, sanitizeGroups } from "../../lib/points-calculation";
+import { computePoints } from "../../lib/points-calculation";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Save, Calculator, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -112,16 +112,24 @@ export function AdminResults({ onMessage }: Props) {
     setCalculating(true);
     onMessage(null);
     try {
-      const actualG = sanitizeGroups(actualGroups);
-      const actualS = actualSpecials;
-      const actualM = actualMatches;
+      // Read finishedGroups from Firestore — only score groups with all 12 matches played.
+      const resultsSnap = await getDoc(doc(db, "results", "actual"));
+      const resultsData = resultsSnap.exists() ? resultsSnap.data() : {};
+      const finishedGroups: string[] = resultsData.finishedGroups || [];
+      const rawGroups: Record<string, string[]> = resultsData.groups ?? {};
+      const actualG: Record<string, string[]> = {};
+      for (const letter of finishedGroups) {
+        if (rawGroups[letter]) actualG[letter] = rawGroups[letter];
+      }
+      const actualS = resultsData.specials || {};
+      const actualM = resultsData.matches || {};
 
       let lastDoc = null;
       let hasMore = true;
       let totalProcessed = 0;
 
       while (hasMore) {
-        const constraints: QueryConstraint[] = [orderBy("__name__"), limit(50)];
+        const constraints: QueryConstraint[] = [orderBy("__name__"), limit(29)];
         if (lastDoc) constraints.push(startAfter(lastDoc));
         const usersSnapChunk = await getDocs(query(collection(db, "users"), ...constraints));
         if (usersSnapChunk.empty) { hasMore = false; break; }
