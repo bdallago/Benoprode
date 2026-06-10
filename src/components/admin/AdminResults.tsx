@@ -190,7 +190,6 @@ export function AdminResults({ onMessage }: Props) {
         usersSnapChunk.docs.forEach((d) =>
           batch.set(doc(db, "users", d.id), {
           totalPoints: 0,
-          earnedBadges: [],
           exactMatchCount: 0,
           correctMatchCount: 0,
           groupsPerfectCount: 0,
