@@ -1,6 +1,5 @@
 import axios from "axios";
 import { GROUPS } from "../data";
-import { recalculatePoints } from "./recalculate-points";
 
 const TEAM_NAME_MAPPING: Record<string, string> = {
   "Korea Republic": "South Korea",
@@ -29,6 +28,5 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
 
   if (Object.keys(newGroups).length > 0) {
     await database.collection("results").doc("actual").set({ groups: newGroups }, { merge: true });
-    await recalculatePoints(database);
   }
 }

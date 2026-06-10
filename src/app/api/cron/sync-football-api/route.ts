@@ -79,7 +79,7 @@ function hasActiveWindow(): boolean {
   const now = Date.now();
   return (matchesJson as { date: string }[]).some((m) => {
     const ko = new Date(m.date).getTime();
-    return now >= ko - 5 * 60_000 && now <= ko + 185 * 60_000;
+    return now >= ko - 5 * 60_000 && now <= ko + 210 * 60_000;
   });
 }
 
