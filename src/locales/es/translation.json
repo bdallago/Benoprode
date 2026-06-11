@@ -544,6 +544,7 @@
     "days": "Días",
     "timeUp": "¡Tiempo Agotado!",
     "timeUpDesc": "La fecha límite ha pasado. Todas las predicciones han sido fijadas automáticamente.",
+    "pointsDelay": "Los puntos se actualizan automáticamente dentro de los 2 minutos de finalizado cada partido.",
     "timeLeft": "Tiempo restante para el Mundial",
     "deadline": "Tenés hasta el 10 de Junio inclusive para hacer tus predicciones"
   },

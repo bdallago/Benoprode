@@ -544,6 +544,7 @@
     "days": "Days",
     "timeUp": "Time's Up!",
     "timeUpDesc": "The deadline has passed. All predictions have been automatically locked.",
+    "pointsDelay": "Points update automatically within 2 minutes of each match ending.",
     "timeLeft": "Time remaining until the World Cup",
     "deadline": "You have until June 10 inclusive to make your predictions"
   },

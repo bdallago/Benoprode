@@ -9,7 +9,8 @@
     "timeLeft": "Tempo restante para a Copa do Mundo",
     "deadline": "Você tem até 10 de Junho inclusive para fazer suas previsões",
     "timeUp": "Esgotado!",
-    "timeUpDesc": "Prazo encerrado."
+    "timeUpDesc": "Prazo encerrado.",
+    "pointsDelay": "Os pontos são atualizados automaticamente em até 2 minutos após o término de cada partida."
   },
   "welcome": {
     "title": "Bem-vindo ao",
