@@ -110,10 +110,12 @@ export default function Welcome() {
     const formatter = new Intl.DateTimeFormat('en-CA', options);
     
     try {
-      const formattedToday = formatter.format(today); // YYYY-MM-DD format
+      const formattedToday = formatter.format(today); // YYYY-MM-DD in ART
       const matchesForToday = matchesData.filter(m => {
         if (!m.date) return false;
-        return m.date.startsWith(formattedToday);
+        // Convert match UTC date to ART date before comparing
+        const matchARTDate = formatter.format(new Date(m.date));
+        return matchARTDate === formattedToday;
       });
       setTodayMatches(matchesForToday);
     } catch(e) {
