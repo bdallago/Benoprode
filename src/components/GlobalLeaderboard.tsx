@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, orderBy, limit, getDocs, startAfter, where, documentId, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, startAfter, where, documentId, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -239,6 +239,22 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
     }
   }, []);
 
+  // Live listener: when leaderboard_top_1000 updates, refresh cache and current page
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "system_stats", "leaderboard_top_1000"), (snap) => {
+      if (!snap.exists()) return;
+      const players = snap.data()?.players || [];
+      if (players.length === 0) return;
+      allPlayersCache.current = players;
+      // Only re-render if not searching/filtering
+      if (!searchQuery && !showFriendsOnly) {
+        lastPageRef.current = -1; // force re-render
+        fetchPage('first');
+      }
+    });
+    return () => unsub();
+  }, [searchQuery, showFriendsOnly]);
+
   const isFirstRender = useRef(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -247,7 +263,7 @@ export function GlobalLeaderboard({ currentUser, onUserClick, initialData }: { c
         isFirstRender.current = false;
         if (initialData && initialData.length > 0 && !searchQuery && !showFriendsOnly) return;
     }
-    
+
     fetchPage('first');
   }, [searchQuery, showFriendsOnly]);
 
