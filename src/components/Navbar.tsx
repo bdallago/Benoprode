@@ -31,8 +31,7 @@ export function Navbar({ user, isAdmin }: { user: User | null; isAdmin?: boolean
       if (
         key.startsWith('lastRead_') ||
         key.startsWith('lastReadComments_') ||
-        key === 'lastReadLiveChat' ||
-        key === 'hasSeenCommentsTooltip'
+key === 'hasSeenCommentsTooltip'
       ) {
         localStorage.removeItem(key);
       }

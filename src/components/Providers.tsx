@@ -37,8 +37,7 @@ import "../i18n";
 import { useTranslation } from "react-i18next";
 import { usePathname, useRouter } from "next/navigation";
 import { BADGES } from "../lib/gamification";
-import { X, MessageCircle } from "lucide-react";
-import { LiveChat } from "./LiveChat";
+import { X } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { TooltipProvider } from "./ui/tooltip";
 
@@ -244,70 +243,6 @@ function GlobalBadgeListener({
   );
 }
 
-function LiveChatFAB({ user }: { user: User }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
-
-  useEffect(() => {
-    const q = query(collection(db, 'liveChat'), orderBy('createdAt', 'desc'), limit(1));
-    const unsubscribe = onSnapshot(q, (snap) => {
-      if (snap.empty) { setHasUnread(false); return; }
-      const last = snap.docs[0].data();
-      if (last.userId === user.uid) { setHasUnread(false); return; }
-      const createdAt = last.createdAt;
-      const lastTime = createdAt?.toDate ? createdAt.toDate().toISOString() : '';
-      const lastRead = localStorage.getItem('lastReadLiveChat') ?? '';
-      setHasUnread(!!lastTime && lastTime > lastRead);
-    }, () => {});
-    return () => unsubscribe();
-  }, [user.uid]); // Stable — no isOpen dep to avoid teardown on every open/close
-
-  // Separate effect: mark as read whenever the panel opens
-  useEffect(() => {
-    if (isOpen) {
-      setHasUnread(false);
-      localStorage.setItem('lastReadLiveChat', new Date().toISOString());
-    }
-  }, [isOpen]);
-
-  const openChat = () => {
-    setIsOpen(true);
-    setHasUnread(false);
-    localStorage.setItem('lastReadLiveChat', new Date().toISOString());
-  };
-
-  return (
-    <>
-      {/* FAB — above mobile bottom nav (h-16 + pb-safe ≈ 80–100px, so bottom-28 clears it) */}
-      <button
-        onClick={isOpen ? () => setIsOpen(false) : openChat}
-        className="fixed bottom-28 right-5 md:bottom-8 md:right-8 z-[60] w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl flex items-center justify-center transition-colors"
-        title="Chat en vivo"
-      >
-        <MessageCircle className="w-6 h-6" />
-        {hasUnread && (
-          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white" />
-        )}
-      </button>
-
-      {/* Backdrop + Panel */}
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[59] bg-black/40 backdrop-blur-sm md:hidden"
-            onClick={() => setIsOpen(false)}
-          />
-          <div
-            className="fixed inset-x-4 bottom-48 md:inset-x-auto md:right-8 md:bottom-24 md:w-96 z-[60] shadow-2xl rounded-xl overflow-hidden"
-            style={{ height: 'min(520px, calc(100dvh - 14rem))' }}
-          >
-            <LiveChat onClose={() => setIsOpen(false)} />
-          </div>
-        </>
-      )}
-    </>
-  );
-}
 
 function sendClientError(message: string, stack?: string, context?: string, uid?: string) {
   fetch("/api/log-error", {
@@ -554,7 +489,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           {user && (
             <GlobalBadgeListener user={user} globalLeagues={globalLeagues} userStats={userStats} />
           )}
-          {user && <LiveChatFAB user={user} />}
           <main className="container mx-auto px-4 py-8 flex-grow">
             {children}
           </main>

@@ -99,30 +99,30 @@ export default function Welcome() {
 
   const totalDays = Object.keys(matchesByDayMap).length;
 
-  const [todayMatches, setTodayMatches] = useState<typeof matchesData>([]);
-
-  useEffect(() => {
-    // Current date logic: check if any matches are played today, 
-    // Format YYYY-MM-DD
+  const [todayMatches] = useState<typeof matchesData>(() => {
     const today = new Date();
-    // Use Argentina's timezone to match the game's context
     const options = { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' } as const;
     const formatter = new Intl.DateTimeFormat('en-CA', options);
-    
     try {
-      const formattedToday = formatter.format(today); // YYYY-MM-DD in ART
-      const matchesForToday = matchesData.filter(m => {
+      const formattedToday = formatter.format(today);
+      return matchesData.filter(m => {
         if (!m.date) return false;
-        // Convert match UTC date to ART date before comparing
-        const matchARTDate = formatter.format(new Date(m.date));
-        return matchARTDate === formattedToday;
+        return formatter.format(new Date(m.date)) === formattedToday;
       });
-      setTodayMatches(matchesForToday);
-    } catch(e) {
-      // Fallback if Intl fails
+    } catch {
       const currentIso = today.toISOString().split('T')[0];
-      setTodayMatches(matchesData.filter(m => m.date && m.date.startsWith(currentIso)));
+      return matchesData.filter(m => m.date && m.date.startsWith(currentIso));
     }
+  });
+
+  const [matchResults, setMatchResults] = useState<Record<string, { teamA: number; teamB: number }>>({});
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const unsub = onSnapshot(doc(db, "results", "actual"), (snap) => {
+      if (snap.exists()) setMatchResults(snap.data()?.matches || {});
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -335,16 +335,17 @@ export default function Welcome() {
                {todayMatches.map(match => {
                  const dateObj = new Date(match.date);
                  const timeStr = dateObj.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute:'2-digit' });
-                 
-                 // Encontrar a qué grupo pertenece el partido
-                 const groupEntry = Object.entries(GROUPS).find(([_, teams]) => 
+
+                 const groupEntry = Object.entries(GROUPS).find(([_, teams]) =>
                    teams.includes(match.teamA) && teams.includes(match.teamB)
                  );
                  const groupName = groupEntry ? groupEntry[0] : 'E';
+                 const result = matchResults[match.id];
+                 const isFinished = !!result;
+                 const isLive = !isFinished && Date.now() > dateObj.getTime();
 
                  return (
                    <div key={match.id} className="relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
-                     {/* Fondo sutil indicando el grupo */}
                      <div className="absolute top-0 right-0 p-2 opacity-10 font-black text-6xl pointer-events-none -mt-4 -mr-2 text-gray-900 dark:text-white">
                         {groupName}
                      </div>
@@ -353,15 +354,28 @@ export default function Welcome() {
                         <span className="text-[10px] uppercase font-black tracking-widest text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-sm">
                            {t('welcome.group', 'GRUPO')} {groupName}
                         </span>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-sm">
-                           <Clock className="w-3 h-3" />
-                           {timeStr} hs
-                        </div>
+                        {isFinished ? (
+                          <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-sm">Final</span>
+                        ) : isLive ? (
+                          <span className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-sm">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse inline-block" />
+                            En Vivo
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-sm">
+                             <Clock className="w-3 h-3" />
+                             {timeStr} hs
+                          </div>
+                        )}
                      </div>
 
                      <div className="flex justify-between items-center z-10 w-full">
                        <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 truncate text-base">{match.teamA}</div>
-                       <div className="px-3 text-xs font-bold text-gray-400 dark:text-gray-300">VS</div>
+                       {isFinished ? (
+                         <div className="px-3 text-lg font-black text-gray-800 dark:text-gray-100 tabular-nums">{result.teamA} - {result.teamB}</div>
+                       ) : (
+                         <div className="px-3 text-xs font-bold text-gray-400 dark:text-gray-300">VS</div>
+                       )}
                        <div className="flex-1 font-bold text-gray-800 dark:text-gray-200 text-right truncate text-base">{match.teamB}</div>
                      </div>
                    </div>
