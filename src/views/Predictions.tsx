@@ -68,7 +68,7 @@ export default function Predictions({ user }: { user: User }) {
 
   // Auto-save logic for matches
   useEffect(() => {
-    if (loading || effectiveIsLocked) return;
+    if (loading) return;
     
     // Skip first render to avoid saving immediately on load
     if (isFirstRender.current) {

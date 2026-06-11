@@ -183,18 +183,27 @@ export function usePredictions(userId: string) {
       const lockedLastMinute = now >= GROUP_STAGE_DEADLINE - tenMins && now < GROUP_STAGE_DEADLINE;
       const lockedEarly = lock && now < EARLY_LOCK_DEADLINE;
 
-      await setDoc(doc(db, "predictions", userId), {
-        uid: userId,
-        groups: groupPredictions,
-        specials: specialPredictions,
-        knockouts: knockoutPredictions,
-        matches: matchPredictions,
-        isLocked: lock || effectiveIsLocked,
-        hasSavedPredictions: true,
-        ...(lockedLastMinute ? { lockedLastMinute: true } : {}),
-        ...(lockedEarly ? { lockedEarly: true } : {}),
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      // After the group stage deadline, Firestore rules only allow changes to matches + updatedAt.
+      // Sending other fields (isLocked, groups, etc.) causes a permission-denied error for non-admins.
+      if (effectiveIsLocked && silent && !lock) {
+        await setDoc(doc(db, "predictions", userId), {
+          matches: matchPredictions,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } else {
+        await setDoc(doc(db, "predictions", userId), {
+          uid: userId,
+          groups: groupPredictions,
+          specials: specialPredictions,
+          knockouts: knockoutPredictions,
+          matches: matchPredictions,
+          isLocked: lock || effectiveIsLocked,
+          hasSavedPredictions: true,
+          ...(lockedLastMinute ? { lockedLastMinute: true } : {}),
+          ...(lockedEarly ? { lockedEarly: true } : {}),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
 
       if (lock || effectiveIsLocked) setIsLocked(true);
     } catch (error: any) {
