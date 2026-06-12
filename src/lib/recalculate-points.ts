@@ -40,6 +40,12 @@ export async function recalculatePoints(database: any): Promise<void> {
   const actualSpecials: Record<string, string> = actualData.specials || {};
   const actualMatches: Record<string, any> = actualData.matches || {};
 
+  // zona_copas/en_cima only unlock after the first matchday is fully played (match_24: Uzbekistán vs Colombia)
+  const m24 = actualMatches["match_24"];
+  const rankingBadgesEnabled =
+    m24 && m24.teamA !== "" && m24.teamA !== null && m24.teamA !== undefined &&
+    m24.teamB !== "" && m24.teamB !== null && m24.teamB !== undefined;
+
   const leaguesSnap = await database.collection("leagues").get();
   const leagues = leaguesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
@@ -114,7 +120,10 @@ export async function recalculatePoints(database: any): Promise<void> {
     while (lastSameIdx + 1 < totalUsers && userResults[lastSameIdx + 1].totalPoints === pts) {
       lastSameIdx++;
     }
-    userResults[i].context.topPercentage = ((lastSameIdx + 1) / totalUsers) * 100;
+    // If first matchday isn't done yet, set topPercentage to 100 so zona_copas/en_cima are never awarded
+    userResults[i].context.topPercentage = rankingBadgesEnabled
+      ? ((lastSameIdx + 1) / totalUsers) * 100
+      : 100;
   }
 
   const top1000 = userResults.slice(0, 1000).map((r) => ({
