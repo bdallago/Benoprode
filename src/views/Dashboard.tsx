@@ -3,12 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { User } from "firebase/auth";
 import {
-  collection,
-  query,
   doc,
   getDoc,
-  getCountFromServer,
-  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -103,24 +99,16 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
       }
 
       try {
-        const myDoc = await getDoc(doc(db, "users", user.uid));
-        const data = myDoc.data();
-        const pts = data?.totalPoints || 0;
+        const leaderboardDoc = await getDoc(doc(db, "system_stats", "leaderboard_top_1000"));
+        const lbData = leaderboardDoc.data();
+        const players: Player[] = lbData?.players || [];
+        const total: number = lbData?.totalCount || players.length;
 
-        // Si el totalUsers ya lo tenemos de los props, solo pedimos el rank
-        const queries = [];
-        if (totalPlayers === 0) {
-           queries.push(getCountFromServer(collection(db, "users")));
-        } else {
-           queries.push(Promise.resolve({ data: () => ({ count: totalPlayers }) }));
-        }
+        const index = players.findIndex((p) => p.uid === user.uid);
+        const rank = index !== -1 ? index + 1 : total;
 
-        queries.push(getCountFromServer(query(collection(db, "users"), where("totalPoints", ">", pts))));
-
-        const [totalSnap, rankSnap]: any = await Promise.all(queries);
-
-        setTotalPlayers(totalSnap.data().count);
-        setExactRank(rankSnap.data().count + 1);
+        setTotalPlayers(total);
+        setExactRank(rank);
       } catch (error: any) {
         // Eliminamos el setTimeout que causaba saturación en cascada y lo dejamos como soft-fail
         console.warn("Error calculating exact rank (soft fail):", error?.message || error);
