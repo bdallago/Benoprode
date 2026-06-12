@@ -109,8 +109,8 @@ service cloud.firestore {
     // Helper para verificar si un partido sigue abierto para predicciones (1 hora de margen)
     function isMatchOpen(matchId) {
       let matchPath = /databases/$(database)/documents/matches/$(matchId);
-      return !exists(matchPath) || 
-             request.time < timestamp(get(matchPath).data.startTime) - duration.value(1, 'h');
+      return !exists(matchPath) ||
+             request.time < get(matchPath).data.startTime - duration.value(1, 'h');
     }
 
     // Rules
@@ -156,7 +156,7 @@ service cloud.firestore {
           // Si cambian partidos, verificamos que el que cambió esté abierto 
           // (Funciona mejor si se guarda de a uno, si es bulk, protegemos por UI y tiempo general)
           (
-            !request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() == 1 ||
+            request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() != 1 ||
             isMatchOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()[0])
           )
         )

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import * as admin from "firebase-admin";
 import matchesJson from "../../../../lib/matches.json";
 
 export async function GET(req: Request) {
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
         id: match.id,
         teamA: match.teamA,
         teamB: match.teamB,
-        startTime: match.date, // ISO Format
+        startTime: admin.firestore.Timestamp.fromDate(new Date(match.date)),
         status: "scheduled",
         updatedAt: new Date().toISOString()
       }, { merge: true });
