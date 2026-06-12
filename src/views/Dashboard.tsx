@@ -105,7 +105,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
         const total: number = lbData?.totalCount || players.length;
 
         const index = players.findIndex((p) => p.uid === user.uid);
-        const rank = index !== -1 ? index + 1 : total;
+        const rank = index !== -1 ? index + 1 : -1;
 
         setTotalPlayers(total);
         setExactRank(rank);
@@ -235,7 +235,7 @@ export default function Dashboard({ initialLeaderboardData, initialTotalCount }:
                     {t("dashboard.globalRank")}
                   </p>
                   <h2 className="text-6xl font-black tracking-tighter">
-                    {loading || !myRank ? '…' : `#${myRank}`}
+                    {loading ? '…' : myRank > 0 ? `#${myRank}` : '—'}
                   </h2>
                 </div>
                 <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">

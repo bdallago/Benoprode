@@ -1,5 +1,16 @@
 import { computePoints, sanitizeGroups } from "./points-calculation";
 import { getUserBadges } from "./gamification";
+import matchesData from "./matches.json";
+
+// Group match IDs by ART date (UTC-3)
+const matchIdsByARTDate: Record<string, string[]> = {};
+for (const m of matchesData as { id: string; date: string }[]) {
+  const artDate = new Date(new Date(m.date).getTime() - 3 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  if (!matchIdsByARTDate[artDate]) matchIdsByARTDate[artDate] = [];
+  matchIdsByARTDate[artDate].push(m.id);
+}
 
 function assignUserBadges(
   docData: any,
@@ -63,11 +74,31 @@ export async function recalculatePoints(database: any): Promise<void> {
       const pred = predMap.get(userId) ?? {};
       const scored = computePoints(sanitizedActualG, actualSpecials, actualMatches, pred);
 
+      // Compute perfectDaysCount: days where ALL matches with results were predicted exactly
+      const predMatches = pred.matches ?? {};
+      let perfectDaysCount = 0;
+      for (const [artDate, matchIds] of Object.entries(matchIdsByARTDate)) {
+        const resolvedIds = matchIds.filter((id) => {
+          const am = actualMatches[id];
+          return am && am.teamA !== "" && am.teamA !== null && am.teamA !== undefined &&
+                 am.teamB !== "" && am.teamB !== null && am.teamB !== undefined;
+        });
+        if (resolvedIds.length === 0) continue;
+        const allExact = resolvedIds.every((id) => {
+          const am = actualMatches[id];
+          const pm = predMatches[id];
+          if (!pm) return false;
+          const normScore = (v: any): number => (v === "" || v === null || v === undefined ? 0 : Number(v));
+          return normScore(pm.teamA) === normScore(am.teamA) && normScore(pm.teamB) === normScore(am.teamB);
+        });
+        if (allExact) perfectDaysCount++;
+      }
+
       userResults.push({
         userId,
         totalPoints: scored.totalPoints,
         userData,
-        context: { ...scored, isGroupStageFinished, topPercentage: 100 },
+        context: { ...scored, isGroupStageFinished, topPercentage: 100, perfectDaysCount },
       });
     }
   }
@@ -75,14 +106,15 @@ export async function recalculatePoints(database: any): Promise<void> {
   userResults.sort((a, b) => b.totalPoints - a.totalPoints);
   const totalUsers = userResults.length;
 
-  let currentRank = 1;
-  let previousPoints = -1;
+  // Use pessimistic rank (last position in tie group) so badges like zona_copas/en_cima
+  // require genuine separation from the pack, not just tying for first.
   for (let i = 0; i < totalUsers; i++) {
-    if (userResults[i].totalPoints !== previousPoints) {
-      currentRank = i + 1;
-      previousPoints = userResults[i].totalPoints;
+    const pts = userResults[i].totalPoints;
+    let lastSameIdx = i;
+    while (lastSameIdx + 1 < totalUsers && userResults[lastSameIdx + 1].totalPoints === pts) {
+      lastSameIdx++;
     }
-    userResults[i].context.topPercentage = (currentRank / totalUsers) * 100;
+    userResults[i].context.topPercentage = ((lastSameIdx + 1) / totalUsers) * 100;
   }
 
   const top1000 = userResults.slice(0, 1000).map((r) => ({
