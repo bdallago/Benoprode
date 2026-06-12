@@ -16,6 +16,7 @@ const TEAM_MAP: Record<string, string> = {
   "Czechia": "República Checa",
   "Canada": "Canadá",
   "Bosnia and Herzegovina": "Bosnia y Herzegovina",
+  "Bosnia & Herzegovina": "Bosnia y Herzegovina",
   "Switzerland": "Suiza",
   "Brazil": "Brasil",
   "Morocco": "Marruecos",
