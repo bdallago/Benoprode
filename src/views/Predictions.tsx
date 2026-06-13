@@ -177,7 +177,10 @@ export default function Predictions({ user }: { user: User }) {
           )}
           {effectiveIsLocked && (
             <div className={`flex items-center gap-2 text-green-700 bg-green-50 rounded-md border border-green-200 justify-center transition-all ${isSticky ? 'py-1 px-2 text-xs flex-1 md:flex-none h-9' : 'px-4 py-2 w-full sm:w-auto'}`}>
-              <Lock className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'}`} /> <span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.predictionsLocked')}</span><span className={isSticky ? "sm:hidden" : "hidden"}>{t('predictions.lockedShort')}</span>
+              {isAutoSaving
+                ? <><Loader2 className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'} animate-spin`} /><span className={isSticky ? "hidden sm:inline" : ""}>Guardando...</span></>
+                : <><Lock className={`${isSticky ? 'w-3 h-3' : 'w-4 h-4'}`} /><span className={isSticky ? "hidden sm:inline" : ""}>{t('predictions.predictionsLocked')}</span><span className={isSticky ? "sm:hidden" : "hidden"}>{t('predictions.lockedShort')}</span></>
+              }
             </div>
           )}
         </div>

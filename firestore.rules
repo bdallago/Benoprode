@@ -150,10 +150,12 @@ service cloud.firestore {
       allow write: if isAuthenticated() && (isAdmin() || (isOwner(userId) && (
         // Antes del mundial todo abierto
         request.time < timestamp.date(2026, 6, 11) ||
+        // Usuario nuevo que nunca guardó predicciones: permite crear documento completo válido
+        (resource == null && isValidPrediction(request.resource.data) && request.resource.data.uid == userId) ||
         (
-          resource != null && 
+          resource != null &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
-          // Si cambian partidos, verificamos que el que cambió esté abierto 
+          // Si cambian partidos, verificamos que el que cambió esté abierto
           // (Funciona mejor si se guarda de a uno, si es bulk, protegemos por UI y tiempo general)
           (
             request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() != 1 ||

@@ -25,6 +25,8 @@ export function usePredictions(userId: string) {
   const previousMatchOutcomes = useRef<Record<string, MatchOutcome>>({});
   // Guard: only true once fetchPredictions completes — prevents save-on-unmount from overwriting with empty state
   const dataLoaded = useRef(false);
+  // Track whether the prediction document already existed in Firestore on load
+  const documentExists = useRef(false);
   // Debounce stats: accumulate net deltas, flush after 1.5s idle
   const pendingStats = useRef<Record<string, { firstOld: MatchOutcome; latest: MatchOutcome }>>({});
   const statsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,6 +39,7 @@ export function usePredictions(userId: string) {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+          documentExists.current = true;
           const data = docSnap.data();
 
           const sanitizedGroups: Record<string, string[]> = {};
@@ -183,9 +186,9 @@ export function usePredictions(userId: string) {
       const lockedLastMinute = now >= GROUP_STAGE_DEADLINE - tenMins && now < GROUP_STAGE_DEADLINE;
       const lockedEarly = lock && now < EARLY_LOCK_DEADLINE;
 
-      // After the group stage deadline, Firestore rules only allow changes to matches + updatedAt.
-      // Sending other fields (isLocked, groups, etc.) causes a permission-denied error for non-admins.
-      if (effectiveIsLocked && silent && !lock) {
+      // After the group stage deadline, Firestore rules only allow changes to matches + updatedAt
+      // for existing documents. New users (no document yet) must send the full valid payload.
+      if (effectiveIsLocked && silent && !lock && documentExists.current) {
         await setDoc(doc(db, "predictions", userId), {
           matches: matchPredictions,
           updatedAt: new Date().toISOString()
@@ -205,6 +208,7 @@ export function usePredictions(userId: string) {
         }, { merge: true });
       }
 
+      documentExists.current = true;
       if (lock || effectiveIsLocked) setIsLocked(true);
     } catch (error: any) {
       console.error("Error saving predictions:", error);
