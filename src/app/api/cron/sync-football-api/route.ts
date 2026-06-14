@@ -117,18 +117,25 @@ export async function GET(req: Request) {
     // non-fatal — proceed
   }
 
+  // Query yesterday + today (UTC) so matches that cross midnight UTC
+  // aren't missed when they finish after the date rolls over.
   const today = new Date().toISOString().split("T")[0];
-  const res = await fetch(`${API_BASE}/fixtures?league=${LEAGUE}&season=${SEASON}&date=${today}`, {
-    headers: { "x-apisports-key": apiKey },
-    cache: "no-store",
-  });
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
 
-  if (!res.ok) {
-    return NextResponse.json({ error: `API-Football error ${res.status}` }, { status: 500 });
+  const fixtures: any[] = [];
+  for (const date of [yesterday, today]) {
+    const res = await fetch(`${API_BASE}/fixtures?league=${LEAGUE}&season=${SEASON}&date=${date}`, {
+      headers: { "x-apisports-key": apiKey },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ error: `API-Football error ${res.status}` }, { status: 500 });
+    }
+
+    const data = await res.json();
+    fixtures.push(...(data.response ?? []));
   }
-
-  const data = await res.json();
-  const fixtures: any[] = data.response ?? [];
 
   const batch = db.batch();
   const resultsUpdates: Record<string, any> = {};
