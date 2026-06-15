@@ -155,9 +155,10 @@ service cloud.firestore {
         (
           resource != null &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
-          // Si cambian partidos, verificamos que el que cambió esté abierto
-          // (Funciona mejor si se guarda de a uno, si es bulk, protegemos por UI y tiempo general)
+          // Si cambian partidos, verificamos que el que cambió esté abierto.
+          // Si el usuario nunca guardó partidos (campo matches inexistente), permitir cualquier primer guardado.
           (
+            !('matches' in resource.data) ||
             request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() != 1 ||
             isMatchOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()[0])
           )
