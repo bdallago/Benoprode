@@ -212,15 +212,12 @@ export function usePredictions(userId: string) {
       if (lock || effectiveIsLocked) setIsLocked(true);
     } catch (error: any) {
       console.error("Error saving predictions:", error);
-      // Rollback optimistic success with error message
-      if (!silent) {
-        if (error.code === 'permission-denied' || error.message?.includes('permission')) {
-          setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
-        } else {
-          setMessage({ type: 'error', text: t('predictions.saveError') });
-        }
-        setTimeout(() => setMessage(null), 5000);
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        setMessage({ type: 'error', text: 'El tiempo para enviar predicciones ha terminado' });
+      } else {
+        setMessage({ type: 'error', text: t('predictions.saveError') });
       }
+      setTimeout(() => setMessage(null), 5000);
     } finally {
       setSaving(false);
     }
