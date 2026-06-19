@@ -113,6 +113,83 @@ service cloud.firestore {
              request.time < get(matchPath).data.startTime - duration.value(1, 'h');
     }
 
+    // Verifica que todos los partidos modificados estén abiertos.
+    // Usa hasAny con short-circuit: solo llama isMatchOpen para el partido que realmente cambió.
+    function allChangedMatchesOpen(keys) {
+      return (!keys.hasAny(['match_1'])  || isMatchOpen('match_1'))  &&
+             (!keys.hasAny(['match_2'])  || isMatchOpen('match_2'))  &&
+             (!keys.hasAny(['match_3'])  || isMatchOpen('match_3'))  &&
+             (!keys.hasAny(['match_4'])  || isMatchOpen('match_4'))  &&
+             (!keys.hasAny(['match_5'])  || isMatchOpen('match_5'))  &&
+             (!keys.hasAny(['match_6'])  || isMatchOpen('match_6'))  &&
+             (!keys.hasAny(['match_7'])  || isMatchOpen('match_7'))  &&
+             (!keys.hasAny(['match_8'])  || isMatchOpen('match_8'))  &&
+             (!keys.hasAny(['match_9'])  || isMatchOpen('match_9'))  &&
+             (!keys.hasAny(['match_10']) || isMatchOpen('match_10')) &&
+             (!keys.hasAny(['match_11']) || isMatchOpen('match_11')) &&
+             (!keys.hasAny(['match_12']) || isMatchOpen('match_12')) &&
+             (!keys.hasAny(['match_13']) || isMatchOpen('match_13')) &&
+             (!keys.hasAny(['match_14']) || isMatchOpen('match_14')) &&
+             (!keys.hasAny(['match_15']) || isMatchOpen('match_15')) &&
+             (!keys.hasAny(['match_16']) || isMatchOpen('match_16')) &&
+             (!keys.hasAny(['match_17']) || isMatchOpen('match_17')) &&
+             (!keys.hasAny(['match_18']) || isMatchOpen('match_18')) &&
+             (!keys.hasAny(['match_19']) || isMatchOpen('match_19')) &&
+             (!keys.hasAny(['match_20']) || isMatchOpen('match_20')) &&
+             (!keys.hasAny(['match_21']) || isMatchOpen('match_21')) &&
+             (!keys.hasAny(['match_22']) || isMatchOpen('match_22')) &&
+             (!keys.hasAny(['match_23']) || isMatchOpen('match_23')) &&
+             (!keys.hasAny(['match_24']) || isMatchOpen('match_24')) &&
+             (!keys.hasAny(['match_25']) || isMatchOpen('match_25')) &&
+             (!keys.hasAny(['match_26']) || isMatchOpen('match_26')) &&
+             (!keys.hasAny(['match_27']) || isMatchOpen('match_27')) &&
+             (!keys.hasAny(['match_28']) || isMatchOpen('match_28')) &&
+             (!keys.hasAny(['match_29']) || isMatchOpen('match_29')) &&
+             (!keys.hasAny(['match_30']) || isMatchOpen('match_30')) &&
+             (!keys.hasAny(['match_31']) || isMatchOpen('match_31')) &&
+             (!keys.hasAny(['match_32']) || isMatchOpen('match_32')) &&
+             (!keys.hasAny(['match_33']) || isMatchOpen('match_33')) &&
+             (!keys.hasAny(['match_34']) || isMatchOpen('match_34')) &&
+             (!keys.hasAny(['match_35']) || isMatchOpen('match_35')) &&
+             (!keys.hasAny(['match_36']) || isMatchOpen('match_36')) &&
+             (!keys.hasAny(['match_37']) || isMatchOpen('match_37')) &&
+             (!keys.hasAny(['match_38']) || isMatchOpen('match_38')) &&
+             (!keys.hasAny(['match_39']) || isMatchOpen('match_39')) &&
+             (!keys.hasAny(['match_40']) || isMatchOpen('match_40')) &&
+             (!keys.hasAny(['match_41']) || isMatchOpen('match_41')) &&
+             (!keys.hasAny(['match_42']) || isMatchOpen('match_42')) &&
+             (!keys.hasAny(['match_43']) || isMatchOpen('match_43')) &&
+             (!keys.hasAny(['match_44']) || isMatchOpen('match_44')) &&
+             (!keys.hasAny(['match_45']) || isMatchOpen('match_45')) &&
+             (!keys.hasAny(['match_46']) || isMatchOpen('match_46')) &&
+             (!keys.hasAny(['match_47']) || isMatchOpen('match_47')) &&
+             (!keys.hasAny(['match_48']) || isMatchOpen('match_48')) &&
+             (!keys.hasAny(['match_49']) || isMatchOpen('match_49')) &&
+             (!keys.hasAny(['match_50']) || isMatchOpen('match_50')) &&
+             (!keys.hasAny(['match_51']) || isMatchOpen('match_51')) &&
+             (!keys.hasAny(['match_52']) || isMatchOpen('match_52')) &&
+             (!keys.hasAny(['match_53']) || isMatchOpen('match_53')) &&
+             (!keys.hasAny(['match_54']) || isMatchOpen('match_54')) &&
+             (!keys.hasAny(['match_55']) || isMatchOpen('match_55')) &&
+             (!keys.hasAny(['match_56']) || isMatchOpen('match_56')) &&
+             (!keys.hasAny(['match_57']) || isMatchOpen('match_57')) &&
+             (!keys.hasAny(['match_58']) || isMatchOpen('match_58')) &&
+             (!keys.hasAny(['match_59']) || isMatchOpen('match_59')) &&
+             (!keys.hasAny(['match_60']) || isMatchOpen('match_60')) &&
+             (!keys.hasAny(['match_61']) || isMatchOpen('match_61')) &&
+             (!keys.hasAny(['match_62']) || isMatchOpen('match_62')) &&
+             (!keys.hasAny(['match_63']) || isMatchOpen('match_63')) &&
+             (!keys.hasAny(['match_64']) || isMatchOpen('match_64')) &&
+             (!keys.hasAny(['match_65']) || isMatchOpen('match_65')) &&
+             (!keys.hasAny(['match_66']) || isMatchOpen('match_66')) &&
+             (!keys.hasAny(['match_67']) || isMatchOpen('match_67')) &&
+             (!keys.hasAny(['match_68']) || isMatchOpen('match_68')) &&
+             (!keys.hasAny(['match_69']) || isMatchOpen('match_69')) &&
+             (!keys.hasAny(['match_70']) || isMatchOpen('match_70')) &&
+             (!keys.hasAny(['match_71']) || isMatchOpen('match_71')) &&
+             (!keys.hasAny(['match_72']) || isMatchOpen('match_72'));
+    }
+
     // Rules
     match /users/{userId} {
       // Anyone authenticated can read users (needed for leaderboard)
@@ -155,13 +232,9 @@ service cloud.firestore {
         (
           resource != null &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
-          // Si cambian partidos, verificamos que el que cambió esté abierto.
-          // Si el usuario nunca guardó partidos (campo matches inexistente), permitir cualquier primer guardado.
-          (
-            !('matches' in resource.data) ||
-            request.resource.data.matches.diff(resource.data.matches).affectedKeys().size() != 1 ||
-            isMatchOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()[0])
-          )
+          // Si el usuario nunca guardó partidos, permitir. Si sí, verificar que los cambiados estén abiertos.
+          (!('matches' in resource.data) ||
+           allChangedMatchesOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()))
         )
       )));
     }
