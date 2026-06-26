@@ -12,14 +12,15 @@ export interface SlotView {
   status: "correct" | "wrong" | null;
 }
 
-// Equipo que "ocupa" la salida de un slot desde la perspectiva del usuario:
-// el ganador real si la ronda ya se resolvió, si no la proyección (pick) del usuario.
+// Equipo que "ocupa" la salida de un slot. Solo se propaga el ganador REAL: las
+// rondas posteriores recién muestran equipos (y se vuelven predecibles) cuando el
+// cruce que las alimenta se resolvió de verdad. No se proyectan los picks del
+// usuario hacia adelante — solo se predice la instancia activa inmediata.
 function advancer(
   slotId: SlotId,
-  userPicks: Record<SlotId, string>,
   actualWinners: Record<SlotId, string>
 ): string | null {
-  return actualWinners[slotId] ?? userPicks[slotId] ?? null;
+  return actualWinners[slotId] ?? null;
 }
 
 // Calcula el view-model por casillero. R32 se siembra desde `seedR32`; las rondas
@@ -39,8 +40,8 @@ export function buildDisplayBracket(
       teamB = seed?.[1] ?? null;
     } else {
       const [s1, s2] = slot.sources;
-      teamA = advancer(s1, userPicks, actualWinners);
-      teamB = advancer(s2, userPicks, actualWinners);
+      teamA = advancer(s1, actualWinners);
+      teamB = advancer(s2, actualWinners);
     }
     const rawPick = userPicks[slot.id] ?? null;
     const pick = rawPick && (rawPick === teamA || rawPick === teamB) ? rawPick : null;

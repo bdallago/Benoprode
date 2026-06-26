@@ -231,7 +231,9 @@ service cloud.firestore {
         (resource == null && isValidPrediction(request.resource.data) && request.resource.data.uid == userId) ||
         (
           resource != null &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'updatedAt']) &&
+          // Después del inicio del Mundial se pueden cambiar partidos individuales y
+          // las elecciones de fase eliminatoria (la fase de KO transcurre post-deadline).
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matches', 'knockouts', 'updatedAt']) &&
           // Si el usuario nunca guardó partidos, permitir. Si sí, verificar que los cambiados estén abiertos.
           (!('matches' in resource.data) ||
            allChangedMatchesOpen(request.resource.data.matches.diff(resource.data.matches).affectedKeys()))

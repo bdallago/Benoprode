@@ -18,7 +18,8 @@ export function usePredictions(userId: string) {
 
   const [groupPredictions, setGroupPredictions] = useState<Record<string, string[]>>(GROUPS);
   const [specialPredictions, setSpecialPredictions] = useState<Record<string, string>>({});
-  const [knockoutPredictions, setKnockoutPredictions] = useState<Record<string, string[]>>({});
+  // Picks de fase eliminatoria por casillero del cuadro: { "R32-1": "Argentina", ... }
+  const [knockoutPredictions, setKnockoutPredictions] = useState<Record<string, string>>({});
   const [matchPredictions, setMatchPredictions] = useState<Record<string, MatchPred>>({});
 
   // previousMatchOutcomes tracks what's persisted in Firestore so we can diff on outcome change
@@ -189,8 +190,11 @@ export function usePredictions(userId: string) {
       // After the group stage deadline, Firestore rules only allow changes to matches + updatedAt
       // for existing documents. New users (no document yet) must send the full valid payload.
       if (effectiveIsLocked && silent && !lock && documentExists.current) {
+        // Post-deadline: las reglas solo permiten cambiar matches + knockouts + updatedAt.
+        // La fase eliminatoria transcurre acá, así que también persistimos los picks de KO.
         await setDoc(doc(db, "predictions", userId), {
           matches: matchPredictions,
+          knockouts: knockoutPredictions,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } else {

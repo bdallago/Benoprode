@@ -13,6 +13,18 @@ import { getUserBadges, BADGES } from "../lib/gamification";
 import { DuelModal } from "./DuelModal";
 import { useSocial } from "../hooks/useSocial";
 import { useAuth } from "./Providers";
+import { BRACKET_TREE, pointsForSlot } from "../lib/bracket/tree";
+import { getTeamFlagUrl } from "../lib/utils";
+import type { Round } from "../lib/bracket/types";
+
+const KO_ROUND_ORDER: Round[] = ["R32", "R16", "QF", "SF", "F"];
+const KO_ROUND_LABEL_KEY: Record<Round, string> = {
+  R32: "predictions.stageRoundOf32",
+  R16: "predictions.stageRoundOf16",
+  QF: "predictions.stageQuarterFinals",
+  SF: "predictions.stageSemiFinals",
+  F: "predictions.stageFinal",
+};
 
 type MatchOutcome = "exact" | "correct" | "wrong" | "no_prediction" | "pending";
 
@@ -212,7 +224,6 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const groups = predictions.groups || GROUPS;
   const specials = predictions.specials || {};
   const matchPredictions = predictions.matches || {};
-  const knockoutPredictions = predictions.knockouts || {};
   const actualMatches: Record<string, any> = results?.matches || {};
   const finishedGroups: string[] = results?.finishedGroups || [];
 
@@ -550,58 +561,56 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             </div>
           )}
           
-          {activeTab === 'knockout' && (
-            <div className="space-y-4">
-              {['octavos', 'cuartos', 'semis', 'final'].map((phaseKey) => {
-                 const phaseLabels: Record<string, string> = {
-                   'octavos': 'Octavos de Final',
-                   'cuartos': 'Cuartos de Final',
-                   'semis': 'Semifinal',
-                   'final': 'Final'
-                 };
-                 const matches = knockoutPredictions[phaseKey] || [];
-                 if (matches.length === 0) return null;
-                 
-                 return (
-                    <div key={phaseKey}>
-                      <h4 className="font-bold text-lg text-blue-900 dark:text-blue-400 mb-2 mt-4 border-b pb-1 dark:border-gray-700">{phaseLabels[phaseKey]}</h4>
+          {activeTab === 'knockout' && (() => {
+            // Picks por casillero del cuadro: { "R32-1": "Argentina", ... }
+            const koPicks: Record<string, string> = (predictions.knockouts && !Array.isArray(predictions.knockouts)) ? predictions.knockouts : {};
+            const koResults: Record<string, string> = results?.knockouts || {};
+            const hasPicks = Object.keys(koPicks).length > 0;
+            return (
+              <div className="space-y-4">
+                {KO_ROUND_ORDER.map((r) => {
+                  const slots = BRACKET_TREE.filter((s) => s.round === r && koPicks[s.id]);
+                  if (slots.length === 0) return null;
+                  return (
+                    <div key={r}>
+                      <h4 className="font-bold text-lg text-blue-900 dark:text-blue-400 mb-2 mt-4 border-b pb-1 dark:border-gray-700">{t(KO_ROUND_LABEL_KEY[r])}</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                         {matches.map((m: any, idx: number) => (
-                           <div key={idx} className="flex flex-col bg-gray-50 dark:bg-gray-800 p-3 rounded-md border dark:border-gray-700 text-sm">
-                             <div className="text-gray-500 dark:text-gray-200 text-xs mb-1">{m.label}</div>
-                             <div className="flex items-center justify-between font-medium">
-                               <span className="text-gray-900 dark:text-gray-100">{m.teamA} vs {m.teamB || t('predictions.tbd')}</span>
-                               {canChallenge && m.winner && (
-                                 <Button 
-                                   variant="outline" size="sm" className="h-7 text-blue-600 border-blue-200" title="Retar ganador"
-                                   onClick={() => setDuelData({ 
-                                     duelType: 'knockout', 
-                                     matchId: `knockout_${phaseKey}_${idx}`, 
-                                     matchData: { phase: phaseKey }, 
-                                     challengedPrediction: { team: m.winner },
-                                     myPrediction: { team: currentUserPredictions?.knockouts?.[phaseKey]?.[idx]?.winner || '' }
-                                   })}
-                                 >
-                                   <Swords className="w-4 h-4 mr-1" /> Retar 
-                                 </Button>
-                               )}
-                             </div>
-                             {m.winner && (
-                               <div className="mt-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 px-2 py-1 rounded inline-block">
-                                 Avanza: font-bold {m.winner}
-                               </div>
-                             )}
-                           </div>
-                         ))}
+                        {slots.map((s) => {
+                          const pick = koPicks[s.id];
+                          const actual = koResults[s.id];
+                          const resolved = !!actual;
+                          const correct = resolved && pick === actual;
+                          const earned = correct ? pointsForSlot(s.id) : 0;
+                          const tone = resolved
+                            ? (correct ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20')
+                            : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800';
+                          return (
+                            <div key={s.id} className={`flex items-center justify-between p-3 rounded-md border text-sm ${tone}`}>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <img src={getTeamFlagUrl(pick)} alt={pick} className="w-6 h-4 object-cover rounded-sm shrink-0" />
+                                <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{pick}</span>
+                              </div>
+                              {resolved && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className={`text-sm font-bold ${correct ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>+{earned} pts</span>
+                                  {correct
+                                    ? <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    : <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                 );
-              })}
-              {Object.keys(knockoutPredictions).length === 0 && (
-                <div className="text-center text-gray-500 py-10">No hay predicciones de fase eliminatoria guardadas.</div>
-              )}
-            </div>
-          )}
+                  );
+                })}
+                {!hasPicks && (
+                  <div className="text-center text-gray-500 py-10">No hay predicciones de fase eliminatoria guardadas.</div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
       
