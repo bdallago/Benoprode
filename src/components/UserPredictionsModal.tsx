@@ -14,6 +14,39 @@ import { DuelModal } from "./DuelModal";
 import { useSocial } from "../hooks/useSocial";
 import { useAuth } from "./Providers";
 
+type MatchOutcome = "exact" | "correct" | "wrong" | "no_prediction" | "pending";
+
+// Deriva el resultado de un partido a partir de la predicción (teamA/teamB) y el
+// resultado real (results.matches[id]). Replica la regla de computePoints:
+// +1 acierto de resultado, +1 marcador exacto.
+function getMatchOutcome(
+  predicted: { teamA: number | string; teamB: number | string } | undefined,
+  actual: { teamA: any; teamB: any } | undefined
+): MatchOutcome {
+  const hasActual = actual && actual.teamA !== undefined && actual.teamB !== undefined &&
+    !isNaN(parseInt(String(actual.teamA))) && !isNaN(parseInt(String(actual.teamB)));
+  if (!hasActual) return "pending";
+  const hasPred = predicted && predicted.teamA !== '' && predicted.teamB !== '' &&
+    !isNaN(parseInt(String(predicted.teamA))) && !isNaN(parseInt(String(predicted.teamB)));
+  if (!hasPred) return "no_prediction";
+  const aa = parseInt(String(actual.teamA));
+  const ab = parseInt(String(actual.teamB));
+  const pa = parseInt(String(predicted!.teamA));
+  const pb = parseInt(String(predicted!.teamB));
+  if (pa === aa && pb === ab) return "exact";
+  const ao = aa > ab ? "A" : aa < ab ? "B" : "draw";
+  const po = pa > pb ? "A" : pa < pb ? "B" : "draw";
+  return ao === po ? "correct" : "wrong";
+}
+
+const outcomeStyle: Record<MatchOutcome, { bg: string; border: string; badge: string; pts: string }> = {
+  exact:         { bg: "bg-yellow-50 dark:bg-yellow-900/20", border: "border-yellow-400 dark:border-yellow-700", badge: "bg-yellow-100 text-yellow-800", pts: "+2 pts" },
+  correct:       { bg: "bg-green-50 dark:bg-green-900/20",   border: "border-green-300 dark:border-green-700",   badge: "bg-green-100 text-green-800",   pts: "+1 pt"  },
+  wrong:         { bg: "bg-red-50 dark:bg-red-900/20",       border: "border-red-300 dark:border-red-800",       badge: "bg-red-100 text-red-700",       pts: "+0 pts" },
+  no_prediction: { bg: "bg-blue-50 dark:bg-blue-900/20",     border: "border-blue-200 dark:border-blue-800",     badge: "bg-blue-100 text-blue-700",     pts: "Sin predicción" },
+  pending:       { bg: "",                                    border: "",                                          badge: "",                              pts: "" },
+};
+
 interface UserPredictionsModalProps {
   userId: string;
   userName: string;
@@ -156,6 +189,8 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const specials = predictions.specials || {};
   const matchPredictions = predictions.matches || {};
   const knockoutPredictions = predictions.knockouts || {};
+  const actualMatches: Record<string, any> = results?.matches || {};
+  const finishedGroups: string[] = results?.finishedGroups || [];
 
   // A match is duelable only if it hasn't started yet
   const isMatchDuelable = (match: { date: string }) =>
@@ -181,7 +216,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     }
 
     const isPerfect = exactMatches === 4;
-    return { isPerfect, exactMatches, totalPoints: exactMatches + (isPerfect ? 2 : 0), actualTeams };
+    return { isPerfect, exactMatches, totalPoints: exactMatches + (isPerfect ? 3 : 0), actualTeams };
   };
 
   const getSpecialStatus = (questionId: string, answer: string) => {
@@ -284,12 +319,20 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             <div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([groupLetter, teams]) => {
-                  const groupStatus = getGroupStatus(groupLetter, teams as string[]);
+                  // Solo se muestran puntos para grupos oficialmente cerrados (igual que el scoring).
+                  const groupStatus = finishedGroups.includes(groupLetter)
+                    ? getGroupStatus(groupLetter, teams as string[])
+                    : null;
                   return (
                     <Card key={groupLetter} className="overflow-hidden border-t-4 border-t-blue-600">
                       <CardHeader className="bg-gray-50 dark:bg-gray-700/50 py-2 px-4 border-b dark:border-gray-700 flex flex-row justify-between items-center transition-colors duration-200">
                         <CardTitle className="text-md flex items-center justify-between w-full">
                           <span className="text-gray-900 dark:text-gray-100">{t('userPredictions.group')} {groupLetter}</span>
+                          {groupStatus && (
+                            <span className={`text-sm font-bold ${groupStatus.totalPoints > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                              +{groupStatus.totalPoints} pts
+                            </span>
+                          )}
                           {canChallenge && isGroupDuelable(groupLetter) && (
                             <Button
                               variant="outline"
@@ -312,15 +355,34 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       <CardContent className="p-0">
                         <ul className="divide-y dark:divide-gray-700">
                           {(teams as string[]).map((team, index) => {
+                            const exactPosition = groupStatus ? groupStatus.actualTeams[index] === team : false;
+                            const rowBg = groupStatus
+                              ? (exactPosition ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20')
+                              : 'bg-white dark:bg-gray-800';
+                            const nameColor = groupStatus
+                              ? (exactPosition ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-red-300')
+                              : 'text-gray-900 dark:text-gray-100';
                             return (
-                              <li key={`${groupLetter}-${index}`} className="p-3 flex items-center justify-between transition-colors duration-200 bg-white dark:bg-gray-800">
+                              <li key={`${groupLetter}-${index}`} className={`p-3 flex items-center justify-between transition-colors duration-200 ${rowBg}`}>
                                 <div className="flex items-center gap-3">
                                   <span className={`font-bold w-5 text-center ${index < 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-300'}`}>
                                     {index + 1}
                                   </span>
-                                  <span className="font-medium text-gray-900 dark:text-gray-100">{t(`teams.${team}`)}</span>
+                                  <span className={`font-medium ${nameColor}`}>{t(`teams.${team}`)}</span>
                                 </div>
-                                {canChallenge && isGroupDuelable(groupLetter) && (
+                                {groupStatus ? (
+                                  exactPosition ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-green-600 dark:text-green-400">+1 pt</span>
+                                      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-red-500 dark:text-red-400">+0 pts</span>
+                                      <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                                    </div>
+                                  )
+                                ) : canChallenge && isGroupDuelable(groupLetter) && (
                                   <Button
                                     variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800" title={t('userPredictions.challengePrediction', 'Retar predicción')}
                                     onClick={() => setDuelData({
@@ -338,6 +400,11 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                             );
                           })}
                         </ul>
+                        {groupStatus?.isPerfect && (
+                          <div className="bg-green-100 dark:bg-green-900/30 p-2 text-center text-sm font-bold text-green-800 dark:text-green-300 border-t border-green-200 dark:border-green-800">
+                            {t('userPredictions.perfectGroup', '¡Grupo Perfecto! (+3 pts)')}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -351,9 +418,14 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               {matchesData.map((match) => {
                 const pred = matchPredictions[match.id];
                 if (!pred) return null;
-                
+
+                const actual = actualMatches[match.id];
+                const outcome = getMatchOutcome(pred, actual);
+                const style = outcomeStyle[outcome];
+                const hasActual = actual && !isNaN(parseInt(String(actual.teamA))) && !isNaN(parseInt(String(actual.teamB)));
+
                 return (
-                  <Card key={match.id} className="overflow-hidden border">
+                  <Card key={match.id} className={`overflow-hidden border ${style.bg} ${style.border}`}>
                     <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-2 flex-1 justify-end">
@@ -366,7 +438,22 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                            <span className="font-semibold text-gray-900 dark:text-gray-100">{match.teamB}</span>
                         </div>
                       </div>
-                      
+
+                      {/* Resultado real + puntos (cuando el partido tiene resultado) */}
+                      {(hasActual || style.pts) && (
+                        <div className="flex items-center gap-3 shrink-0">
+                          {hasActual && (
+                            <div className="text-center">
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{t('userPredictions.realResult', 'Real')}</p>
+                              <span className="text-lg font-bold text-gray-800 dark:text-gray-100">{actual.teamA} - {actual.teamB}</span>
+                            </div>
+                          )}
+                          {style.pts && (
+                            <span className={`text-sm font-bold px-2 py-1 rounded-full ${style.badge}`}>{style.pts}</span>
+                          )}
+                        </div>
+                      )}
+
                       {canChallenge && isMatchDuelable(match) && (
                         <Button
                           size="sm" title="Retar partido" className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full md:w-auto mt-2 md:mt-0"
@@ -395,13 +482,24 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {SPECIAL_QUESTIONS.map((q) => {
                 const answer = specials[q.id] || t('userPredictions.noAnswer');
+                const status = getSpecialStatus(q.id, specials[q.id]);
+                const cardTone = status
+                  ? (status.correct ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20')
+                  : '';
                 return (
-                  <Card key={q.id} className="border transition-colors duration-200">
+                  <Card key={q.id} className={`border transition-colors duration-200 ${cardTone}`}>
                     <CardContent className="p-4">
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t(`specialQuestions.${q.id}`)}</p>
                       <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
                         <span className="font-medium text-gray-900 dark:text-gray-100">{answer}</span>
-                        {canChallenge && specials[q.id] && (
+                        {status ? (
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${status.correct ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>+{status.points} pts</span>
+                            {status.correct
+                              ? <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              : <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />}
+                          </div>
+                        ) : canChallenge && specials[q.id] && (
                            <Button 
                              variant="ghost" size="sm" className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 shadow-sm" title="Retar predicción"
                              onClick={() => setDuelData({ 

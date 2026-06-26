@@ -385,7 +385,8 @@
     "group": "Grupo",
     "exactPosition": "Posición exacta",
     "incorrectPosition": "Posición incorrecta",
-    "perfectGroup": "¡Grupo Perfecto! (+2 pts)",
+    "perfectGroup": "¡Grupo Perfecto! (+3 pts)",
+    "realResult": "Real",
     "specialQuestions": "Preguntas Especiales",
     "noAnswer": "Sin respuesta"
   },

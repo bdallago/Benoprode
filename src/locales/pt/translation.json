@@ -417,6 +417,8 @@
     "draft": "Rascunho",
     "groupStage": "Fase de Grupos",
     "knockoutStage": "Fase Eliminatória",
+    "perfectGroup": "Grupo Perfeito! (+3 pts)",
+    "realResult": "Real",
     "specialQuestions": "Perguntas Especiais",
     "noAnswer": "Sem resposta"
   },
