@@ -42,6 +42,7 @@ const TEAM_MAP: Record<string, string> = {
   "New Zealand": "Nueva Zelanda",
   "Spain": "España",
   "Cape Verde": "Cabo Verde",
+  "Cape Verde Islands": "Cabo Verde",
   "Saudi Arabia": "Arabia Saudita",
   "France": "Francia",
   "Iraq": "Irak",

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
@@ -65,7 +65,10 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [results, setResults] = useState<any>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [duelData, setDuelData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('groups');
+  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('matches');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollKey = `upm_scroll_${userId}`;
+  const scrollRestored = useRef(false);
 
   const isFriend = friends.has(userId);
   const requestSent = sentRequests.has(userId);
@@ -118,6 +121,16 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  // Restaura la posición de scroll donde el usuario cerró el modal por última vez.
+  useEffect(() => {
+    if (loading || scrollRestored.current) return;
+    scrollRestored.current = true;
+    const saved = Number(localStorage.getItem(scrollKey) || 0);
+    if (saved > 0) {
+      requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = saved; });
+    }
+  }, [loading, scrollKey]);
 
   if (loading) {
     return createPortal(
@@ -229,7 +242,12 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={scrollRef}
+        onScroll={() => { if (scrollRef.current) localStorage.setItem(scrollKey, String(scrollRef.current.scrollTop)); }}
+        className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl max-h-[90vh] overflow-y-auto transition-colors duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="relative flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-t-lg transition-colors duration-200">
           <div className="flex flex-col items-center gap-3 w-full">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 text-center">{t('userPredictions.title', { userName })}</h3>
