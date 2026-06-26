@@ -546,6 +546,7 @@
     "predictionsDesc": "El 7 de Junio de 2026 es el último día para fijar elecciones.",
     "days": "Días",
     "timeUp": "¡Tiempo Agotado!",
+    "knockoutNotice": "Atención: al término de los partidos del Grupo J se habilitarán las elecciones de 16avos. Tenés hasta 1 hora antes de cada partido para decidir.",
     "timeUpDesc": "La fecha límite ha pasado. Todas las predicciones han sido fijadas automáticamente.",
     "pointsDelay": "Los puntos se actualizan automáticamente dentro de los 2 minutos de finalizado cada partido.",
     "timeLeft": "Tiempo restante para el Mundial",

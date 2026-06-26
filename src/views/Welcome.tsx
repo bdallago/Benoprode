@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Home, Trophy, Users, PenSquare, BookOpen, MessageSquareWarning, X, FileText, Image as ImageIcon, Film, Clock, Lock } from "lucide-react";
+import { Home, Trophy, Users, PenSquare, BookOpen, MessageSquareWarning, X, FileText, Image as ImageIcon, Film, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../components/ui/button";
 import { addDoc, collection, doc, onSnapshot } from "firebase/firestore";
@@ -45,12 +45,9 @@ function ClockBanner() {
 
   if (isTimeUp) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 transition-colors duration-200 w-full">
-        <Lock className="w-6 h-6 text-red-600 dark:text-red-400" />
-        <div className="text-left">
-          <h3 className="font-bold">{t('countdown.timeUp')}</h3>
-          <p className="text-sm">{t('countdown.timeUpDesc')}</p>
-        </div>
+      <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-amber-200 dark:border-amber-800/40 transition-colors duration-200 w-full">
+        <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="text-sm font-medium text-left">{t('countdown.knockoutNotice')}</p>
       </div>
     );
   }

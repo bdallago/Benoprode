@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Lock } from "lucide-react";
+import { Clock, AlertTriangle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { GROUP_STAGE_DEADLINE as DEADLINE } from '../lib/config';
 
@@ -53,13 +53,9 @@ export function CountdownBanner() {
 
   if (isTimeUp) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-300 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-red-200 dark:border-red-800 transition-colors duration-200">
-        <Lock className="w-6 h-6 text-red-600 dark:text-red-400" />
-        <div>
-          <h3 className="font-bold">{t('countdown.timeUp')}</h3>
-          <p className="text-sm">{t('countdown.timeUpDesc')}</p>
-          <p className="text-xs mt-1 text-red-700 dark:text-red-400">{t('countdown.pointsDelay')}</p>
-        </div>
+      <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-4 rounded-lg shadow-sm flex items-center gap-3 border border-amber-200 dark:border-amber-800/40 transition-colors duration-200">
+        <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="text-sm font-medium">{t('countdown.knockoutNotice')}</p>
       </div>
     );
   }
