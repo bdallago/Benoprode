@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react";
@@ -6,6 +8,20 @@ import { db } from "../../firebase";
 import { GROUPS } from "../../data";
 import { getTeamFlagUrl } from "../../lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { BRACKET_TREE } from "../../lib/bracket/tree";
+import { buildDisplayBracket, SlotView } from "../../lib/bracket/displayBracket";
+import { isSlotLocked } from "../../lib/bracket/lock";
+import type { Round } from "../../lib/bracket/types";
+import { KnockoutMatchCard } from "../knockout/KnockoutMatchCard";
+
+const ROUND_ORDER: Round[] = ["R32", "R16", "QF", "SF", "F"];
+const ROUND_LABEL_KEY: Record<Round, string> = {
+  R32: "predictions.stageRoundOf32",
+  R16: "predictions.stageRoundOf16",
+  QF: "predictions.stageQuarterFinals",
+  SF: "predictions.stageSemiFinals",
+  F: "predictions.stageFinal",
+};
 
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -59,11 +75,21 @@ function TeamRow({ name, tbdLabel }: { name: string | null; tbdLabel: string }) 
   );
 }
 
-export function KnockoutStage() {
+export function KnockoutStage({
+  userPicks = {},
+  onPick,
+}: {
+  userPicks?: Record<string, string>;
+  onPick?: (slotId: string, team: string) => void;
+}) {
   const { t } = useTranslation();
   const [seedR32, setSeedR32] = useState<Record<string, [string, string]>>({});
+  const [winners, setWinners] = useState<Record<string, string>>({});
   const [kickoffs, setKickoffs] = useState<Record<string, number>>({});
   const [finishedGroups, setFinishedGroups] = useState<string[]>([]);
+  const [round, setRound] = useState<Round>("R32");
+  const [showTree, setShowTree] = useState(false);
+  const now = Date.now();
 
   useEffect(() => {
     getDoc(doc(db, "results", "actual"))
@@ -76,6 +102,7 @@ export function KnockoutStage() {
           if (slotId.startsWith("R32-")) r32[slotId] = pair as [string, string];
         }
         setSeedR32(r32);
+        setWinners(r.knockouts || {});
         setKickoffs(r.bracketKickoffs || {});
         setFinishedGroups(r.finishedGroups || []);
       })
@@ -85,65 +112,139 @@ export function KnockoutStage() {
   const tbdLabel = t("predictions.tbdTeam");
   const groupStageFinished = finishedGroups.length === Object.keys(GROUPS).length;
 
-  // Merge real API data (seedR32 + kickoffs) sobre el calendario hardcodeado.
-  // Match por kickoff primero, luego por nombre de equipo conocido.
-  const apiFixtures = Object.entries(seedR32).map(([slotId, [a, b]]) => ({
-    teamA: a, teamB: b, kickoffMs: kickoffs[slotId] ?? null,
-  }));
+  const view = useMemo(
+    () => buildDisplayBracket(seedR32, userPicks, winners),
+    [seedR32, userPicks, winners]
+  );
+  const slotsOfRound = (r: Round): SlotView[] =>
+    BRACKET_TREE.filter((s) => s.round === r).map((s) => view[s.id]);
 
-  const merged = R32_SCHEDULE.map((slot) => {
-    const byKickoff = apiFixtures.find((f) => f.kickoffMs === slot.kickoffMs);
-    if (byKickoff) return { ...slot, teamA: byKickoff.teamA, teamB: byKickoff.teamB };
+  const header = (
+    <div className="flex items-center gap-2 border-b dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400">
+        {t("predictions.knockoutStage")}
+      </h2>
+      <Tooltip>
+        <TooltipTrigger>
+          <Info className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-xs">{t("predictions.knockoutTooltip")}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
 
-    const knownTeam = slot.teamA ?? slot.teamB;
-    if (knownTeam) {
-      const byTeam = apiFixtures.find((f) => f.teamA === knownTeam || f.teamB === knownTeam);
-      if (byTeam) return { ...slot, teamA: byTeam.teamA, teamB: byTeam.teamB };
-    }
-    return slot;
-  });
+  // ── Fase de grupos NO terminada: vista provisional read-only ──
+  if (!groupStageFinished) {
+    const apiFixtures = Object.entries(seedR32).map(([slotId, [a, b]]) => ({
+      teamA: a, teamB: b, kickoffMs: kickoffs[slotId] ?? null,
+    }));
+    const merged = R32_SCHEDULE.map((slot) => {
+      const byKickoff = apiFixtures.find((f) => f.kickoffMs === slot.kickoffMs);
+      if (byKickoff) return { ...slot, teamA: byKickoff.teamA, teamB: byKickoff.teamB };
+      const knownTeam = slot.teamA ?? slot.teamB;
+      if (knownTeam) {
+        const byTeam = apiFixtures.find((f) => f.teamA === knownTeam || f.teamB === knownTeam);
+        if (byTeam) return { ...slot, teamA: byTeam.teamA, teamB: byTeam.teamB };
+      }
+      return slot;
+    });
 
+    return (
+      <div className="space-y-4 pt-2 pb-12">
+        {header}
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 rounded-xl p-4 text-sm font-medium">
+          {t("predictions.knockoutProvisionalBanner")}
+        </div>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          {t("predictions.provisionalR32Title")}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {merged.map(({ kickoffMs, teamA, teamB }, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden text-sm shadow-sm">
+              <div className="px-3 pt-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 font-medium border-b border-gray-50 dark:border-gray-700/50">
+                {formatKickoff(kickoffMs)}
+              </div>
+              <div className="border-b border-gray-100 dark:border-gray-700"><TeamRow name={teamA} tbdLabel={tbdLabel} /></div>
+              <TeamRow name={teamB} tbdLabel={tbdLabel} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Fase de grupos terminada: árbol completo (read-only) ──
+  if (showTree) {
+    return (
+      <div className="space-y-3 pt-2 pb-12">
+        {header}
+        <button onClick={() => setShowTree(false)} className="text-sm font-semibold text-blue-900 dark:text-blue-400">
+          ← {t("predictions.koBackToRounds")}
+        </button>
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-[760px]">
+            {ROUND_ORDER.map((r) => (
+              <div key={r} className="flex flex-col justify-around gap-2 flex-1">
+                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 text-center">{t(ROUND_LABEL_KEY[r])}</h4>
+                {slotsOfRound(r).map((s) => (
+                  <div key={s.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-[11px]">
+                    {[s.teamA, s.teamB].map((tm, i) => (
+                      <div
+                        key={i}
+                        className={`px-2 py-1 ${i === 0 ? "border-b border-gray-100 dark:border-gray-700" : ""} ${
+                          s.resolved && s.pick === tm
+                            ? s.status === "correct"
+                              ? "text-green-700 dark:text-green-400 font-bold"
+                              : "text-red-600 dark:text-red-400 line-through"
+                            : "text-gray-900 dark:text-gray-100"
+                        }`}
+                      >
+                        {tm ?? tbdLabel}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Fase de grupos terminada: bracket interactivo por ronda ──
   return (
     <div className="space-y-4 pt-2 pb-12">
-      <div className="flex items-center gap-2 border-b dark:border-gray-700 pb-2">
-        <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400">
-          {t("predictions.knockoutStage")}
-        </h2>
-        <Tooltip>
-          <TooltipTrigger>
-            <Info className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs">{t("predictions.knockoutTooltip")}</p>
-          </TooltipContent>
-        </Tooltip>
+      {header}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-1 overflow-x-auto">
+          {ROUND_ORDER.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRound(r)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${round === r ? "bg-blue-900 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"}`}
+            >
+              {t(ROUND_LABEL_KEY[r])}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowTree(true)} className="text-xs font-semibold whitespace-nowrap text-blue-900 dark:text-blue-400">
+          {t("predictions.koFullBracket")}
+        </button>
       </div>
-
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 rounded-xl p-4 text-sm font-medium">
-        {t("predictions.knockoutProvisionalBanner")}
-      </div>
-
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-        {t("predictions.provisionalR32Title")}
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {merged.map(({ kickoffMs, teamA, teamB }, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden text-sm shadow-sm">
-            <div className="px-3 pt-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 font-medium border-b border-gray-50 dark:border-gray-700/50">
-              {formatKickoff(kickoffMs)}
-            </div>
-            <div className="border-b border-gray-100 dark:border-gray-700"><TeamRow name={teamA} tbdLabel={tbdLabel} /></div>
-            <TeamRow name={teamB} tbdLabel={tbdLabel} />
-          </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">{t("predictions.koTapToPick")}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {slotsOfRound(round).map((s) => (
+          <KnockoutMatchCard
+            key={s.id}
+            slot={s}
+            locked={isSlotLocked(kickoffs[s.id], now)}
+            onPick={onPick ?? (() => {})}
+          />
         ))}
       </div>
-
-      {groupStageFinished && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center pt-2">
-          {t("predictions.knockoutDesc")}
-        </p>
-      )}
     </div>
   );
 }

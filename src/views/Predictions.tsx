@@ -53,9 +53,18 @@ export default function Predictions({ user }: { user: User }) {
     setSpecialPredictions,
     matchPredictions,
     setMatchPredictions,
+    knockoutPredictions,
+    setKnockoutPredictions,
     handleMatchChange,
     savePredictions
   } = usePredictions(user.uid);
+
+  // Pick de fase eliminatoria: marca el ganador del casillero y auto-guarda.
+  const koDirty = useRef(false);
+  const handleKnockoutPick = (slotId: string, team: string) => {
+    koDirty.current = true;
+    setKnockoutPredictions((prev: Record<string, string>) => ({ ...prev, [slotId]: team }));
+  };
 
   // Keep a ref to savePredictions so the unmount cleanup always calls the latest version
   const savePredictionsRef = useRef(savePredictions);
@@ -86,6 +95,17 @@ export default function Predictions({ user }: { user: User }) {
     
     return () => clearTimeout(timeout);
   }, [matchPredictions, activeTab]);
+
+  // Auto-save de picks de fase eliminatoria (solo tras una elección del usuario).
+  useEffect(() => {
+    if (loading || !koDirty.current) return;
+    const timeout = setTimeout(async () => {
+      setIsAutoSaving(true);
+      await savePredictions(false, true); // guardado silencioso
+      setIsAutoSaving(false);
+    }, 1200);
+    return () => clearTimeout(timeout);
+  }, [knockoutPredictions, loading]);
 
   const handleDragEnd = (event: any, groupLetter: string) => {
     if (effectiveIsLocked) return;
@@ -265,7 +285,7 @@ export default function Predictions({ user }: { user: User }) {
         )}
 
         {activeTab === 'knockout' && (
-          <KnockoutStage />
+          <KnockoutStage userPicks={knockoutPredictions} onPick={handleKnockoutPick} />
         )}
 
         {activeTab === 'matches' && (
