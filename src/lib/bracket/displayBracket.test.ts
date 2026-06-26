@@ -29,10 +29,20 @@ describe("buildDisplayBracket", () => {
     expect(view["R32-1"].status).toBe("wrong");
   });
 
-  it("proyecta a R16 el pick del usuario mientras la ronda previa no esté resuelta", () => {
+  it("NO proyecta los picks del usuario: R16 queda en TBD hasta que se resuelva R32", () => {
     const view = buildDisplayBracket(seedR32, { "R32-1": "Argentina", "R32-2": "Brasil" }, {});
-    expect(view["R16-1"].teamA).toBe("Argentina");
-    expect(view["R16-1"].teamB).toBe("Brasil");
+    expect(view["R16-1"].teamA).toBeNull();
+    expect(view["R16-1"].teamB).toBeNull();
+  });
+
+  it("habilita R16 solo cuando AMBOS cruces previos de R32 tienen ganador real", () => {
+    const partial = buildDisplayBracket(seedR32, {}, { "R32-1": "Argentina" });
+    expect(partial["R16-1"].teamA).toBe("Argentina");
+    expect(partial["R16-1"].teamB).toBeNull();
+
+    const full = buildDisplayBracket(seedR32, {}, { "R32-1": "Argentina", "R32-2": "Brasil" });
+    expect(full["R16-1"].teamA).toBe("Argentina");
+    expect(full["R16-1"].teamB).toBe("Brasil");
   });
 
   it("reemplaza la proyección por el ganador real al resolverse la ronda previa", () => {
