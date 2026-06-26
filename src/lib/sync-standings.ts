@@ -14,6 +14,7 @@ const TEAM_NAME_MAPPING: Record<string, string> = {
   "Canada":                          "Canadá",
   "Bosnia":                          "Bosnia y Herzegovina",
   "Bosnia and Herzegovina":          "Bosnia y Herzegovina",
+  "Bosnia & Herzegovina":            "Bosnia y Herzegovina",
   // Qatar, Suiza → same below
   "Switzerland":                     "Suiza",
   // Grupo C
@@ -47,6 +48,7 @@ const TEAM_NAME_MAPPING: Record<string, string> = {
   // Grupo H
   "Spain":                           "España",
   "Cape Verde":                      "Cabo Verde",
+  "Cape Verde Islands":              "Cabo Verde",
   "Saudi Arabia":                    "Arabia Saudita",
   // Uruguay → same
   // Grupo I
@@ -86,6 +88,7 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
   const standings = data.response[0].league.standings;
   const newGroups: Record<string, string[]> = {};
   const finishedGroups: string[] = [];
+  const qualifiedTeams: string[] = [];
 
   standings.forEach((groupStandings: any[]) => {
     if (!groupStandings?.length) return;
@@ -100,6 +103,14 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
     groupStandings.sort((a: any, b: any) => a.rank - b.rank);
     newGroups[groupLetter] = groupStandings.map((s: any) => TEAM_NAME_MAPPING[s.team.name] ?? s.team.name);
 
+    // Track teams already confirmed to the Round of 32 (API "description" field).
+    for (const s of groupStandings) {
+      if (s.description === "Round of 32") {
+        const name = TEAM_NAME_MAPPING[s.team.name] ?? s.team.name;
+        if (!qualifiedTeams.includes(name)) qualifiedTeams.push(name);
+      }
+    }
+
     // Mark group as finished only when all matches have been played.
     if (totalPlayed >= GAMES_PER_GROUP) finishedGroups.push(groupLetter);
   });
@@ -108,6 +119,7 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
     await database.collection("results").doc("actual").set({
       groups: newGroups,
       finishedGroups,
+      qualifiedTeams,
     }, { merge: true });
   }
 }
