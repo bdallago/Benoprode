@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { syncStandings } from "@/lib/sync-standings";
-import { recalculatePoints } from "@/lib/recalculate-points";
 import { syncKnockouts } from "@/lib/bracket/syncKnockouts";
 
+// Siembra/actualiza el cuadro de eliminatorias y recalcula puntos.
+// Disparable manualmente; además se invoca acoplado desde sync-football-api
+// y update-standings (siempre después de syncStandings).
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -16,13 +17,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    await syncStandings(db, process.env.API_FOOTBALL_KEY);
-    await recalculatePoints(db);
-    // Sembrar/actualizar el cuadro de eliminatorias con standings frescos
-    // (vuelve a recalcular puntos internamente, incluyendo knockouts).
-    await syncKnockouts(db, process.env.API_FOOTBALL_KEY);
-    return NextResponse.json({ success: true, message: "Standings + knockouts updated and points recalculated." });
+    const result = await syncKnockouts(db, process.env.API_FOOTBALL_KEY);
+    return NextResponse.json({ ok: true, ...result });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }

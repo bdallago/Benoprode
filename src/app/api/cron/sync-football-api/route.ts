@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { recalculatePoints } from "@/lib/recalculate-points";
 import { syncStandings } from "@/lib/sync-standings";
+import { syncKnockouts } from "@/lib/bracket/syncKnockouts";
 import { recalculateGlobalStats } from "@/lib/recalculate-global-stats";
 import matchesJson from "../../../../lib/matches.json";
 
@@ -205,6 +206,15 @@ export async function GET(req: Request) {
       syncStandings(db, apiKey),
       recalculateGlobalStats(db),
     ]);
+
+    // Con standings ya frescos, sembrar/actualizar el cuadro de eliminatorias
+    // (recalcula puntos incluyendo aciertos de knockouts). No bloquea la respuesta
+    // si falla la API de fixtures.
+    try {
+      await syncKnockouts(db, apiKey);
+    } catch (err) {
+      console.error("[sync-football-api] syncKnockouts falló:", err);
+    }
   }
 
   return NextResponse.json({ ok: true, liveCount, finishedCount });
