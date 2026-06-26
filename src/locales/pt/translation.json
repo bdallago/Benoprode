@@ -254,6 +254,8 @@
     "reviewAgain": "Revisar novamente",
     "lockWithEmpty": "Fixar com campos vazios",
     "knockoutTooltip": "Aqui você poderá prever quem avança em cada fase eliminatória assim que a fase de grupos terminar. Fique atento!",
+    "provisionalR32Title": "Classificados às 16-avos",
+    "knockoutProvisionalBanner": "Chave provisória das 16-avos. Os classificados e confrontos são preenchidos automaticamente conforme os grupos são definidos.",
     "stageRoundOf32": "16avos",
     "stageRoundOf16": "Oitavas",
     "stageQuarterFinals": "Quartas",

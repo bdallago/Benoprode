@@ -220,6 +220,8 @@
     "reviewAgain": "Review again",
     "lockWithEmpty": "Lock with empty fields",
     "knockoutTooltip": "Here you can predict who advances in each knockout stage once the group stage is over. Stay tuned!",
+    "provisionalR32Title": "Qualified to Round of 32",
+    "knockoutProvisionalBanner": "Provisional Round of 32 bracket. Qualified teams and matchups fill in automatically as groups are decided.",
     "stageRoundOf32": "Round of 32",
     "stageRoundOf16": "Round of 16",
     "stageQuarterFinals": "Quarter Finals",
