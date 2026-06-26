@@ -1,4 +1,5 @@
 import { GROUPS } from "../data";
+import { scoreBracket } from "./bracket/score";
 
 export interface PointsResult {
   totalPoints: number;
@@ -8,6 +9,7 @@ export interface PointsResult {
   zeroZeroPredictionsCount: number;
   mufaGroupCount: number;
   argentinaPerfectGroup: boolean;
+  knockoutPoints: number;
 }
 
 export function sanitizeGroups(
@@ -32,7 +34,8 @@ export function computePoints(
   actualGroups: Record<string, string[]>,
   actualSpecials: Record<string, string>,
   actualMatches: Record<string, any>,
-  pred: { groups?: any; specials?: any; matches?: any }
+  pred: { groups?: any; specials?: any; matches?: any; knockouts?: any },
+  actualKnockouts: Record<string, string> = {}
 ): PointsResult {
   let totalPoints = 0;
   let exactMatchCount = 0;
@@ -118,5 +121,10 @@ export function computePoints(
     }
   }
 
-  return { totalPoints, exactMatchCount, correctMatchCount, groupsPerfectCount, zeroZeroPredictionsCount, mufaGroupCount, argentinaPerfectGroup };
+  // Knockouts (fase eliminatoria): cada acierto de equipo que avanza suma los
+  // puntos de su ronda. Independiente del resto del scoring.
+  const knockoutPoints = scoreBracket(pred.knockouts ?? {}, actualKnockouts);
+  totalPoints += knockoutPoints;
+
+  return { totalPoints, exactMatchCount, correctMatchCount, groupsPerfectCount, zeroZeroPredictionsCount, mufaGroupCount, argentinaPerfectGroup, knockoutPoints };
 }

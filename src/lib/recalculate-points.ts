@@ -39,6 +39,7 @@ export async function recalculatePoints(database: any): Promise<void> {
 
   const actualSpecials: Record<string, string> = actualData.specials || {};
   const actualMatches: Record<string, any> = actualData.matches || {};
+  const actualKnockouts: Record<string, string> = actualData.knockouts || {};
 
   // zona_copas/en_cima only unlock after the first matchday is fully played (match_24: Uzbekistán vs Colombia)
   const m24 = actualMatches["match_24"];
@@ -78,7 +79,7 @@ export async function recalculatePoints(database: any): Promise<void> {
       );
 
       const pred = predMap.get(userId) ?? {};
-      const scored = computePoints(sanitizedActualG, actualSpecials, actualMatches, pred);
+      const scored = computePoints(sanitizedActualG, actualSpecials, actualMatches, pred, actualKnockouts);
 
       // Compute perfectDaysCount: days where ALL matches with results were predicted exactly
       const predMatches = pred.matches ?? {};

@@ -220,6 +220,8 @@
     "reviewAgain": "Revisar de nuevo",
     "lockWithEmpty": "Fijar con espacios vacíos",
     "knockoutTooltip": "Acá vas a poder predecir quién avanza en cada fase eliminatoria una vez que termine la fase de grupos. ¡Estate atento!",
+    "provisionalR32Title": "Clasificados a 16avos",
+    "knockoutProvisionalBanner": "Cuadro provisional de 16avos. Los clasificados y cruces se van completando automáticamente a medida que cierran los grupos.",
     "stageRoundOf32": "16avos",
     "stageRoundOf16": "Octavos",
     "stageQuarterFinals": "Cuartos",
@@ -383,7 +385,8 @@
     "group": "Grupo",
     "exactPosition": "Posición exacta",
     "incorrectPosition": "Posición incorrecta",
-    "perfectGroup": "¡Grupo Perfecto! (+2 pts)",
+    "perfectGroup": "¡Grupo Perfecto! (+3 pts)",
+    "realResult": "Real",
     "specialQuestions": "Preguntas Especiales",
     "noAnswer": "Sin respuesta"
   },
