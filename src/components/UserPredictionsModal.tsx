@@ -65,10 +65,21 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
   const [results, setResults] = useState<any>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [duelData, setDuelData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'knockout' | 'specials'>('matches');
-  const scrollRef = useRef<HTMLDivElement>(null);
   const scrollKey = `upm_scroll_${userId}`;
+  const tabKey = `upm_tab_${userId}`;
+  type PredTab = 'groups' | 'matches' | 'knockout' | 'specials';
+  const [activeTab, setActiveTab] = useState<PredTab>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(tabKey);
+      if (saved === 'groups' || saved === 'matches' || saved === 'knockout' || saved === 'specials') return saved;
+    }
+    return 'matches';
+  });
+  const scrollRef = useRef<HTMLDivElement>(null);
   const scrollRestored = useRef(false);
+
+  // Recuerda la última pestaña abierta por usuario.
+  useEffect(() => { localStorage.setItem(tabKey, activeTab); }, [tabKey, activeTab]);
 
   const isFriend = friends.has(userId);
   const requestSent = sentRequests.has(userId);
