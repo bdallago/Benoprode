@@ -119,6 +119,12 @@ export function KnockoutStage({
   const slotsOfRound = (r: Round): SlotView[] =>
     BRACKET_TREE.filter((s) => s.round === r).map((s) => view[s.id]);
 
+  // Cards de una ronda ordenadas cronológicamente por kickoff (los sin horario van al
+  // final). El cuadro completo (árbol) mantiene el orden posicional.
+  const slotsByKickoff = (r: Round): SlotView[] =>
+    slotsOfRound(r).slice().sort(
+      (a, b) => (kickoffs[a.id] ?? Infinity) - (kickoffs[b.id] ?? Infinity));
+
   const header = (
     <div className="flex items-center gap-2 border-b dark:border-gray-700 pb-2">
       <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-400">
@@ -236,11 +242,12 @@ export function KnockoutStage({
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">{t("predictions.koTapToPick")}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {slotsOfRound(round).map((s) => (
+        {slotsByKickoff(round).map((s) => (
           <KnockoutMatchCard
             key={s.id}
             slot={s}
             locked={isSlotLocked(kickoffs[s.id], now)}
+            kickoffLabel={kickoffs[s.id] ? formatKickoff(kickoffs[s.id]) : undefined}
             onPick={onPick ?? (() => {})}
           />
         ))}
