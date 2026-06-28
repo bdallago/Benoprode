@@ -4,6 +4,7 @@ import { recalculatePoints } from "@/lib/recalculate-points";
 import { syncStandings } from "@/lib/sync-standings";
 import { syncKnockouts } from "@/lib/bracket/syncKnockouts";
 import { recalculateGlobalStats } from "@/lib/recalculate-global-stats";
+import { inActiveWindow, extractUpcomingKickoffs, extractKoSchedule } from "@/lib/ko-schedule";
 import matchesJson from "../../../../lib/matches.json";
 
 const API_BASE = "https://v3.football.api-sports.io";
@@ -77,14 +78,21 @@ function resolveMatchId(homeApi: string, awayApi: string): { matchId: string; re
   return null;
 }
 
-// Returns true if any match is currently in its active window (kickoff -5 to +185 min)
-function hasActiveWindow(): boolean {
+// Ventana activa de los partidos de FASE DE GRUPOS (estáticos en matches.json).
+function hasGroupWindow(): boolean {
   const now = Date.now();
   return (matchesJson as { date: string }[]).some((m) => {
     const ko = new Date(m.date).getTime();
     return now >= ko - 5 * 60_000 && now <= ko + 210 * 60_000;
   });
 }
+
+// El calendario KO no está en matches.json (es dinámico desde la API). Para saber
+// cuándo arranca/termina un partido KO sin gastar invocaciones de más, cacheamos en
+// Firestore los próximos kickoffs (grupos + KO) y el gate los lee. El cache se refresca
+// con un fetch liviano de toda la temporada cuando está viejo (> CACHE_TTL_MS).
+const KICKOFF_CACHE_DOC = "kickoff_cache";
+const CACHE_TTL_MS = 30 * 60_000;
 
 const FINISHED = new Set(["FT", "AET", "PEN"]);
 
@@ -94,15 +102,57 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!hasActiveWindow()) {
-    return NextResponse.json({ ok: true, skipped: "no_active_window" });
-  }
-
   const db = getAdminDb();
   if (!db) return NextResponse.json({ error: "DB Error" }, { status: 500 });
 
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) return NextResponse.json({ error: "API_FOOTBALL_KEY not configured" }, { status: 500 });
+
+  // Gate: leer cache de kickoffs (grupos + KO). Activo si algún partido de grupos
+  // estático o algún kickoff cacheado cae en su ventana activa.
+  const cacheRef = db.collection("system_stats").doc(KICKOFF_CACHE_DOC);
+  const cacheSnap = await cacheRef.get();
+  const cachedIso: string[] = cacheSnap.data()?.kickoffs ?? [];
+  const cacheUpdatedAt = new Date(cacheSnap.data()?.updatedAt ?? 0).getTime();
+  const cachedKickoffs = cachedIso.map((s) => new Date(s).getTime());
+
+  let active = hasGroupWindow() || inActiveWindow(cachedKickoffs);
+  const cacheStale = Date.now() - cacheUpdatedAt > CACHE_TTL_MS;
+
+  if (!active && !cacheStale) {
+    return NextResponse.json({ ok: true, skipped: "no_active_window" });
+  }
+
+  // Cache viejo: 1 fetch de toda la temporada para refrescar kickoffs + persistir el
+  // calendario KO (para la lista por día/hora). Esto destraba la fase eliminatoria sin
+  // intervención manual cuando matches.json (solo grupos) ya no aplica.
+  if (cacheStale) {
+    try {
+      const allRes = await fetch(`${API_BASE}/fixtures?league=${LEAGUE}&season=${SEASON}`, {
+        headers: { "x-apisports-key": apiKey },
+        cache: "no-store",
+      });
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        const allFixtures: any[] = allData.response ?? [];
+        const kickoffs = extractUpcomingKickoffs(allFixtures);
+        await cacheRef.set({ kickoffs, updatedAt: new Date().toISOString() }, { merge: true });
+
+        const koRows = extractKoSchedule(allFixtures, TEAM_MAP);
+        if (koRows.length > 0) {
+          const koMap: Record<string, any> = {};
+          for (const r of koRows) koMap[r.fixtureId] = r;
+          await db.collection("results").doc("actual").set({ koSchedule: koMap }, { merge: true });
+        }
+        active = hasGroupWindow() || inActiveWindow(kickoffs.map((s) => new Date(s).getTime()));
+      }
+    } catch (err) {
+      console.error("[sync-football-api] refresh de cache KO falló:", err);
+    }
+    if (!active) {
+      return NextResponse.json({ ok: true, skipped: "cache_refreshed_no_window" });
+    }
+  }
 
   // Rate limit: max once every 30s across instances
   const rateLimitRef = db.collection("system_stats").doc("sync_rate_limit");
@@ -182,6 +232,15 @@ export async function GET(req: Request) {
   }
 
   await batch.commit();
+
+  // Upsert live del calendario KO de hoy/ayer (estado y score al minuto), desacoplado
+  // del recálculo de puntos: solo refresca lo que muestra la lista por día/hora.
+  const liveKo = extractKoSchedule(fixtures, TEAM_MAP);
+  if (liveKo.length > 0) {
+    const koMap: Record<string, any> = {};
+    for (const r of liveKo) koMap[r.fixtureId] = r;
+    await db.collection("results").doc("actual").set({ koSchedule: koMap }, { merge: true });
+  }
 
   if (Object.keys(resultsUpdates).length > 0) {
     resultsUpdates.updatedAt = new Date().toISOString();

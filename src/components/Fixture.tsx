@@ -66,6 +66,55 @@ const generateFixture = () => {
 
 const FIXTURE_DATA = generateFixture();
 
+// --- Eliminatorias: rondas, formato de fecha/hora (ART, UTC-3) y estados ---
+const KO_ROUNDS: Array<[string, string]> = [
+  ["R32", "16avos de final"],
+  ["R16", "Octavos de final"],
+  ["QF", "Cuartos de final"],
+  ["SF", "Semifinales"],
+  ["F", "Final"],
+];
+const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const KO_LIVE = new Set(["1H", "HT", "2H", "ET", "BT", "P", "LIVE"]);
+const KO_FINISHED = new Set(["FT", "AET", "PEN"]);
+
+interface KoRow {
+  fixtureId: string; round: string; teamA: string; teamB: string;
+  date: string; statusCode: string; goalsA: number | null; goalsB: number | null;
+}
+
+// Formatea un ISO a hora de Argentina (UTC-3) sin depender del TZ del navegador.
+function fmtArt(iso: string): { dateLabel: string; time: string } {
+  const d = new Date(new Date(iso).getTime() - 3 * 3600_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    dateLabel: `${DAYS_ES[d.getUTCDay()]} ${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`,
+    time: `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,
+  };
+}
+
+interface KoPage { label: string; days: Record<string, Array<KoRow & { time: string }>> }
+
+// Arma páginas KO por ronda (solo rondas con partidos), cada una agrupada por día y
+// ordenada por horario.
+function buildKoPages(koSchedule: Record<string, KoRow>): KoPage[] {
+  const byRound: Record<string, KoRow[]> = {};
+  for (const row of Object.values(koSchedule || {})) {
+    if (!row?.round) continue;
+    (byRound[row.round] ||= []).push(row);
+  }
+  return KO_ROUNDS.filter(([r]) => byRound[r]?.length).map(([r, label]) => {
+    const rows = byRound[r].slice().sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const days: KoPage["days"] = {};
+    for (const row of rows) {
+      const { dateLabel, time } = fmtArt(row.date);
+      (days[dateLabel] ||= []).push({ ...row, time });
+    }
+    return { label, days };
+  });
+}
+
 export const TeamFlag = ({ teamName }: { teamName: string }) => {
   const { t } = useTranslation();
   const code = TEAM_CODES[teamName];
@@ -90,6 +139,7 @@ export function Fixture() {
   const [currentFecha, setCurrentFecha] = useState(0);
   const [actualGroups, setActualGroups] = useState<Record<string, string[]>>(GROUPS);
   const [actualStandings, setActualStandings] = useState<Record<string, any[]>>({});
+  const [koSchedule, setKoSchedule] = useState<Record<string, KoRow>>({});
 
   useEffect(() => {
     const fetchActualResults = async () => {
@@ -120,6 +170,10 @@ export function Fixture() {
           if (data.standings) {
             setActualStandings(data.standings);
           }
+
+          if (data.koSchedule) {
+            setKoSchedule(data.koSchedule as Record<string, KoRow>);
+          }
         }
       } catch (error) {
         console.error("Error fetching actual results:", error);
@@ -128,24 +182,32 @@ export function Fixture() {
     fetchActualResults();
   }, []);
 
+  // Páginas: 3 fechas de grupos + 1 por cada ronda KO con partidos.
+  const koPages = buildKoPages(koSchedule);
+  const totalPages = 3 + koPages.length;
+
   const handlePrev = () => {
-    setCurrentFecha((prev: number) => (prev > 0 ? prev - 1 : 2));
+    setCurrentFecha((prev: number) => (prev > 0 ? prev - 1 : totalPages - 1));
   };
 
   const handleNext = () => {
-    setCurrentFecha((prev: number) => (prev < 2 ? prev + 1 : 0));
+    setCurrentFecha((prev: number) => (prev < totalPages - 1 ? prev + 1 : 0));
   };
 
-  const matches = FIXTURE_DATA[currentFecha];
+  const isKoPage = currentFecha >= 3;
+  const koPage = isKoPage ? koPages[currentFecha - 3] : null;
+  const pageTitle = isKoPage
+    ? (koPage?.label ?? "")
+    : t('fixture.matchday', { number: currentFecha + 1 });
 
-  // Agrupar partidos por fecha
+  // Agrupar partidos de grupos por fecha (solo páginas de grupos)
   const groupedMatches: Record<string, any[]> = {};
-  matches.forEach((match: any) => {
-    if (!groupedMatches[match.date]) {
-      groupedMatches[match.date] = [];
-    }
-    groupedMatches[match.date].push(match);
-  });
+  if (!isKoPage) {
+    FIXTURE_DATA[currentFecha].forEach((match: any) => {
+      if (!groupedMatches[match.date]) groupedMatches[match.date] = [];
+      groupedMatches[match.date].push(match);
+    });
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto mt-12">
@@ -159,7 +221,7 @@ export function Fixture() {
               <button onClick={handlePrev} aria-label="Jornada anterior" className="p-1 hover:bg-white/20 rounded-full transition-colors">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="font-bold text-base">{t('fixture.matchday', { number: currentFecha + 1 })}</span>
+              <span className="font-bold text-base">{pageTitle}</span>
               <button onClick={handleNext} aria-label="Siguiente jornada" className="p-1 hover:bg-white/20 rounded-full transition-colors">
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -168,7 +230,37 @@ export function Fixture() {
 
           {/* Matches */}
           <div className="bg-white dark:bg-gray-800 max-h-[600px] overflow-y-auto custom-scrollbar transition-colors duration-200">
-            {Object.entries(groupedMatches).map(([date, dayMatches]) => (
+            {isKoPage && Object.entries(koPage?.days ?? {}).map(([date, dayMatches]) => (
+              <div key={`ko-${date}`}>
+                <div className="bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 text-center py-1.5 text-sm font-bold border-y border-slate-200 dark:border-gray-600 uppercase tracking-wide transition-colors duration-200">
+                  {date}
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-gray-700">
+                  {dayMatches.map((m) => {
+                    const live = KO_LIVE.has(m.statusCode);
+                    const finished = KO_FINISHED.has(m.statusCode);
+                    const showScore = (live || finished) && m.goalsA != null && m.goalsB != null;
+                    return (
+                      <div key={m.fixtureId} className="flex items-center text-slate-800 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="w-14 sm:w-16 text-center py-3 text-xs sm:text-sm font-semibold text-slate-500 dark:text-gray-200 border-r border-slate-100 dark:border-gray-700 flex-shrink-0">
+                          {live ? <span className="text-red-600 dark:text-red-400 font-bold">EN VIVO</span> : m.time}
+                        </div>
+                        <div className="flex-1 grid grid-cols-[1fr_24px_28px_24px_1fr] sm:grid-cols-[1fr_28px_32px_28px_1fr] items-center py-2 sm:py-3 px-2 sm:px-4 gap-1 sm:gap-2">
+                          <div className="text-center font-semibold text-xs sm:text-sm truncate px-1">{t(`teams.${m.teamA}`)}</div>
+                          <div className="flex justify-center"><TeamFlag teamName={m.teamA} /></div>
+                          <div className="text-center font-bold text-xs sm:text-sm text-slate-700 dark:text-gray-200">
+                            {showScore ? `${m.goalsA}-${m.goalsB}` : "-"}
+                          </div>
+                          <div className="flex justify-center"><TeamFlag teamName={m.teamB} /></div>
+                          <div className="text-center font-semibold text-xs sm:text-sm truncate px-1">{t(`teams.${m.teamB}`)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {!isKoPage && Object.entries(groupedMatches).map(([date, dayMatches]) => (
               <div key={date}>
                 <div className="bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 text-center py-1.5 text-sm font-bold border-y border-slate-200 dark:border-gray-600 uppercase tracking-wide transition-colors duration-200">
                   {date}
