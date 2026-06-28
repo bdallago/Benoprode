@@ -261,20 +261,21 @@ export async function GET(req: Request) {
 
     // Then update standings (1 extra API call) + global stats in parallel
     // Use allSettled so a standings API failure doesn't block stats
-    const apiKey = process.env.API_FOOTBALL_KEY!;
     await Promise.allSettled([
       syncStandings(db, apiKey),
       recalculateGlobalStats(db),
     ]);
+  }
 
-    // Con standings ya frescos, sembrar/actualizar el cuadro de eliminatorias
-    // (recalcula puntos incluyendo aciertos de knockouts). No bloquea la respuesta
-    // si falla la API de fixtures.
-    try {
-      await syncKnockouts(db, apiKey);
-    } catch (err) {
-      console.error("[sync-football-api] syncKnockouts falló:", err);
-    }
+  // Eliminatorias: sembrar/actualizar el cuadro, detectar ganadores de fixtures KO
+  // finalizados (propaga por el árbol), refrescar kickoffs y recalcular puntos.
+  // DEBE correr en CADA tick activo, no solo cuando termina un partido de grupos:
+  // en fase KO no hay resultsUpdates de grupos, así que antes nunca se ejecutaba.
+  // No bloquea la respuesta si falla la API de fixtures.
+  try {
+    await syncKnockouts(db, apiKey);
+  } catch (err) {
+    console.error("[sync-football-api] syncKnockouts falló:", err);
   }
 
   return NextResponse.json({ ok: true, liveCount, finishedCount });
