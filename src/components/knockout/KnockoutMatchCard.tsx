@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { getTeamFlagUrl } from "../../lib/utils";
+import { pointsForSlot } from "../../lib/bracket/tree";
 import type { SlotView } from "../../lib/bracket/displayBracket";
 
 function Flag({ team }: { team: string | null }) {
@@ -57,7 +58,7 @@ export function KnockoutMatchCard({
       )}
       {team && slot.resolved && slot.pick === team && (
         <span className={`ml-auto text-[10px] font-bold ${slot.status === "correct" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-          {slot.status === "correct" ? t("predictions.koCorrect") : t("predictions.koWrong")}
+          {slot.status === "correct" ? `${t("predictions.koCorrect")} +${pointsForSlot(slot.id)}` : t("predictions.koWrong")}
         </span>
       )}
     </button>
