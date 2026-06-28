@@ -133,3 +133,16 @@ cron (gate: cache de kickoffs)
 
 Respetar **staging → test → main** en ambos repos (regla del dueño). Verificación
 read-only contra prod antes de cualquier escritura.
+
+## Estado de implementación (2026-06-28) — ✅ COMPLETADO
+
+Implementado y en producción (main) en Benoprode y Prode Mundial 2026:
+- Parte A (cron por cache de kickoffs + `syncKnockouts` en cada tick activo) — hecho.
+  Helper compartido `src/lib/ko-schedule.ts` con tests.
+- Parte B (secciones KO por ronda/día/hora en `Fixture.tsx`) — hecho.
+- Extra no previsto en el diseño original pero pedido después: orden cronológico de
+  los cruces en la pestaña Eliminatorias + badge "+N" de puntos por ronda
+  (R32=2, R16=4, QF=6, SF=8, Final=15) + confirmación del lock de 1h.
+
+Commits Benoprode: `e95d505`, `86ccfd5`, `f652f80`, `b881fb8`.
+Commits Prode: `cad9a4e`, `ce25412`, `edff3a9`.
