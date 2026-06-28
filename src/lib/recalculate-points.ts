@@ -32,9 +32,13 @@ export async function recalculatePoints(database: any): Promise<void> {
   // Only score groups explicitly marked as finished (all 12 matches played).
   // Prevents awarding points from partial or pre-tournament default standings.
   const rawGroups: Record<string, string[]> = actualData.groups ?? {};
+  // Deduplicar/normalizar los standings reales por grupo antes de puntuar: la API
+  // puede repetir filas por equipo y eso correría las posiciones (rompiendo el
+  // scoring por posición). sanitizeGroups filtra a equipos válidos sin duplicados.
+  const dedupedGroups = sanitizeGroups(rawGroups);
   const sanitizedActualG: Record<string, string[]> = {};
   for (const letter of finishedGroups) {
-    if (rawGroups[letter]) sanitizedActualG[letter] = rawGroups[letter];
+    if (rawGroups[letter]) sanitizedActualG[letter] = dedupedGroups[letter];
   }
 
   const actualSpecials: Record<string, string> = actualData.specials || {};

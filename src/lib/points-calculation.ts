@@ -19,7 +19,12 @@ export function sanitizeGroups(
   const result: Record<string, string[]> = {};
   for (const [letter, validTeams] of Object.entries(validGroups)) {
     const saved = (raw[letter] || []) as string[];
-    const valid = saved.filter(t => validTeams.includes(t));
+    // Filtrar a equipos válidos y deduplicar: la API a veces repite filas por
+    // equipo, lo que correría las posiciones y rompería el scoring por posición.
+    const valid: string[] = [];
+    for (const t of saved) {
+      if (validTeams.includes(t) && !valid.includes(t)) valid.push(t);
+    }
     const missing = validTeams.filter(t => !valid.includes(t));
     result[letter] = [...valid, ...missing];
   }

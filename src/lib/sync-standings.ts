@@ -90,17 +90,29 @@ export async function syncStandings(database: any, apiKey: string): Promise<void
   const finishedGroups: string[] = [];
   const qualifiedTeams: string[] = [];
 
-  standings.forEach((groupStandings: any[]) => {
-    if (!groupStandings?.length) return;
-    const groupLetter = groupStandings[0].group.replace("Group ", "").trim();
+  standings.forEach((rawGroupStandings: any[]) => {
+    if (!rawGroupStandings?.length) return;
+    const groupLetter = rawGroupStandings[0].group.replace("Group ", "").trim();
     if (!(groupLetter in GROUPS)) return;
+
+    // La API a veces devuelve filas duplicadas por equipo (mismo team.id repetido),
+    // lo que corre las posiciones del array y rompe el scoring por posición.
+    // Deduplicar por team.id (fallback al nombre) tras ordenar por rank, quedándonos
+    // con la primera aparición de cada equipo.
+    const sorted = [...rawGroupStandings].sort((a: any, b: any) => a.rank - b.rank);
+    const seen = new Set<string | number>();
+    const groupStandings = sorted.filter((s: any) => {
+      const key = s.team?.id ?? s.team?.name;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     const totalPlayed = groupStandings.reduce((sum: number, s: any) => sum + (s.all?.played ?? 0), 0);
 
     // Skip groups with no matches played — API returns pre-tournament default order.
     if (totalPlayed === 0) return;
 
-    groupStandings.sort((a: any, b: any) => a.rank - b.rank);
     newGroups[groupLetter] = groupStandings.map((s: any) => TEAM_NAME_MAPPING[s.team.name] ?? s.team.name);
 
     // Track teams already confirmed to the Round of 32 (API "description" field).
