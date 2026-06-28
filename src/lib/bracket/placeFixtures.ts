@@ -1,4 +1,5 @@
 import { BRACKET_TREE } from "./tree";
+import { R32_MATCHUPS } from "./seedTable";
 import type { Standings, KnockoutFixture, SlotId, GroupSeed } from "./types";
 
 // Resuelve un GroupSeed ("1A","2D") al nombre concreto del equipo según standings.
@@ -13,6 +14,22 @@ function resolveSeed(seed: GroupSeed, standings: Standings): string | null {
 export interface PlacementResult {
   placements: Record<SlotId, [string, string]>;
   warnings: string[];
+}
+
+// Siembra los 16 cruces de R32 directamente desde los standings, usando el mapa
+// oficial de cruces (R32_MATCHUPS). Sólo incluye un slot si AMBOS lados resuelven
+// (es decir, los grupos involucrados ya están definidos). Sirve como base para no
+// depender de que la API publique todos los fixtures KO.
+export function seedBracketFromStandings(
+  standings: Standings
+): Record<SlotId, [string, string]> {
+  const out: Record<SlotId, [string, string]> = {};
+  for (const [slot, [fixed, opp]] of Object.entries(R32_MATCHUPS)) {
+    const a = resolveSeed(fixed, standings);
+    const b = resolveSeed(opp, standings);
+    if (a && b) out[slot as SlotId] = [a, b];
+  }
+  return out;
 }
 
 // Ubica cada fixture de R32 en el slot cuyo lado fijo (fixedSeed → equipo via
