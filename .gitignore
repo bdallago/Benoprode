@@ -15,5 +15,7 @@ prompt.txt
 prompt.txt.txt
 firebase-applet-config.json
 tsconfig.tsbuildinfo
+*-service-account.json
+benoprode-dev-service-account.json
 
 .vercel
