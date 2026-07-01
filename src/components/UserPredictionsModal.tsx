@@ -14,6 +14,7 @@ import { DuelModal } from "./DuelModal";
 import { useSocial } from "../hooks/useSocial";
 import { useAuth } from "./Providers";
 import { BRACKET_TREE, pointsForSlot } from "../lib/bracket/tree";
+import { isSpecialCorrect } from "../lib/specials";
 import { getTeamFlagUrl } from "../lib/utils";
 import type { Round } from "../lib/bracket/types";
 
@@ -258,8 +259,7 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
     if (!results || !results.specials || !results.specials[questionId]) return null;
     const actualAnswer = results.specials[questionId];
     if (!actualAnswer || !answer) return null;
-    if (answer.trim().toLowerCase() === actualAnswer.trim().toLowerCase()) return { correct: true, points: 10 }; 
-    return { correct: false, points: 0 };
+    return isSpecialCorrect(answer, actualAnswer) ? { correct: true, points: 10 } : { correct: false, points: 0 };
   };
 
   return createPortal(
