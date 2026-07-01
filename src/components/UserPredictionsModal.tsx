@@ -523,8 +523,11 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
               {SPECIAL_QUESTIONS.map((q) => {
                 const answer = specials[q.id] || t('userPredictions.noAnswer');
                 const status = getSpecialStatus(q.id, specials[q.id]);
-                const cardTone = status
-                  ? (status.correct ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20')
+                // Solo mostrar acertadas (verde) o aún no resueltas (con reto).
+                // Las resueltas y erradas NO se muestran.
+                if (status && !status.correct) return null;
+                const cardTone = status?.correct
+                  ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
                   : '';
                 return (
                   <Card key={q.id} className={`border transition-colors duration-200 ${cardTone}`}>
@@ -532,12 +535,10 @@ export function UserPredictionsModal({ userId, userName, userPoints = 0, onClose
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t(`specialQuestions.${q.id}`)}</p>
                       <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
                         <span className="font-medium text-gray-900 dark:text-gray-100">{answer}</span>
-                        {status ? (
+                        {status?.correct ? (
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${status.correct ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>+{status.points} pts</span>
-                            {status.correct
-                              ? <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                              : <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />}
+                            <span className="text-sm font-bold text-green-600 dark:text-green-400">+{status.points} pts</span>
+                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                           </div>
                         ) : canChallenge && specials[q.id] && (
                            <Button 
