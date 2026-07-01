@@ -75,6 +75,14 @@ export function AdminResults({ onMessage }: Props) {
     setActualSpecials((prev) => ({ ...prev, [id]: value }));
   };
 
+  // Dispara el recálculo de puntos en el servidor (autenticado con el ID token del
+  // admin logueado). Acopla el Guardar con la actualización de puntos: no espera al cron.
+  const triggerRecalc = async () => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return;
+    await fetch("/api/cron/recalculate", { headers: { Authorization: `Bearer ${token}` } });
+  };
+
   const saveSpecialAnswer = async (qId: string) => {
     setSavingSlot(`special-${qId}`);
     onMessage(null);
@@ -82,7 +90,9 @@ export function AdminResults({ onMessage }: Props) {
       await setDoc(doc(db, "results", "actual"),
         { specials: { ...actualSpecials, [qId]: actualSpecials[qId] || "" }, updatedAt: new Date().toISOString() },
         { merge: true });
-      onMessage({ type: "success", text: "Respuesta guardada. Los puntos se recalculan solos en ~1 min." });
+      onMessage({ type: "success", text: "Respuesta guardada. Recalculando puntos..." });
+      await triggerRecalc();
+      onMessage({ type: "success", text: "Respuesta guardada. Puntos actualizados." });
     } catch (error) {
       console.error("Error saving special answer:", error);
       onMessage({ type: "error", text: "Error al guardar la respuesta." });
@@ -109,7 +119,9 @@ export function AdminResults({ onMessage }: Props) {
 
       setActualKnockouts(newKnockouts);
       setBracketMatchups(newMatchups);
-      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Los puntos se recalculan solos en ~1 min.` });
+      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Recalculando puntos...` });
+      await triggerRecalc();
+      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Puntos actualizados.` });
     } catch (error) {
       console.error("Error saving knockout winner:", error);
       onMessage({ type: "error", text: "Error al guardar el ganador del cruce." });

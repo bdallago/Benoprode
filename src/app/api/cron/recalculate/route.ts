@@ -1,12 +1,30 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
+import { getAdminDb, getAdminAuth } from "@/lib/firebase-admin";
 import { recalculatePoints } from "@/lib/recalculate-points";
 
-// Recálculo de puntos desacoplado de la API. Corre cada minuto y reparte puntos
-// a partir de results/actual (datos cargados manualmente por el superadmin).
+// Recálculo de puntos desacoplado de la API. Autenticado por CRON_SECRET (cron diario
+// de red de seguridad) o por un ID token de admin (lo dispara el botón Guardar del panel).
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+
+  const isCron = process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  let authorized = Boolean(isCron);
+
+  if (!authorized && authHeader?.startsWith("Bearer ")) {
+    const idToken = authHeader.slice(7);
+    try {
+      const adminAuth = getAdminAuth();
+      if (!adminAuth) throw new Error("Auth not configured");
+      const decoded = await adminAuth.verifyIdToken(idToken);
+      const db = getAdminDb();
+      const userDoc = await db!.collection("users").doc(decoded.uid).get();
+      authorized = userDoc.exists && userDoc.data()?.role === "admin";
+    } catch {
+      authorized = false;
+    }
+  }
+
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
