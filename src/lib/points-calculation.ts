@@ -1,5 +1,6 @@
 import { GROUPS } from "../data";
 import { scoreBracket } from "./bracket/score";
+import { isSpecialCorrect } from "./specials";
 
 export interface PointsResult {
   totalPoints: number;
@@ -74,12 +75,8 @@ export function computePoints(
   }
 
   for (const [qId, actualAnswer] of Object.entries(actualSpecials)) {
-    const predicted = predSpecials[qId];
-    if (
-      predicted && actualAnswer &&
-      typeof predicted === "string" && typeof actualAnswer === "string" &&
-      predicted.trim().toLowerCase() === actualAnswer.trim().toLowerCase()
-    ) {
+    // La respuesta oficial puede traer varias opciones separadas por coma.
+    if (isSpecialCorrect(predSpecials[qId], actualAnswer)) {
       totalPoints += 10;
     }
   }
