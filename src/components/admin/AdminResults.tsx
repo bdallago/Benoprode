@@ -653,7 +653,7 @@ export function AdminResults({ onMessage }: Props) {
                   {slots.map((v) => {
                     const winner = actualKnockouts[v.id];
                     const selected = koPicks[v.id] ?? winner;
-                    const canSave = selected != null && selected !== winner;
+                    const canSave = selected != null; // habilitado si hay un equipo elegido
                     const saved = savedSlot === v.id;
                     return (
                       <Card key={v.id} className={saved ? "ring-2 ring-green-400 transition-all" : "transition-all"}>
