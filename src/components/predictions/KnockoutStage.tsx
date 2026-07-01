@@ -246,7 +246,8 @@ export function KnockoutStage({
           <KnockoutMatchCard
             key={s.id}
             slot={s}
-            locked={isSlotLocked(kickoffs[s.id], now)}
+            // TEMPORAL: octavos+ bloqueados hasta corregir el orden del cuadro KO.
+            locked={s.round !== "R32" || isSlotLocked(kickoffs[s.id], now)}
             kickoffLabel={kickoffs[s.id] ? formatKickoff(kickoffs[s.id]) : undefined}
             onPick={onPick ?? (() => {})}
           />
