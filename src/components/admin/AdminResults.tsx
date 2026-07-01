@@ -97,15 +97,17 @@ export function AdminResults({ onMessage }: Props) {
       await setDoc(doc(db, "results", "actual"),
         { specials: { ...actualSpecials, [qId]: actualSpecials[qId] || "" }, updatedAt: new Date().toISOString() },
         { merge: true });
-      onMessage({ type: "success", text: "Respuesta guardada. Recalculando puntos..." });
-      await triggerRecalc();
+      setSavingSlot(null);
       flashSaved(`special-${qId}`);
-      onMessage({ type: "success", text: "Respuesta guardada. Puntos actualizados." });
+      onMessage({ type: "success", text: "Respuesta guardada. Recalculando puntos..." });
+      triggerRecalc()
+        .then(() => onMessage({ type: "success", text: "Respuesta guardada. Puntos actualizados." }))
+        .catch(() => onMessage({ type: "success", text: "Respuesta guardada. El recálculo se completará en el próximo ciclo." }))
+        .finally(() => setTimeout(() => onMessage(null), 5000));
     } catch (error) {
       console.error("Error saving special answer:", error);
-      onMessage({ type: "error", text: "Error al guardar la respuesta." });
-    } finally {
       setSavingSlot(null);
+      onMessage({ type: "error", text: "Error al guardar la respuesta." });
       setTimeout(() => onMessage(null), 5000);
     }
   };
@@ -127,15 +129,18 @@ export function AdminResults({ onMessage }: Props) {
 
       setActualKnockouts(newKnockouts);
       setBracketMatchups(newMatchups);
-      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Recalculando puntos...` });
-      await triggerRecalc();
+      // Confirmación inmediata (no espera al recálculo, que corre en segundo plano).
+      setSavingSlot(null);
       flashSaved(slotId);
-      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Puntos actualizados.` });
+      onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Recalculando puntos...` });
+      triggerRecalc()
+        .then(() => onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Puntos actualizados.` }))
+        .catch(() => onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. El recálculo se completará en el próximo ciclo.` }))
+        .finally(() => setTimeout(() => onMessage(null), 5000));
     } catch (error) {
       console.error("Error saving knockout winner:", error);
-      onMessage({ type: "error", text: "Error al guardar el ganador del cruce." });
-    } finally {
       setSavingSlot(null);
+      onMessage({ type: "error", text: "Error al guardar el ganador del cruce." });
       setTimeout(() => onMessage(null), 5000);
     }
   };
