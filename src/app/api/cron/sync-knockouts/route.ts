@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { syncKnockouts } from "@/lib/bracket/syncKnockouts";
+import { isApiEnabled } from "@/lib/apiEnabled";
 
 // Siembra/actualiza el cuadro de eliminatorias y recalcula puntos.
 // Disparable manualmente; además se invoca acoplado desde sync-football-api
@@ -9,6 +10,10 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isApiEnabled()) {
+    return NextResponse.json({ ok: true, skipped: "api_paused" });
   }
 
   const db = getAdminDb();

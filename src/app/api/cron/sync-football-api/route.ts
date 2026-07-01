@@ -5,6 +5,7 @@ import { syncStandings } from "@/lib/sync-standings";
 import { syncKnockouts } from "@/lib/bracket/syncKnockouts";
 import { recalculateGlobalStats } from "@/lib/recalculate-global-stats";
 import { inActiveWindow, extractUpcomingKickoffs, extractKoSchedule } from "@/lib/ko-schedule";
+import { isApiEnabled } from "@/lib/apiEnabled";
 import matchesJson from "../../../../lib/matches.json";
 
 const API_BASE = "https://v3.football.api-sports.io";
@@ -100,6 +101,10 @@ export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isApiEnabled()) {
+    return NextResponse.json({ ok: true, skipped: "api_paused" });
   }
 
   const db = getAdminDb();
