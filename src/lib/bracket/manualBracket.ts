@@ -18,7 +18,7 @@ export const R32_ACTUAL_MATCHUPS: Record<SlotId, [string, string]> = {
   "R32-9":  ["Brasil", "Japón"],
   "R32-10": ["Costa de Marfil", "Noruega"],
   "R32-11": ["México", "Ecuador"],
-  "R32-12": ["Inglaterra", "RD Congo"],
+  "R32-12": ["Inglaterra", "República Democrática del Congo"],
   "R32-13": ["Argentina", "Cabo Verde"],
   "R32-14": ["Australia", "Egipto"],
   "R32-15": ["Suiza", "Argelia"],

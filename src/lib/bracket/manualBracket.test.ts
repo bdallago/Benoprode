@@ -9,7 +9,7 @@ describe("R32_ACTUAL_MATCHUPS", () => {
     expect(R32_ACTUAL_MATCHUPS["R32-2"]).toEqual(["Países Bajos", "Marruecos"]);
     expect(R32_ACTUAL_MATCHUPS["R32-3"]).toEqual(["Alemania", "Paraguay"]);
     expect(R32_ACTUAL_MATCHUPS["R32-4"]).toEqual(["Francia", "Suecia"]);
-    expect(R32_ACTUAL_MATCHUPS["R32-12"]).toEqual(["Inglaterra", "RD Congo"]);
+    expect(R32_ACTUAL_MATCHUPS["R32-12"]).toEqual(["Inglaterra", "República Democrática del Congo"]);
     expect(Object.keys(R32_ACTUAL_MATCHUPS)).toHaveLength(16);
   });
 
