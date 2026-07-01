@@ -34,6 +34,7 @@ export function AdminResults({ onMessage }: Props) {
   >({});
   const [bracketMatchups, setBracketMatchups] = useState<Record<string, [string, string]>>({});
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
+  const [koPicks, setKoPicks] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [syncingStats, setSyncingStats] = useState(false);
@@ -637,6 +638,8 @@ export function AdminResults({ onMessage }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {slots.map((v) => {
                     const winner = actualKnockouts[v.id];
+                    const selected = koPicks[v.id] ?? winner;
+                    const canSave = selected != null && selected !== winner;
                     return (
                       <Card key={v.id}>
                         <CardContent className="p-4 space-y-3">
@@ -644,20 +647,32 @@ export function AdminResults({ onMessage }: Props) {
                             {[v.teamA!, v.teamB!].map((team) => (
                               <Button
                                 key={team}
-                                variant={winner === team ? "default" : "outline"}
-                                onClick={() => saveKnockoutWinner(v.id, team)}
+                                variant={selected === team ? "default" : "outline"}
+                                onClick={() => setKoPicks((prev) => ({ ...prev, [v.id]: team }))}
                                 disabled={savingSlot === v.id}
-                                className={`flex-1 ${winner === team ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+                                className={`flex-1 ${selected === team ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
                               >
                                 {t(`teams.${team}`)}
                               </Button>
                             ))}
                           </div>
-                          {winner && (
-                            <p className="text-xs text-green-700 dark:text-green-400 font-medium">
-                              Ganador: {t(`teams.${winner}`)}
-                            </p>
-                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            {winner ? (
+                              <p className="text-xs text-green-700 dark:text-green-400 font-medium">
+                                Ganador guardado: {t(`teams.${winner}`)}
+                              </p>
+                            ) : (
+                              <span className="text-xs text-gray-400">Sin guardar</span>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={() => saveKnockoutWinner(v.id, selected!)}
+                              disabled={!canSave || savingSlot === v.id}
+                              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                            >
+                              <Save className="w-4 h-4" /> {savingSlot === v.id ? "Guardando..." : "Guardar ganador"}
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     );
