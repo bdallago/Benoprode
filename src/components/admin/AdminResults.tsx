@@ -34,7 +34,13 @@ export function AdminResults({ onMessage }: Props) {
   >({});
   const [bracketMatchups, setBracketMatchups] = useState<Record<string, [string, string]>>({});
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
+  const [savedSlot, setSavedSlot] = useState<string | null>(null);
   const [koPicks, setKoPicks] = useState<Record<string, string>>({});
+
+  const flashSaved = (id: string) => {
+    setSavedSlot(id);
+    setTimeout(() => setSavedSlot((prev) => (prev === id ? null : prev)), 2500);
+  };
   const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [syncingStats, setSyncingStats] = useState(false);
@@ -93,6 +99,7 @@ export function AdminResults({ onMessage }: Props) {
         { merge: true });
       onMessage({ type: "success", text: "Respuesta guardada. Recalculando puntos..." });
       await triggerRecalc();
+      flashSaved(`special-${qId}`);
       onMessage({ type: "success", text: "Respuesta guardada. Puntos actualizados." });
     } catch (error) {
       console.error("Error saving special answer:", error);
@@ -122,6 +129,7 @@ export function AdminResults({ onMessage }: Props) {
       setBracketMatchups(newMatchups);
       onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Recalculando puntos...` });
       await triggerRecalc();
+      flashSaved(slotId);
       onMessage({ type: "success", text: `Ganador guardado: ${t(`teams.${winner}`)}. Puntos actualizados.` });
     } catch (error) {
       console.error("Error saving knockout winner:", error);
@@ -508,13 +516,14 @@ export function AdminResults({ onMessage }: Props) {
                   Podés poner más de una respuesta correcta separándolas por coma (ej: Messi, Mbappé).
                 </p>
                 <Button
-                  variant="outline"
+                  variant={savedSlot === `special-${q.id}` ? "default" : "outline"}
                   size="sm"
                   onClick={() => saveSpecialAnswer(q.id)}
                   disabled={savingSlot === `special-${q.id}`}
-                  className="flex items-center gap-2"
+                  className={`flex items-center gap-2 transition-all active:scale-95 ${savedSlot === `special-${q.id}` ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
                 >
-                  <Save className="w-4 h-4" /> Guardar respuesta
+                  {savedSlot === `special-${q.id}` ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {savingSlot === `special-${q.id}` ? "Guardando..." : savedSlot === `special-${q.id}` ? "¡Guardado!" : "Guardar respuesta"}
                 </Button>
               </CardContent>
             </Card>
@@ -640,8 +649,9 @@ export function AdminResults({ onMessage }: Props) {
                     const winner = actualKnockouts[v.id];
                     const selected = koPicks[v.id] ?? winner;
                     const canSave = selected != null && selected !== winner;
+                    const saved = savedSlot === v.id;
                     return (
-                      <Card key={v.id}>
+                      <Card key={v.id} className={saved ? "ring-2 ring-green-400 transition-all" : "transition-all"}>
                         <CardContent className="p-4 space-y-3">
                           <div className="flex gap-2">
                             {[v.teamA!, v.teamB!].map((team) => (
@@ -650,7 +660,7 @@ export function AdminResults({ onMessage }: Props) {
                                 variant={selected === team ? "default" : "outline"}
                                 onClick={() => setKoPicks((prev) => ({ ...prev, [v.id]: team }))}
                                 disabled={savingSlot === v.id}
-                                className={`flex-1 ${selected === team ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+                                className={`flex-1 transition-transform active:scale-95 ${selected === team ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
                               >
                                 {t(`teams.${team}`)}
                               </Button>
@@ -668,9 +678,10 @@ export function AdminResults({ onMessage }: Props) {
                               size="sm"
                               onClick={() => saveKnockoutWinner(v.id, selected!)}
                               disabled={!canSave || savingSlot === v.id}
-                              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                              className={`flex items-center gap-2 text-white transition-all active:scale-95 ${saved ? "bg-green-600 hover:bg-green-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
                             >
-                              <Save className="w-4 h-4" /> {savingSlot === v.id ? "Guardando..." : "Guardar ganador"}
+                              {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                              {savingSlot === v.id ? "Guardando..." : saved ? "¡Guardado!" : "Guardar ganador"}
                             </Button>
                           </div>
                         </CardContent>
