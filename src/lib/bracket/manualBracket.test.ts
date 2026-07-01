@@ -4,23 +4,23 @@ import { propagateWinners } from "./propagate";
 import type { SlotId } from "./types";
 
 describe("R32_ACTUAL_MATCHUPS", () => {
-  it("tiene los 16 slots R32 en el orden de adyacencia correcto", () => {
-    expect(R32_ACTUAL_MATCHUPS["R32-1"]).toEqual(["Sudáfrica", "Canadá"]);
-    expect(R32_ACTUAL_MATCHUPS["R32-2"]).toEqual(["Países Bajos", "Marruecos"]);
-    expect(R32_ACTUAL_MATCHUPS["R32-3"]).toEqual(["Alemania", "Paraguay"]);
-    expect(R32_ACTUAL_MATCHUPS["R32-4"]).toEqual(["Francia", "Suecia"]);
+  it("tiene los 16 slots R32 en el orden viejo/real", () => {
+    expect(R32_ACTUAL_MATCHUPS["R32-1"]).toEqual(["México", "Ecuador"]);
+    expect(R32_ACTUAL_MATCHUPS["R32-2"]).toEqual(["Brasil", "Japón"]);
+    expect(R32_ACTUAL_MATCHUPS["R32-4"]).toEqual(["Países Bajos", "Marruecos"]);
+    expect(R32_ACTUAL_MATCHUPS["R32-13"]).toEqual(["Sudáfrica", "Canadá"]);
     expect(R32_ACTUAL_MATCHUPS["R32-12"]).toEqual(["Inglaterra", "República Democrática del Congo"]);
     expect(Object.keys(R32_ACTUAL_MATCHUPS)).toHaveLength(16);
   });
 
-  it("propaga a octavos según el cuadro real (P90=R16-1, P89=R16-2)", () => {
+  it("propaga a octavos según las KO_SOURCES reales (R16-1←R32-13,R32-4; R16-2←R32-3,R32-5)", () => {
     const winners: Record<SlotId, string> = {
-      "R32-1": "Canadá", "R32-2": "Marruecos",
-      "R32-3": "Paraguay", "R32-4": "Francia",
+      "R32-13": "Canadá", "R32-4": "Marruecos",
+      "R32-3": "Paraguay", "R32-5": "Francia",
     };
     const out = propagateWinners({ ...R32_ACTUAL_MATCHUPS }, winners);
-    expect(out["R16-1"]).toEqual(["Canadá", "Marruecos"]);   // M90
-    expect(out["R16-2"]).toEqual(["Paraguay", "Francia"]);   // M89
+    expect(out["R16-1"]).toEqual(["Canadá", "Marruecos"]);
+    expect(out["R16-2"]).toEqual(["Paraguay", "Francia"]);
   });
 });
 

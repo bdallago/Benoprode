@@ -24,8 +24,8 @@ describe("BRACKET_TREE", () => {
     }
   });
 
-  it("R16-1 se alimenta de R32-1 y R32-2", () => {
-    expect(getSlot("R16-1").sources).toEqual(["R32-1", "R32-2"]);
+  it("R16-1 se alimenta de los cruces reales R32-13 y R32-4 (cuadro FIFA)", () => {
+    expect(getSlot("R16-1").sources).toEqual(["R32-13", "R32-4"]);
   });
 
   it("pointsForSlot devuelve el puntaje por ronda", () => {

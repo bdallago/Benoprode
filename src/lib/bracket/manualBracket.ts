@@ -2,27 +2,28 @@ import { getSlot } from "./tree";
 import type { SlotId } from "./types";
 import type { KoScheduleRow } from "../ko-schedule";
 
-// Cuadro real FIFA 2026 al 2026-07-01. Los 16 cruces de 16avos en el orden de slots
-// que hace que la adyacencia estándar del BRACKET_TREE reproduzca las llaves oficiales
-// (M89–M102). Equipos, días y horarios NO cambian respecto a lo que ya se ve en 16avos;
-// esto solo garantiza el slot interno correcto para que octavos empareje bien.
+// Cuadro real FIFA 2026 — ORDEN VIEJO/REAL de slots R32 (el que viven las predicciones
+// y los ganadores en Firestore). El emparejamiento de octavos→final NO depende de la
+// adyacencia estándar: lo definen las KO_SOURCES reales en tree.ts. Esta constante ya no
+// se usa en runtime (AdminResults lee bracketMatchups de Firestore); se conserva veraz
+// como referencia del orden real de 16avos.
 export const R32_ACTUAL_MATCHUPS: Record<SlotId, [string, string]> = {
-  "R32-1":  ["Sudáfrica", "Canadá"],
-  "R32-2":  ["Países Bajos", "Marruecos"],
+  "R32-1":  ["México", "Ecuador"],
+  "R32-2":  ["Brasil", "Japón"],
   "R32-3":  ["Alemania", "Paraguay"],
-  "R32-4":  ["Francia", "Suecia"],
-  "R32-5":  ["Portugal", "Croacia"],
-  "R32-6":  ["España", "Austria"],
+  "R32-4":  ["Países Bajos", "Marruecos"],
+  "R32-5":  ["Francia", "Suecia"],
+  "R32-6":  ["Colombia", "Ghana"],
   "R32-7":  ["Estados Unidos", "Bosnia y Herzegovina"],
   "R32-8":  ["Bélgica", "Senegal"],
-  "R32-9":  ["Brasil", "Japón"],
-  "R32-10": ["Costa de Marfil", "Noruega"],
-  "R32-11": ["México", "Ecuador"],
+  "R32-9":  ["Suiza", "Argelia"],
+  "R32-10": ["Argentina", "Cabo Verde"],
+  "R32-11": ["España", "Austria"],
   "R32-12": ["Inglaterra", "República Democrática del Congo"],
-  "R32-13": ["Argentina", "Cabo Verde"],
-  "R32-14": ["Australia", "Egipto"],
-  "R32-15": ["Suiza", "Argelia"],
-  "R32-16": ["Colombia", "Ghana"],
+  "R32-13": ["Sudáfrica", "Canadá"],
+  "R32-14": ["Costa de Marfil", "Noruega"],
+  "R32-15": ["Portugal", "Croacia"],
+  "R32-16": ["Australia", "Egipto"],
 };
 
 // Kickoffs confirmados (ms UTC). ART = UTC−3, por eso se suma 3h.

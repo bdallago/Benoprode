@@ -4,7 +4,9 @@ import type { SlotId } from "./types";
 
 const seedR32: Record<SlotId, [string, string]> = {
   "R32-1": ["Argentina", "Jordania"],
-  "R32-2": ["Brasil", "Marruecos"],
+  // R16-1 se alimenta de R32-13 y R32-4 (cuadro real FIFA 2026).
+  "R32-13": ["Sudáfrica", "Canadá"],
+  "R32-4": ["Países Bajos", "Marruecos"],
 };
 
 describe("buildDisplayBracket", () => {
@@ -30,29 +32,29 @@ describe("buildDisplayBracket", () => {
   });
 
   it("NO proyecta los picks del usuario: R16 queda en TBD hasta que se resuelva R32", () => {
-    const view = buildDisplayBracket(seedR32, { "R32-1": "Argentina", "R32-2": "Brasil" }, {});
+    const view = buildDisplayBracket(seedR32, { "R32-13": "Canadá", "R32-4": "Marruecos" }, {});
     expect(view["R16-1"].teamA).toBeNull();
     expect(view["R16-1"].teamB).toBeNull();
   });
 
   it("habilita R16 solo cuando AMBOS cruces previos de R32 tienen ganador real", () => {
-    const partial = buildDisplayBracket(seedR32, {}, { "R32-1": "Argentina" });
-    expect(partial["R16-1"].teamA).toBe("Argentina");
+    const partial = buildDisplayBracket(seedR32, {}, { "R32-13": "Canadá" });
+    expect(partial["R16-1"].teamA).toBe("Canadá");
     expect(partial["R16-1"].teamB).toBeNull();
 
-    const full = buildDisplayBracket(seedR32, {}, { "R32-1": "Argentina", "R32-2": "Brasil" });
-    expect(full["R16-1"].teamA).toBe("Argentina");
-    expect(full["R16-1"].teamB).toBe("Brasil");
+    const full = buildDisplayBracket(seedR32, {}, { "R32-13": "Canadá", "R32-4": "Marruecos" });
+    expect(full["R16-1"].teamA).toBe("Canadá");
+    expect(full["R16-1"].teamB).toBe("Marruecos");
   });
 
   it("reemplaza la proyección por el ganador real al resolverse la ronda previa", () => {
     const view = buildDisplayBracket(
       seedR32,
-      { "R32-1": "Argentina", "R32-2": "Brasil", "R16-1": "Argentina" },
-      { "R32-1": "Jordania", "R32-2": "Brasil" }
+      { "R32-13": "Canadá", "R32-4": "Marruecos", "R16-1": "Canadá" },
+      { "R32-13": "Sudáfrica", "R32-4": "Marruecos" }
     );
-    expect(view["R16-1"].teamA).toBe("Jordania");
-    expect(view["R16-1"].teamB).toBe("Brasil");
+    expect(view["R16-1"].teamA).toBe("Sudáfrica");
+    expect(view["R16-1"].teamB).toBe("Marruecos");
     expect(view["R16-1"].pick).toBeNull();
   });
 
